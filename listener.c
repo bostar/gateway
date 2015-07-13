@@ -32,6 +32,8 @@
 #include <netinet/in.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
+#include <unistd.h>
+#include <arpa/inet.h>
 
 struct sockaddr_in addr_server;
 #define SERVER_IP	"121.43.69.176"
@@ -41,10 +43,8 @@ struct sockaddr_in addr_server;
 #define LENGTH  512                    // Buffer length     
 
 int sockfd;                                                                            
-void udp_init(void)
+void tcp_init(void)
 { 
-    int num;                           // Counter of received bytes  
-    char revbuf[LENGTH];               // Receive buffer
     struct sockaddr_in remote_addr;    // Host address information
 
     printf("%s\r\n",__func__);
@@ -62,18 +62,15 @@ void udp_init(void)
     bzero(&(remote_addr.sin_zero), 8);                  // Flush the rest of struct
 
     /* Try to connect the remote */
-    if (connect(sockfd, (struct sockaddr *)&remote_addr,  sizeof(struct sockaddr)) == -1)
+    while (connect(sockfd, (struct sockaddr *)&remote_addr,  sizeof(struct sockaddr)) == -1)
     {
         printf ("ERROR: Failed to connect to the host!\n");
-        return (0);
+        usleep(1000000);
     }
-    else
-    {
-        printf ("OK: Have connected to the server.\r\n");
-    }
+    printf ("OK: Have connected to the server.\r\n");
 }
 
-int udp_listen(unsigned char *revbuf,int bufsize)
+int tcp_listen(unsigned char *revbuf,int bufsize)
 {
     int num;
     bzero(revbuf,bufsize);
@@ -100,7 +97,7 @@ int udp_listen(unsigned char *revbuf,int bufsize)
     return num;
 }
 
-int udp_send_to_server(int len,unsigned char *bytes)
+int tcp_send_to_server(int len,unsigned char *bytes)
 {
     int num;
     if((num = send(sockfd, bytes, len, 0)) == -1)
@@ -110,9 +107,10 @@ int udp_send_to_server(int len,unsigned char *bytes)
         exit(1);
     }
     printf("OK: Sent %d bytes sucessful, please enter again.\n", num);
+    return num;
 }
 
-void udp_exit(void)
+void tcp_exit(void)
 {
     close(sockfd);
 }
