@@ -7,8 +7,8 @@
 #include <sys/socket.h>
 
 struct sockaddr_in addr_server;
-void udp_init(void);
-int udp_listen(unsigned char *revbuf,int bufsize);
-int udp_send_to_server(int len,unsigned char *bytes);
-void udp_exit(void);
+void tcp_init(void);
+int tcp_listen(unsigned char *revbuf,int bufsize);
+int tcp_send_to_server(int len,unsigned char *bytes);
+void tcp_exit(void);
 #endif
