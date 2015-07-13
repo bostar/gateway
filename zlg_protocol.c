@@ -226,7 +226,7 @@ void testMotor(unsigned short DstAddr,unsigned char cmd)
 	wbuf[0] = 'T';
 	wbuf[1] = 'S';
 	wbuf[2] = 'T';
-	wbuf[3] = cmdLedTest;
+	wbuf[3] = cmdMotorTest;
 	wbuf[4] = cmd;
 	
 	set_temporary_DestAddr(DstAddr);
@@ -248,4 +248,18 @@ void testMotor(unsigned short DstAddr,unsigned char cmd)
 			printf("cmd is error...\r\n");
 		break;
 	}
+}
+void switchLockControl(unsigned short DstAddr,unsigned char cmd)
+{
+	unsigned char wbuf[5];
+	
+	wbuf[0] = 'C';
+	wbuf[1] = 'T';
+	wbuf[2] = 'L';
+	wbuf[3] = 0x00;//cmd
+	wbuf[4] = cmd;
+
+	set_temporary_DestAddr(DstAddr);
+	set_temporary_cast_mode(unicast);
+	WriteComPort(wbuf, 5);
 }

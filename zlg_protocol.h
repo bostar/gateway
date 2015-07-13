@@ -54,5 +54,6 @@ void startSensorCalibration(void);
 void testBeep(unsigned short DstAddr,unsigned char cmd);
 void testLed(unsigned short DstAddr,unsigned char ioLevel);
 void testMotor(unsigned short DstAddr,unsigned char cmd);
+void switchLockControl(unsigned short DstAddr,unsigned char cmd);
 
 #endif

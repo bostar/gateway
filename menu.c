@@ -9,32 +9,34 @@
 #include "zlg_protocol.h"
 
 const char menu[] = "\r\n\
-+********************** ZLG CMD HELP ************************+\r\n\
-+--- Description ----+--CMD --+--- Demo ----+-- Remark------ +\r\n\
-| read local cfg     | AT+1   | AT+1        |                |\r\n\
-| search node        | AT+2   | AT+2        |                |\r\n\
-| set channel nv     | AT+3   | AT+3 25     |                |\r\n\
-| get remote info    | AT+4   | AT+4 0x2002 |                |\r\n\
-| reset node         | AT+5   | AT+5 0x2002 |                |\r\n\
-| restore factory settings    | AT+6 0x2002 |                |\r\n\
-| set temp channel   | AT+7   | AT+7 25     |                |\r\n\
-| set temp DstAddr   | AT+8   | AT+8 0x2002 |                |\r\n\
-| set temp io dir    | AT+9   | AT+9 0x2002 0x55|            |\r\n\
-| read temp io level | AT+A   | AT+A 0x2002 |                |\r\n\
-| set temp io level  | AT+B   | AT+B 0x2002 0x55|            |\r\n\
-| read temp adc value| AT+C   | AT+C 0x2002 |                |\r\n\
-| set temp cast mode | AT+D   | AT+D 0x00   | broadcast:0x01 |\r\n\
-| send to remote node| AT+S   | AT+S 0x2002 hello |          |\r\n\
-| send               | send   | send hello  |                |\r\n\
-| help               | ?      |             |                |\r\n\
-+--------------------+--------+-------------+----------------+\r\n\
-| link test          | AT+T   | AT+T        |                |\r\n\
-| change Node Type   | AT+N   | AT+N 0x00   | router:0x01    |\r\n\
-| changePanidChannel | AT+P   | AT+P 0x1001 25 |             |\r\n\
-| reset all node     | AT+R   | AT+R        |                |\r\n\
-| test beep          | beep   | beep 0x2001 1 |  0:silence   |\r\n\
-| test leds          | leds   | leds 0x2001 0xff|            |\r\n\
-+--------------------+--------+-------------+----------------+\r\n";
++********************** ZLG CMD HELP ***************************+\r\n\
++--- Description ----+--CMD --+--- Demo ----+-- Remark--------- +\r\n\
+| read local cfg     | AT+1   | AT+1        |                   |\r\n\
+| search node        | AT+2   | AT+2        |                   |\r\n\
+| set channel nv     | AT+3   | AT+3 25     |                   |\r\n\
+| get remote info    | AT+4   | AT+4 0x2002 |                   |\r\n\
+| reset node         | AT+5   | AT+5 0x2002 |                   |\r\n\
+| restore factory settings    | AT+6 0x2002 |                   |\r\n\
+| set temp channel   | AT+7   | AT+7 25     |                   |\r\n\
+| set temp DstAddr   | AT+8   | AT+8 0x2002 |                   |\r\n\
+| set temp io dir    | AT+9   | AT+9 0x2002 0x55|               |\r\n\
+| read temp io level | AT+A   | AT+A 0x2002 |                   |\r\n\
+| set temp io level  | AT+B   | AT+B 0x2002 0x55|               |\r\n\
+| read temp adc value| AT+C   | AT+C 0x2002 |                   |\r\n\
+| set temp cast mode | AT+D   | AT+D 0x00   | broadcast:0x01    |\r\n\
+| send to remote node| AT+S   | AT+S 0x2002 hello |             |\r\n\
+| send               | send   | send hello  |                   |\r\n\
+| help               | ?      |             |                   |\r\n\
++--------------------+--------+-------------+-------------------+\r\n\
+| link test          | AT+T   | AT+T        |                   |\r\n\
+| change Node Type   | AT+N   | AT+N 0x00   | router:0x01       |\r\n\
+| changePanidChannel | AT+P   | AT+P 0x1001 25 |                |\r\n\
+| reset all node     | AT+R   | AT+R        |                   |\r\n\
+| test beep          | beep   | beep 0x2001 1 |  0:silence      |\r\n\
+| test leds          | leds   | leds 0x2001 0xff|               |\r\n\
+| test motor         | moto   | moto 0x2001 0x00| 0x01:F 0x02:B |\r\n\
+| switchlock contrl  | lock   | lock 0x2001 0x00|               |\r\n\
++--------------------+--------+-------------+-------------------+\r\n";
 
 void menu_thread(void)
 {
@@ -189,7 +191,7 @@ void menu_thread(void)
 				//printf("zlg_zm516x > ");
 				//continue;
 			}
-		    else if(!strncmp((const char *)wbuf,"send",4))
+		        else if(!strncmp((const char *)wbuf,"send",4))
 			{
 				WriteComPort((unsigned char *)&wbuf[5],strlen(wbuf)-5);
 			}
@@ -250,6 +252,32 @@ void menu_thread(void)
 					sscanf(&wbuf[strlen(wbuf)-9],"%04x",&temp1);
 					sscanf(&wbuf[strlen(wbuf)-2],"%02x",&temp2);
 					testLed(temp1,temp2);					
+				}
+				else
+					printf("paramter error...\r\n");
+			}
+			else if(!strncmp(wbuf,"moto",4))
+			{
+				unsigned int temp1;
+				unsigned int temp2;
+				if(!strncmp(&wbuf[strlen(wbuf)-11],"0x",2) && !strncmp(&wbuf[strlen(wbuf)-4],"0x",2))
+				{
+					sscanf(&wbuf[strlen(wbuf)-9],"%04x",&temp1);
+					sscanf(&wbuf[strlen(wbuf)-2],"%02x",&temp2);
+					testMotor(temp1,temp2);					
+				}
+				else
+					printf("paramter error...\r\n");
+			}
+			else if(!strncmp(wbuf,"lock",4))
+			{
+				unsigned int temp1;
+				unsigned int temp2;
+				if(!strncmp(&wbuf[strlen(wbuf)-11],"0x",2) && !strncmp(&wbuf[strlen(wbuf)-4],"0x",2))
+				{
+					sscanf(&wbuf[strlen(wbuf)-9],"%04x",&temp1);
+					sscanf(&wbuf[strlen(wbuf)-2],"%02x",&temp2);
+					switchLockControl(temp1,temp2);					
 				}
 				else
 					printf("paramter error...\r\n");
