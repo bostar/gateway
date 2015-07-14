@@ -2,4 +2,6 @@
 #define __SERVER_DUTY_H_
 int get_local_addr(unsigned char *local_addr,unsigned char* long_addr);
 void server_duty_thread(void);
+void set_node_online(unsigned char *macaddr);
+int networking_over(void);
 #endif

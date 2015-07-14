@@ -17,8 +17,42 @@ typedef struct {
     unsigned short parking_id;
     unsigned char parking_mac_addr[8];
     unsigned char state;
+    unsigned char online;
 }st_parkingState,*pst_parkingState;
 pst_parkingState pstParkingState = NULL;
+
+int networking_over(void)
+{
+    int loop;
+    for(loop = 0;loop < depot_info.depot_size;loop ++)
+    {
+        if(pstParkingState[loop].online == 1)
+        {
+            
+        }
+        else
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+void set_node_online(unsigned char *macaddr)
+{
+    int loop;
+    for(loop = 0;loop < depot_info.depot_size;loop ++)
+    {
+        if(memcmp(pstParkingState[loop].parking_mac_addr,macaddr,8) == 0)
+        {
+            break;
+        }
+    }
+    if(loop < depot_info.depot_size)
+    {
+        pstParkingState[loop].online = 1;
+    }
+}
 
 int get_local_addr(unsigned char *local_addr,unsigned char* long_addr)
 {
@@ -100,6 +134,7 @@ down:
         swap(8,&rbuf[8 + 2 + loop * 2 + loop * 8]);
         memcpy(pstParkingState[loop].parking_mac_addr,&rbuf[8 + 2 + loop * 2 + loop * 8],8);
         pstParkingState[loop].state = 0;
+        pstParkingState[loop].online = 0;
         printf("parking_id = %d;parking_mac_addr = 0x%08x%08x\r\n",pstParkingState[loop].parking_id,*(unsigned int*)&pstParkingState[loop].parking_mac_addr[4],*(unsigned int*)&pstParkingState[loop].parking_mac_addr[0]);
     }
     
