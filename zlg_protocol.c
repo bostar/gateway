@@ -7,13 +7,14 @@
 #include "zlg_protocol.h"
 #include "zlg_cmd.h"
 #include "serial.h"
-
+#include "server_duty.h"
 unsigned char iEEEAddress[8];
 
 void communicate_thread(void)
 {
 	unsigned char rbuf[255];
 	unsigned char rlen;
+	unsigned short allocLocalAddress;
 
 	while(1)
 	{
@@ -29,8 +30,14 @@ void communicate_thread(void)
 					case cmdCheckIn:
 						//iEEEAddress = (unsigned char *)malloc();
 						memcpy(&iEEEAddress,&rbuf[4],8);
-						ackRegisterNetwork(0x0001,Allow);
-						printf("node is checking in...\r\n");
+                                                if(!get_local_addr((unsigned char *)&allocLocalAddress,(unsigned char *)&iEEEAddress))
+						{
+							ackRegisterNetwork(allocLocalAddress,Allow);
+						        printf("server alloc address success,node is checking in...\r\n");
+							set_node_online((unsigned char *)&iEEEAddress);
+						}
+						else
+							printf("server can not alloc address\r\n");
 					break;
 					case cmdAckChangeNodeType:						
 						printf("change node type ACK...\r\n");

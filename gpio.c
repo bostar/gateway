@@ -76,7 +76,7 @@ void reset_zm516x(void)
 {
 	int ret;
     ret = write(fd4, "0", 1);
-    ret = write(fd1, "0", 1); // DEF
+//    ret = write(fd1, "0", 1); // DEF
     usleep(100000);
     ret = write(fd4, "1", 1);
     usleep(100000);

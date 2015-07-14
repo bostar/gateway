@@ -62,8 +62,7 @@ int get_local_addr(unsigned char *local_addr,unsigned char* long_addr)
     }
     else
     {
-        local_addr[0] = 0x00;
-        local_addr[1] = 0x01;
+        *(unsigned short*)local_addr = 0x0001;
         return 0;
     }
 }
@@ -85,7 +84,6 @@ void server_duty_thread(void)
     int len;
     int loop = 0;
     struct timeb tp;
-    pst_parkingState pstParkingState = NULL;
     tcp_init();
 cfg:
     memcpy(wbuf,"size",4); // pkg head

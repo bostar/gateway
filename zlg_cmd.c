@@ -47,6 +47,8 @@ void init_zlg_zm516x(void)
     serialport_init();
     usleep(100000);
     sleep_zm516x(0);
+    read_local_cfg();
+    write_local_cfg();    
 }
 
 void read_local_cfg(void)
@@ -181,9 +183,11 @@ void write_local_cfg(void)
     buf[4] = stDevInfo.devLoacalNetAddr[0];
     buf[5] = stDevInfo.devLoacalNetAddr[1];
     memset(stDevInfo.devLoacalNetAddr,0,2);
-    stDevInfo.devChannel = 0x19;
-    stDevInfo.devPanid[0] = 0x10;
-    stDevInfo.devPanid[1] = 0x01;
+    stDevInfo.devChannel = 15;
+    stDevInfo.devPanid[0] = 0x00;
+    stDevInfo.devPanid[1] = 0x00;
+    stDevInfo.devDestNetAddr[0] = 0xFF;
+    stDevInfo.devDestNetAddr[1] = 0xFE;
     memcpy(&buf[6],&stDevInfo,65);
     
     for(i = 0;i < (6 + 65);i++)
