@@ -40,15 +40,15 @@ int networking_over(void)
 
 void set_node_online(unsigned char *macaddr)
 {
-    int loop;
-    for(loop = 0;loop < depot_info.depot_size;loop ++)
+    int loop = 0;
+    //for(loop = 0;loop < depot_info.depot_size;loop ++)
     {
-        if(memcmp(pstParkingState[loop].parking_mac_addr,macaddr,8) == 0)
+        /*if(memcmp(pstParkingState[loop].parking_mac_addr,macaddr,8) == 0)
         {
             break;
-        }
+        }*/
     }
-    if(loop < depot_info.depot_size)
+    //if(loop < depot_info.depot_size)
     {
         pstParkingState[loop].online = 1;
     }
@@ -84,6 +84,7 @@ void server_duty_thread(void)
     int len;
     int loop = 0;
     struct timeb tp;
+    static unsigned char ctl;
     tcp_init();
 cfg:
     memcpy(wbuf,"size",4); // pkg head
@@ -157,6 +158,23 @@ down:
     while(1)
     {
         usleep(1000000);
+        /*printf("before run \r\n");
+        if(networking_over() != 1)
+        {
+            continue;
+        }
+        printf("run \r\n");
+        if(ctl)
+        {
+            ctl = 0;
+            switchLockControl(0x0001,0x00);
+        }
+        else
+        {
+            ctl = 1;
+            switchLockControl(0x0001,0x03);
+
+        }*/
         len = tcp_listen(rbuf,sizeof(rbuf));
         if(memcmp("TALL",rbuf,4) != 0)
         {

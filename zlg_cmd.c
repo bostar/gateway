@@ -69,7 +69,7 @@ void read_local_cfg(void)
     do{
         printf("get device info...\r\n");
         WriteComPort(wbuf, 5);
-        //usleep(100000);
+        usleep(100000);
         len = ReadComPort(rbuf,255);
         printf("device response data length is %d\r\n",len);
     }while(len < 65);
@@ -266,6 +266,7 @@ void set_channel_nv(unsigned char nv)
     {
 		printf("start to set channel to %d...\r\n",nv);
     	WriteComPort(wbuf, 6);
+                usleep(100000);
 		rlen = ReadComPort(rbuf,10);
     }
     if(rbuf[0] == 0xab && rbuf[1] == 0xbc && rbuf[2] == 0xcd)
@@ -305,7 +306,7 @@ void search_node(void)
 			if(!strncmp((const char *)inputbuf,"q",1) || !strncmp((const char *)inputbuf,"c",1))
 		 		return;
 		}*/
-		//usleep(10000);
+		usleep(10000);
 		rlen = ReadComPort(rbuf,20);
     }while(rlen != 13);
     if(rbuf[0] == 0xab && rbuf[1] == 0xbc && rbuf[2] == 0xcd)
@@ -351,7 +352,7 @@ void get_remote_info(unsigned short DstAddr)
     do{
 		printf("start get remote node 0x%04x info...\r\n",DstAddr);
     		WriteComPort(wbuf, 7);
-	//	usleep(100000);
+		usleep(100000);
 		rlen = ReadComPort(rbuf,80);
 		printf("response_len is:%d\r\n",rlen);
     }while(rlen < 74);
@@ -555,6 +556,7 @@ void set_temporary_channel(unsigned char channel)
 	{
 		printf("start to set temp channel to %d\r\n",channel);
 		WriteComPort(wbuf, 5);
+                usleep(100000);
 		rlen = ReadComPort(rbuf,10);
 	}while(rlen != 5);
 	if((rbuf[0] == 0xde)&&(rbuf[1] == 0xdf)&&(rbuf[2] == 0xef))
@@ -581,13 +583,14 @@ void set_temporary_DestAddr(unsigned short DestAddr)
 	wbuf[3] = enSetDestAddr; 
 	wbuf[4] = DestAddr >> 8;
 	wbuf[5] = DestAddr;
-	do
-	{
+	//do
+	//{
 		printf("start to set DestAddr to 0x%04x\r\n",DestAddr);
 		WriteComPort(wbuf, 6);
+                usleep(100000);
 		rlen = ReadComPort(rbuf,10);
-	}while(rlen != 5);
-	if((rbuf[0] == 0xde)&&(rbuf[1] == 0xdf)&&(rbuf[2] == 0xef))
+	//}while(rlen != 5);
+/*	if((rbuf[0] == 0xde)&&(rbuf[1] == 0xdf)&&(rbuf[2] == 0xef))
 	{
 		if(rbuf[3] == enSetDestAddr)
 		{
@@ -598,7 +601,7 @@ void set_temporary_DestAddr(unsigned short DestAddr)
 			}
 		}
 	}
-	printf("set DestAddr error...\r\n"); 
+	printf("set DestAddr error...\r\n"); */
 }
 
 void set_temporary_ShowSrcAddr(showSrcAddr_cmd_t cmd)
@@ -626,6 +629,7 @@ void set_temporary_ShowSrcAddr(showSrcAddr_cmd_t cmd)
 			break;
 		}
 		WriteComPort(wbuf, 5);
+                usleep(100000);
 		rlen = ReadComPort(rbuf,10);
 	}while(rlen != 5);
 	if((rbuf[0] == 0xde)&&(rbuf[1] == 0xdf)&&(rbuf[2] == 0xef))
@@ -659,6 +663,9 @@ void set_temporary_io_dir(unsigned short DstAddr,unsigned char IO_Dir)
 	{
 		printf("start to set 0x%04x node's io_dir:0x%02x\r\n",DstAddr,IO_Dir);
 		WriteComPort(wbuf, 7);
+
+
+                usleep(100000);
 		rlen = ReadComPort(rbuf,10);
 	}while(rlen != 7);
 	if((rbuf[0] == 0xde)&&(rbuf[1] == 0xdf)&&(rbuf[2] == 0xef))
@@ -691,6 +698,7 @@ unsigned char read_temporary_io_level(unsigned short DstAddr)
 	{
 		printf("start to read 0x%04x node's io_level...\r\n",DstAddr);
 		WriteComPort(wbuf, 6);
+                usleep(100000);
 		rlen = ReadComPort(rbuf,10);
 	}while(rlen != 7);
 	if((rbuf[0] == 0xde)&&(rbuf[1] == 0xdf)&&(rbuf[2] == 0xef))
@@ -722,6 +730,7 @@ void set_temporary_io_level(unsigned short DstAddr,unsigned char IO_Level)
 	{
 		printf("start to set 0x%04x node's io_level to 0x%02x\r\n",DstAddr,IO_Level);
 		WriteComPort(wbuf, 7);
+                usleep(100000);
 		rlen = ReadComPort(rbuf,10);
 	}while(rlen != 7);
 	if((rbuf[0] == 0xde)&&(rbuf[1] == 0xdf)&&(rbuf[2] == 0xef))
@@ -754,6 +763,7 @@ unsigned short read_temporary_adc_value(unsigned short DstAddr)
 	{
 		printf("start to read 0x%04x node's adc_value...\r\n",DstAddr);
 		WriteComPort(wbuf, 7);
+                usleep(100000);
 		rlen = ReadComPort(rbuf,10);
 	}while(rlen != 8);
 	if((rbuf[0] == 0xde)&&(rbuf[1] == 0xdf)&&(rbuf[2] == 0xef))
@@ -791,8 +801,8 @@ void set_temporary_cast_mode(cast_mode_t mode)
 	wbuf[2] = 0xef;
 	wbuf[3] = enSetUnicastOrBroadcast;
 	wbuf[4] = mode;
-	do
-	{
+	//do
+	//{
 		switch(mode)
 		{
 			case unicast:
@@ -805,9 +815,10 @@ void set_temporary_cast_mode(cast_mode_t mode)
 				break;
 		}
 		WriteComPort(wbuf, 5);
+                usleep(100000);
 		rlen = ReadComPort(rbuf,10);
-	}while(rlen != 5);
-	if((rbuf[0] == 0xde)&&(rbuf[1] == 0xdf)&&(rbuf[2] == 0xef))
+	//}while(rlen != 5);
+/*	if((rbuf[0] == 0xde)&&(rbuf[1] == 0xdf)&&(rbuf[2] == 0xef))
 	{
 		if(rbuf[3] == enSetUnicastOrBroadcast)
 		{
@@ -818,7 +829,7 @@ void set_temporary_cast_mode(cast_mode_t mode)
 			}
 		}
 	}
-	printf("set cast mode error...\r\n");
+	printf("set cast mode error...\r\n");*/
 }
 
 unsigned char read_temporary_node_rssi(unsigned short DstAddr)

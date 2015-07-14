@@ -14,7 +14,7 @@ void communicate_thread(void)
 {
 	unsigned char rbuf[255];
 	unsigned char rlen;
-	unsigned short allocLocalAddress;
+	unsigned short allocLocalAddress = 0x0001;
 
 	while(1)
 	{
@@ -28,13 +28,15 @@ void communicate_thread(void)
 				switch(rbuf[3])
 				{
 					case cmdCheckIn:
-						//iEEEAddress = (unsigned char *)malloc();
 						memcpy(&iEEEAddress,&rbuf[4],8);
                                                 if(!get_local_addr((unsigned char *)&allocLocalAddress,(unsigned char *)&iEEEAddress))
 						{
 							ackRegisterNetwork(allocLocalAddress,Allow);
+                                                        usleep(100000);
 						        printf("server alloc address success,node is checking in...\r\n");
 							set_node_online((unsigned char *)&iEEEAddress);
+							set_temporary_DestAddr(0x0001);
+                                                        usleep(100000);
 						}
 						else
 							printf("server can not alloc address\r\n");
@@ -83,7 +85,8 @@ void ackRegisterNetwork(unsigned short NetAddress,ackCmd_t cmd)
 	wbuf[12] = cmd;
 	wbuf[13] = NetAddress >> 8;
 	wbuf[14] = NetAddress;
-	
+
+ 	set_temporary_DestAddr(0xfffe);
 	set_temporary_cast_mode(unicast);
 	WriteComPort((unsigned char *)wbuf, 15);
 
@@ -258,15 +261,26 @@ void testMotor(unsigned short DstAddr,unsigned char cmd)
 }
 void switchLockControl(unsigned short DstAddr,unsigned char cmd)
 {
+        static unsigned short addrcpy = 0;
 	unsigned char wbuf[5];
-	
 	wbuf[0] = 'C';
-	wbuf[1] = 'T';
-	wbuf[2] = 'L';
-	wbuf[3] = 0x00;//cmd
-	wbuf[4] = cmd;
+        wbuf[1] = 'T';
+        wbuf[2] = 'L';
+        wbuf[3] = 0x00;//cmd
+        wbuf[4] = cmd;
+        
+	if(DstAddr == addrcpy)
+        {
+           goto data;
+        }
 
+	printf("tags...\r\n");
 	set_temporary_DestAddr(DstAddr);
+        usleep(100000);
 	set_temporary_cast_mode(unicast);
+        usleep(100000);
+        addrcpy = DstAddr;
+data:
 	WriteComPort(wbuf, 5);
+	usleep(100000);
 }
