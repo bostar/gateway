@@ -4,8 +4,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <sys/timeb.h>
-
-static const unsigned char mac_addr[8] = {0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07};
+#include "zlg_protocol.h"
+static const unsigned char mac_addr[8] = {0xf1,0xf2,0xf3,0xf4,0xf5,0xf6,0xf7,0xf8};
 static struct{
     int depot_id;
     int depot_size;
@@ -18,7 +18,21 @@ typedef struct {
     unsigned char parking_mac_addr[8];
     unsigned char state;
 }st_parkingState,*pst_parkingState;
+pst_parkingState pstParkingState = NULL;
 
+int get_local_addr(unsigned char *local_addr,unsigned char* long_addr)
+{
+    if(pstParkingState == NULL)
+    {
+        return -1;
+    }
+    else
+    {
+        local_addr[0] = 0x00;
+        local_addr[1] = 0x01;
+        return 0;
+    }
+}
 static void swap(unsigned char len,unsigned char *array)
 {
     int k;
@@ -48,13 +62,11 @@ cfg:
         usleep(1000000);
     }
     
-    len = tcp_listen(rbuf,sizeof(rbuf));
-    if(len != 15)
-    {
-        printf("[SERVER]read again...\r\n");
-        goto cfg;
-    }
-    if(!memcmp(rbuf,"SIZE",4))
+    usleep(1000000);
+    len = tcp_listen(rbuf,15);
+    //len = tcp_listen(rbuf,sizeof(rbuf));
+    printf("len = %d",len);
+    if(memcmp(rbuf,"SIZE",4) != 0)
     {
         printf("[SERVER]read again...\r\n");
         goto cfg;
@@ -66,20 +78,15 @@ cfg:
     depot_info.wireless_channel = rbuf[12];
     swap(4,&rbuf[14]);
     depot_info.net_id = *(int *)(&rbuf[14]);
-    
+    printf("depot_id = %d;depot_size = %d;wireless_channel = %d",depot_info.depot_id,depot_info.depot_size,depot_info.wireless_channel);
     while((pstParkingState = malloc(sizeof(st_parkingState) * depot_info.depot_size)) == NULL)
     {
         printf("[SERVER]malloc park_info memory failed!\r\n");
     }
 down:
+    usleep(1000000);
     /* download the parking info of this depot */
     len = tcp_listen(rbuf,sizeof(rbuf));
-    if(len < (8 + depot_info.depot_size * 10))
-    {
-        printf("[SERVER]download parking info err\r\n");
-        usleep(1000000);
-        goto down;
-    }
     if(memcmp("DOWN",rbuf,4) != 0)
     {
         printf("[SERVER]is not download parking info cmd\r\n");
@@ -93,6 +100,7 @@ down:
         swap(8,&rbuf[8 + 2 + loop * 2 + loop * 8]);
         memcpy(pstParkingState[loop].parking_mac_addr,&rbuf[8 + 2 + loop * 2 + loop * 8],8);
         pstParkingState[loop].state = 0;
+        printf("parking_id = %d;parking_mac_addr = 0x%08x%08x\r\n",pstParkingState[loop].parking_id,*(unsigned int*)&pstParkingState[loop].parking_mac_addr[4],*(unsigned int*)&pstParkingState[loop].parking_mac_addr[0]);
     }
     
     /* send all parking info */
@@ -105,6 +113,7 @@ down:
     for(loop = 0;loop < depot_info.depot_size;loop ++)
     {
         wbuf[16 + loop] = pstParkingState[loop].state;
+        printf("parking%d state is 0x%02x\r\n",loop + 1,pstParkingState[loop].state);
     }
     while((len = tcp_send_to_server(16 + depot_info.depot_size,wbuf)) < 16 + depot_info.depot_size)
     {
@@ -114,16 +123,30 @@ down:
 
     while(1)
     {
+        usleep(1000000);
         len = tcp_listen(rbuf,sizeof(rbuf));
-        if(len < 16 + depot_info.depot_size)
-        {
-            printf("[SERVER]len err\r\n");
-        }
-        else if(!memcmp("TALL",rbuf,4))
+        if(memcmp("TALL",rbuf,4) != 0)
         {
             printf("[SERVER]cmd err\r\n");
         }
+        for(loop = 0;loop < depot_info.depot_size;loop ++)
+        {
+            if(rbuf[16 + loop] != pstParkingState[loop].state)
+            {
+                pstParkingState[loop].state = rbuf[16 + loop];
+                if(pstParkingState[loop].state == 0x81)
+                {
+                    switchLockControl((unsigned short)(loop + 1),0x00);
+                }
+                else
+                {
+                    switchLockControl((unsigned short)(loop + 1),0x01);
+                }
+            }
+            printf("parking%d state is 0x%02x\r\n",loop + 1,rbuf[16 + loop]);
+        }
         
-        usleep(500000);
+        
+        usleep(1000000);
     }
 }

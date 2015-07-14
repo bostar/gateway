@@ -84,7 +84,7 @@ int tcp_listen(unsigned char *revbuf,int bufsize)
             return (0);
 
         case  0:
-            close(sockfd);
+            //close(sockfd);
             return(0);
 
         default:
@@ -106,7 +106,7 @@ int tcp_send_to_server(int len,unsigned char *bytes)
         close(sockfd);
         exit(1);
     }
-    printf("OK: Sent %d bytes sucessful, please enter again.\n", num);
+    printf("OK: Sent %d bytes sucessful\n", num);
     return num;
 }
 
