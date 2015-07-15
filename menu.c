@@ -29,9 +29,6 @@ const char menu[] = "\r\n\
 | help               | ?      |             |                   |\r\n\
 +--------------------+--------+-------------+-------------------+\r\n\
 | link test          | AT+T   | AT+T        |                   |\r\n\
-| change Node Type   | AT+N   | AT+N 0x00   | router:0x01       |\r\n\
-| changePanidChannel | AT+P   | AT+P 0x1001 25 |                |\r\n\
-| reset all node     | AT+R   | AT+R        |                   |\r\n\
 | test beep          | beep   | beep 0x2001 1 |  0:silence      |\r\n\
 | test leds          | leds   | leds 0x2001 0xff|               |\r\n\
 | test motor         | moto   | moto 0x2001 0x00| 0x01:F 0x02:B |\r\n\
@@ -197,38 +194,7 @@ void menu_thread(void)
 			}
 			else if(!strncmp(wbuf,"AT+T",4))
 			{
-				testLink();
-			}
-			else if(!strncmp(wbuf,"AT+N",4))
-			{
-				unsigned int temp;
-				if(!strncmp((const char *)&wbuf[strlen(wbuf)-4],"0x",2))
-				{
-					sscanf(&wbuf[strlen(wbuf)-2],"%02x",&temp);
-					if(temp == 0x00 || temp == 0x01)
-						changeNodeType((unsigned char)temp);
-					else
-						printf("paramter error...\r\n");
-				}
-				else
-					printf("paramter error...\r\n");
-			}
-			else if(!strncmp(wbuf,"AT+P",4))
-			{
-				unsigned int temp1;
-				unsigned char temp2;
-				if(!strncmp(&wbuf[strlen(wbuf)-9],"0x",2))
-				{
-					sscanf(&wbuf[strlen(wbuf)-7],"%04x",&temp1);
-					temp2 = atoi(&wbuf[strlen(wbuf)-3]);
-					changePanidChannel(temp1,temp2);					
-				}
-				else
-					printf("paramter error...\r\n");
-			}
-			else if(!strncmp(wbuf,"AT+R",4))
-			{
-				resetAllNode();
+				testLink((const char *)iEEEAddress);
 			}
 			else if(!strncmp(wbuf,"beep",4))
 			{

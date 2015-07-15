@@ -10,12 +10,13 @@
 #include "server_duty.h"
 unsigned char iEEEAddress[8];
 
+void mac2str(char *str,const char *ieeeAddress);
 void communicate_thread(void)
 {
 	unsigned char rbuf[255];
 	unsigned char rlen;
 	unsigned short allocLocalAddress = 0x0001;
-
+	char macstr[20];
 	while(1)
 	{
 		pthread_mutex_lock(&mut);
@@ -31,7 +32,7 @@ void communicate_thread(void)
 						memcpy(&iEEEAddress,&rbuf[4],8);
                                                 if(!get_local_addr((unsigned char *)&allocLocalAddress,(unsigned char *)&iEEEAddress))
 						{
-							ackRegisterNetwork(allocLocalAddress,Allow);
+							ackRegisterNetwork(allocLocalAddress,Allow,0x00,15);
                                                         usleep(100000);
 						        printf("server alloc address success,node is checking in...\r\n");
 							set_node_online((unsigned char *)&iEEEAddress);
@@ -41,19 +42,16 @@ void communicate_thread(void)
 						else
 							printf("server can not alloc address\r\n");
 					break;
-					case cmdAckChangeNodeType:						
-						printf("change node type ACK...\r\n");
-					break;
 					case cmdAckLinkTest:
-						printf("LinkTest ACK...\r\n");
+						memcpy(&iEEEAddress,&rbuf[4],8);
+						mac2str(macstr,(const char *)iEEEAddress);
+						printf("0x%s LinkTest ACK...\r\n",macstr);
 					break;
 					default:
 					break;
 				}
 				
 			}
-			
-			//printf("rbuf is:%s\r\n",rbuf);
 		}
 		usleep(10000);
 	}
@@ -71,12 +69,12 @@ void mac2str(char *str,const char *ieeeAddress)
 	return;
 }
 
-void ackRegisterNetwork(unsigned short NetAddress,ackCmd_t cmd)
+void ackRegisterNetwork(unsigned short NetAddress,ackCmd_t cmd,unsigned short panid,unsigned char channel)
 {
-	char wbuf[15];
+	char wbuf[18];
 	char str[20];
 	unsigned char *ieeeAddress = iEEEAddress;
- //       long long temp;
+
 	wbuf[0] = 'C';
 	wbuf[1] = 'F';
 	wbuf[2] = 'G';	
@@ -85,96 +83,37 @@ void ackRegisterNetwork(unsigned short NetAddress,ackCmd_t cmd)
 	wbuf[12] = cmd;
 	wbuf[13] = NetAddress >> 8;
 	wbuf[14] = NetAddress;
+	wbuf[15] = panid >> 8;
+	wbuf[16] = panid;
+	wbuf[17] = channel;
 
  	set_temporary_DestAddr(0xfffe);
 	set_temporary_cast_mode(unicast);
-	WriteComPort((unsigned char *)wbuf, 15);
+	WriteComPort((unsigned char *)wbuf, 18);
 
-//temp = *(long long*)iEEEAddress;
-//printf("%016x\r\n",temp);
 	mac2str(str,(const char *)iEEEAddress);
 	if(cmd == Allow)
-		printf("have ack 0x%s allocate local address is 0x%04x allow...\r\n",str,NetAddress);
+		printf("have ack 0x%s allocate local address is 0x%04x allow,panid is:0x%04x ,channel is:%d\r\n",str,NetAddress,panid,channel);
 	else
 		printf("have ack 0x%s allocate local address is 0x%04x refuse...\r\n",str,NetAddress);
 }
 
-void changeNodeType(devTypeCmd_t deviceType)
+void testLink(const char * ieeeAddress)
 {
-	//int i;
-	char wbuf[14];
-	//char str1[10];
-    	//char str2[10];
-	unsigned char *ieeeAddress = iEEEAddress;
-	wbuf[0] = 'C';
-	wbuf[1] = 'F';
-	wbuf[2] = 'G';	
-	wbuf[3] = cmdChangeNodeType;
-	memcpy(&wbuf[4],(const char *)ieeeAddress,8);
-	wbuf[11] = deviceType;
-	
-	set_temporary_cast_mode(unicast);
-	WriteComPort((unsigned char *)wbuf, 12);
-	/*
-	strcpy(str1,""); 
-    for(i = 0;i < 8;i++)
-    {
-        sprintf(str2,"%02x",*((const char *)ieeeAddress)&0x0ff);
-        strcat(str1,str2);
-		ieeeAddress ++;
-    }
-	if(deviceType == endDevice)
-		printf("have changed 0x%s deviceType : endDevice...\r\n",str1);
-	else
-		printf("have changed 0x%s deviceType : routerDevice...\r\n",str1);*/
-}
-
-void changePanidChannel(unsigned short panid,unsigned char channel)
-{
-	char wbuf[7];
-	
-	wbuf[0] = 'C';
-	wbuf[1] = 'F';
-	wbuf[2] = 'G';
-	wbuf[3] = cmdChangePanidChannel;
-	wbuf[4] = panid >> 8;
-	wbuf[5] = panid;
-	wbuf[6] = channel;
-	
-	set_temporary_cast_mode(broadcast);
-	WriteComPort((unsigned char *)wbuf, 7);
-	
-	printf("have changed all node's panid to 0x%04x,channel to %d...\r\n",panid,channel);	
-}
-
-void resetAllNode(void)
-{
-	char wbuf[4];
-	
-	wbuf[0] = 'C';
-	wbuf[1] = 'F';
-	wbuf[2] = 'G';
-	wbuf[3] = cmdAllNodeReset;
-	
-	set_temporary_cast_mode(broadcast);
-	WriteComPort((unsigned char *)wbuf, 4);
-	
-	printf("have reset all node...\r\n");
-}
-
-void testLink(void)
-{
-	unsigned char wbuf[4];
+	unsigned char wbuf[12];
+	char str[20];
 	
 	wbuf[0] = 'C';
 	wbuf[1] = 'F';
 	wbuf[2] = 'G';
 	wbuf[3] = cmdLinkTest;
+	memcpy(&wbuf[4],ieeeAddress,8);
 	
 	set_temporary_cast_mode(unicast);
-	WriteComPort( wbuf, 4);
+	WriteComPort( wbuf, 12);
 	
-	printf("taking link test...\r\n");
+	mac2str(str,ieeeAddress);
+	printf("taking link test to 0x%s...\r\n",str);
 }
 
 void startSensorCalibration(void)
