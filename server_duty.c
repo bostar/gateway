@@ -84,7 +84,6 @@ void server_duty_thread(void)
     int len;
     int loop = 0;
     struct timeb tp;
-    static unsigned char ctl;
     tcp_init();
 cfg:
     memcpy(wbuf,"size",4); // pkg head
@@ -157,24 +156,7 @@ down:
 
     while(1)
     {
-        usleep(1000000);
-        /*printf("before run \r\n");
-        if(networking_over() != 1)
-        {
-            continue;
-        }
-        printf("run \r\n");
-        if(ctl)
-        {
-            ctl = 0;
-            switchLockControl(0x0001,0x00);
-        }
-        else
-        {
-            ctl = 1;
-            switchLockControl(0x0001,0x03);
-
-        }*/
+        usleep(100000);
         len = tcp_listen(rbuf,sizeof(rbuf));
         if(memcmp("TALL",rbuf,4) != 0)
         {
@@ -198,6 +180,5 @@ down:
         }
         
         
-        usleep(1000000);
     }
 }
