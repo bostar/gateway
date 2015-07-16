@@ -19,7 +19,10 @@ enum cfg_cmd {
 //	cmdChangePanidChannel = 0x04,
 //	cmdAllNodeReset = 0x05,
 	cmdLinkTest = 0x06,
-	cmdAckLinkTest = 0x07
+	cmdAckLinkTest = 0x07,
+	cmdRestoreFactoryConfig = 0x08,
+	cmdHeartBeatPkg = 0x09,
+	cmdDateRequset = 0x0a
 };
 
 enum sen_cmd {
@@ -50,6 +53,8 @@ void ackRegisterNetwork(unsigned short NetAddress,ackCmd_t cmd,unsigned short pa
 //void changePanidChannel(unsigned short panid,unsigned char channel);
 //void resetAllNode(void);
 void testLink(const char * ieeeAddress);
+void restoreFactoryConfig(unsigned short DstAddr);
+void heartbeat(unsigned char *addresses,unsigned short nodes);
 void startSensorCalibration(void);
 void testBeep(unsigned short DstAddr,unsigned char cmd);
 void testLed(unsigned short DstAddr,unsigned char ioLevel);

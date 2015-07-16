@@ -29,6 +29,7 @@ const char menu[] = "\r\n\
 | help               | ?      |             |                   |\r\n\
 +--------------------+--------+-------------+-------------------+\r\n\
 | link test          | AT+T   | AT+T        |                   |\r\n\
+| restore factory cfg| AT+R   | AT+R 0x0001 | 0xFFFF:restore all|\r\n\
 | test beep          | beep   | beep 0x2001 1 |  0:silence      |\r\n\
 | test leds          | leds   | leds 0x2001 0xff|               |\r\n\
 | test motor         | moto   | moto 0x2001 0x00| 0x01:F 0x02:B |\r\n\
@@ -195,6 +196,17 @@ void menu_thread(void)
 			else if(!strncmp(wbuf,"AT+T",4))
 			{
 				testLink((const char *)iEEEAddress);
+			}
+			else if(!strncmp(wbuf,"AT+R",4))
+			{
+				unsigned int temp;
+				if(!strncmp(&wbuf[strlen(wbuf)-6],"0x",2))
+				{
+					sscanf(&wbuf[strlen(wbuf)-4],"%04x",&temp);
+					restoreFactoryConfig(temp);					
+				}
+				else
+					printf("paramter error...\r\n");							
 			}
 			else if(!strncmp(wbuf,"beep",4))
 			{

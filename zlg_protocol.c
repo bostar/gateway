@@ -52,10 +52,12 @@ void communicate_thread(void)
 				}
 				
 			}
+			memset(rbuf,0x0,rlen);
 		}
 		usleep(10000);
 	}
 }
+
 void mac2str(char *str,const char *ieeeAddress)
 {
 	int i;
@@ -198,6 +200,36 @@ void testMotor(unsigned short DstAddr,unsigned char cmd)
 		break;
 	}
 }
+
+void restoreFactoryConfig(unsigned short DstAddr)
+{
+	unsigned char wbuf[4];
+	wbuf[0] = 'C';
+	wbuf[1] = 'F';
+	wbuf[2] = 'G';
+ 	wbuf[3] = cmdRestoreFactoryConfig;
+	
+	set_temporary_DestAddr(DstAddr);
+        usleep(100000);
+	WriteComPort(wbuf, 4);
+	printf("restore node 0x%04x factory config...\r\n",DstAddr);
+}
+
+void heartbeat(unsigned char *addresses,unsigned short nodes)
+{
+	unsigned char wbuf[4+2*nodes];
+	wbuf[0] = 'C';
+	wbuf[1] = 'F';
+	wbuf[2] = 'G';
+	wbuf[3] = cmdHeartBeatPkg;
+	memcpy(&wbuf[4],addresses,2*nodes);
+
+	set_temporary_cast_mode(broadcast);
+        usleep(100000);
+	WriteComPort(wbuf, 4+2*nodes);
+
+} 
+
 void switchLockControl(unsigned short DstAddr,unsigned char cmd)
 {
         static unsigned short addrcpy = 0;
@@ -221,5 +253,4 @@ void switchLockControl(unsigned short DstAddr,unsigned char cmd)
         addrcpy = DstAddr;
 data:
 	WriteComPort(wbuf, 5);
-	usleep(100000);
 }
