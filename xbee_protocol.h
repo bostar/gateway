@@ -1,4 +1,6 @@
 #ifndef __XBEE_PROTOCOL_H__
 #define __XBEE_PROTOCOL_H__
 
+#include "xbee_vari_type.h"
+
 #endif

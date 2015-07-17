@@ -87,55 +87,8 @@ unsigned char xbee_gpio_get(int gpio)
 {
     return 0;
 }
-typedef unsigned char uint8;
-typedef struct       //IO口API没命令帧
-{
-  uint8 start_delimiter;
-  uint8 len_msb;
-  uint8 len_lsb;
-  uint8 frame_type;
-  uint8 frame_id;
-  uint8 atCmd[2];
-  uint8 param;
-  uint8 checksum;
-}XBeeApiIOCmd;
-uint8 wbuf[255];
-void XBeeOpenBuzzer()
-{
-  uint8 i;
-  XBeeApiIOCmd *cmd = (XBeeApiIOCmd*)wbuf;
-  cmd->start_delimiter  = 0x7E;
-  cmd->len_msb          = 0x00;
-  cmd->len_lsb          = 0x05;
-  cmd->frame_type       = 0x08;
-  cmd->frame_id         = 0x52;
-  cmd->atCmd[0]         = 'P';
-  cmd->atCmd[1]         = '1';
-  cmd->param            = 0x05;
-  i = cmd->frame_type + cmd->frame_id + cmd->atCmd[0] + cmd->atCmd[1] + cmd->param;
-  cmd->checksum = 0xff- i;
-  xbee_serial_port_write((uint8*)cmd,9);
-}
-/*******************************************************************
-**brief 关闭蜂鸣器
-**param none       
-**reval none
-*******************************************************************/
-void XBeeCloseBuzzer()
-{
-  uint8 i;
-  XBeeApiIOCmd *cmd = (XBeeApiIOCmd*)wbuf;
-  cmd->start_delimiter  = 0x7E;
-  cmd->len_msb          = 0x00;
-  cmd->len_lsb          = 0x05;
-  cmd->frame_type       = 0x08;
-  cmd->frame_id         = 0x52;
-  cmd->atCmd[0]         = 'P';
-  cmd->atCmd[1]         = '1';
-  cmd->param            = 0x04;
-  i = cmd->frame_type + cmd->frame_id + cmd->atCmd[0] + cmd->atCmd[1] + cmd->param;
-  cmd->checksum = 0xff- i;
-  xbee_serial_port_write((uint8*)cmd,9);
-}
+
+
+
 
 

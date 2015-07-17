@@ -1,4 +1,8 @@
-#ifndef __XBEE_API__
-#define __XBEE_API__
+#ifndef _xbee_api_h_
+#define _xbee_api_h_
+
+#include "xbee_vari_type.h"
+
+
 
 #endif
