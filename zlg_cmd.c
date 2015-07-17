@@ -577,28 +577,35 @@ void set_temporary_DestAddr(unsigned short DestAddr)
 {
 	unsigned char wbuf[6],rbuf[5];
 	unsigned char rlen = 0;
+	static unsigned char lastDestAddr = 0x00;
+	
+	if( DestAddr == lastDestAddr )
+		return;
+	else
+		lastDestAddr = DestAddr;
 	wbuf[0] = 0xde;
 	wbuf[1] = 0xdf;
 	wbuf[2] = 0xef;  
 	wbuf[3] = enSetDestAddr; 
 	wbuf[4] = DestAddr >> 8;
 	wbuf[5] = DestAddr;
-	//do
-	//{
+//	do
+//	{
 		printf("start to set DestAddr to 0x%04x\r\n",DestAddr);
 		WriteComPort(wbuf, 6);
                 usleep(100000);
 		rlen = ReadComPort(rbuf,10);
-	//}while(rlen != 5);
-/*	if((rbuf[0] == 0xde)&&(rbuf[1] == 0xdf)&&(rbuf[2] == 0xef))
+/*	}while(rlen != 5);
+	if((rbuf[0] == 0xde)&&(rbuf[1] == 0xdf)&&(rbuf[2] == 0xef))
 	{
 		if(rbuf[3] == enSetDestAddr)
 		{
 			if(rbuf[4] == 0x00)
 			{
-				printf("set DestAddr success...\r\n");
 				return;
 			}
+			else
+				printf("set DestAddr failed...\r\n");
 		}
 	}
 	printf("set DestAddr error...\r\n"); */
@@ -795,14 +802,19 @@ void set_temporary_cast_mode(cast_mode_t mode)
 {
 	unsigned char wbuf[5],rbuf[5];
 	unsigned char rlen = 0;
-	
+	static unsigned char mode_last = 0xff;
+
+	if( mode == mode_last ) 
+		return;
+	else
+		mode_last = mode;	
 	wbuf[0] = 0xde;
 	wbuf[1] = 0xdf;
 	wbuf[2] = 0xef;
 	wbuf[3] = enSetUnicastOrBroadcast;
 	wbuf[4] = mode;
-	//do
-	//{
+//	do
+//	{
 		switch(mode)
 		{
 			case unicast:
@@ -817,16 +829,17 @@ void set_temporary_cast_mode(cast_mode_t mode)
 		WriteComPort(wbuf, 5);
                 usleep(100000);
 		rlen = ReadComPort(rbuf,10);
-	//}while(rlen != 5);
-/*	if((rbuf[0] == 0xde)&&(rbuf[1] == 0xdf)&&(rbuf[2] == 0xef))
+/*	}while(rlen != 5);
+	if((rbuf[0] == 0xde)&&(rbuf[1] == 0xdf)&&(rbuf[2] == 0xef))
 	{
 		if(rbuf[3] == enSetUnicastOrBroadcast)
 		{
 			if(rbuf[4] == 0x00)
 			{
-				printf("set cast mode success...\r\n");
 				return;
 			}
+			else
+				printf("set cast mode failed...\r\n");
 		}
 	}
 	printf("set cast mode error...\r\n");*/

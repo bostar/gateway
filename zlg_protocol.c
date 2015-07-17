@@ -47,6 +47,9 @@ void communicate_thread(void)
 						mac2str(macstr,(const char *)iEEEAddress);
 						printf("0x%s LinkTest ACK...\r\n",macstr);
 					break;
+					case cmdDataRequest:
+						testLink((const char *)iEEEAddress);
+					break;
 					default:
 					break;
 				}
@@ -215,19 +218,26 @@ void restoreFactoryConfig(unsigned short DstAddr)
 	printf("restore node 0x%04x factory config...\r\n",DstAddr);
 }
 
-void heartbeat(unsigned char *addresses,unsigned short nodes)
+void heartbeat(const unsigned short *needRequestAddresses,unsigned char nodes)
 {
-	unsigned char wbuf[4+2*nodes];
+	int i;
+	unsigned char wbuf[5+nodes*2];
 	wbuf[0] = 'C';
 	wbuf[1] = 'F';
 	wbuf[2] = 'G';
 	wbuf[3] = cmdHeartBeatPkg;
-	memcpy(&wbuf[4],addresses,2*nodes);
+	wbuf[4] = nodes;
+	memcpy(&wbuf[5],needRequestAddresses,nodes*2); 
 
 	set_temporary_cast_mode(broadcast);
-        usleep(100000);
-	WriteComPort(wbuf, 4+2*nodes);
-
+        //usleep(100000);
+	WriteComPort(wbuf, 5+nodes*2);
+	printf("heart heat:node ");
+	for(i = 0;i < nodes; i++)
+	{
+		printf("0x%04x ",*((unsigned short *)needRequestAddresses+i));
+	}
+	printf("need request data...\r\n");
 } 
 
 void switchLockControl(unsigned short DstAddr,unsigned char cmd)

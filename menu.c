@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <string.h>
 #include <pthread.h>
+#include <unistd.h>
 #include "menu.h"
 #include "zlg_cmd.h"
 #include "serial.h"
@@ -30,15 +31,30 @@ const char menu[] = "\r\n\
 +--------------------+--------+-------------+-------------------+\r\n\
 | link test          | AT+T   | AT+T        |                   |\r\n\
 | restore factory cfg| AT+R   | AT+R 0x0001 | 0xFFFF:restore all|\r\n\
+| heart beat test    | AT+H   | AT+H 0x0001 |                   |\r\n\
+| end heart beat test| AT+E   | AT+E        |                   |\r\n\
 | test beep          | beep   | beep 0x2001 1 |  0:silence      |\r\n\
 | test leds          | leds   | leds 0x2001 0xff|               |\r\n\
 | test motor         | moto   | moto 0x2001 0x00| 0x01:F 0x02:B |\r\n\
 | switchlock contrl  | lock   | lock 0x2001 0x00|               |\r\n\
 +--------------------+--------+-------------+-------------------+\r\n";
+const unsigned short addresses[2] = { 0x0001,0x0002 };
+void heart_beat_thread(void *arg)
+{
+	unsigned int address = *(unsigned char *)arg;
+	(void) address;
+	while(1)
+	{
+		heartbeat(addresses,2);
+		usleep(1000000);
+		pthread_testcancel();
+	}
+}
 
 void menu_thread(void)
 {
 	char wbuf[255];
+    	pthread_t id;
 	
 	while(1)
 	{
@@ -207,6 +223,25 @@ void menu_thread(void)
 				}
 				else
 					printf("paramter error...\r\n");							
+			}
+			else if(!strncmp(wbuf,"AT+H",4))
+			{
+				unsigned int temp;
+   				int ret;
+				if(!strncmp(&wbuf[strlen(wbuf)-6],"0x",2))
+				{
+					sscanf(&wbuf[strlen(wbuf)-4],"%04x",&temp);
+    					ret=pthread_create(&id,NULL,(void *) heart_beat_thread,&temp);
+    					if(ret!=0){
+        					printf ("Create heart_beat_thread error...\r\n!n");
+   					}
+				}
+				else
+					printf("paramter error...\r\n");							
+			}
+			else if(!strncmp(wbuf,"AT+E",4))
+			{
+				pthread_cancel(id);
 			}
 			else if(!strncmp(wbuf,"beep",4))
 			{

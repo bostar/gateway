@@ -22,7 +22,7 @@ enum cfg_cmd {
 	cmdAckLinkTest = 0x07,
 	cmdRestoreFactoryConfig = 0x08,
 	cmdHeartBeatPkg = 0x09,
-	cmdDateRequset = 0x0a
+	cmdDataRequest = 0x0A
 };
 
 enum sen_cmd {
@@ -54,7 +54,7 @@ void ackRegisterNetwork(unsigned short NetAddress,ackCmd_t cmd,unsigned short pa
 //void resetAllNode(void);
 void testLink(const char * ieeeAddress);
 void restoreFactoryConfig(unsigned short DstAddr);
-void heartbeat(unsigned char *addresses,unsigned short nodes);
+void heartbeat(const unsigned short *needRequestAddresses,unsigned char nodes);
 void startSensorCalibration(void);
 void testBeep(unsigned short DstAddr,unsigned char cmd);
 void testLed(unsigned short DstAddr,unsigned char ioLevel);
