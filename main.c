@@ -61,7 +61,7 @@ void uart_read_thread(void)
 #endif
 int main(int argc, char *argv[])
 {
-    int ret;
+    int ret=0;
     pthread_t id;
     ret=pthread_create(&id,NULL,(void *) server_duty_thread,NULL);
     if(ret!=0){

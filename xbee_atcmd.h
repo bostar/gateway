@@ -71,7 +71,17 @@ typedef enum
 int XBeeSetIO(XBeeIOParam ioparam,IOStatus state);	//配置IO口
 int XBeeScanParam(ATCommandType AtCmd);  //发送读取xbee参数指令
 uint8 XBeeApiChecksum(uint8 *begin,uint16 length);  //求checksum
-int XBeePanID(void);  //设置ID的值
-int XBeeSendATCmd(uint8 *atcmd,uint8* PParam,uint8 len);  //api模式发送AT指令
+int XBeeSendATCmd(int8 *atcmd,uint8* PParam,uint8 len);  //api模式发送AT指令
+int XBeeSetPanID(void);  //设置ID的值
+int XBeeReadPanID(void);
+int XBeeSetChannel(void);
+int xbeeFR(void);
+int XBeeReadAI(void);
+int XBeeSendWR(void);
+int XBeeSendMY(void);
+int XBeeSetLT(uint8 time);
+int XBeeReadCH(void);
+int XbeeSendAC(void);
+
 
 #endif

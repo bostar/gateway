@@ -24,7 +24,7 @@
 **      len    参数的长度
 **reval 
 **************************************************/
-int XBeeSendATCmd(uint8 *atcmd,uint8* pparam,uint8 len)
+int XBeeSendATCmd(int8* atcmd,uint8* pparam,uint8 len)
 {
   uint8 wbuf[256],i;
   XBeeApiATCmdType *cmd = (XBeeApiATCmdType*)wbuf;
@@ -39,6 +39,7 @@ int XBeeSendATCmd(uint8 *atcmd,uint8* pparam,uint8 len)
    *(((uint8*)cmd)+7+i) = *(pparam+i);
   *(((uint8*)cmd)+7+len) = XBeeApiChecksum(((uint8*)cmd)+3,4+len); 
 #if 1
+  printf("api cmd is:");
   for(i=0;i<8+len;i++)
      printf("0x%02x ",*(((uint8*)cmd)+i));
   printf("\r\n");
@@ -48,23 +49,104 @@ int XBeeSendATCmd(uint8 *atcmd,uint8* pparam,uint8 len)
 
 /*********************************************************
 **biref 设置ID的值
-**param state = 1  set ID
-**           != 1  read ID
-**reval
 **********************************************************/
-int XBeePanID(void)
+int XBeeSetPanID(void)
 {
   uint8 panID[8],i=0;
-  uint8 cmd[2];
-  uint8 *str = "ID";
-  for(i=0;i<2;i++)
-     sprintf(cmd+i,"%02x",str);
- /* cmd[0]=0x73;
-  cmd[1]=0x68;*/
+  int8 *cmd = "ID";
   for(i=0;i<8;i++)
-     *(panID+i) = 0;
+     *(panID+i) = 0xee;
   return XBeeSendATCmd(cmd,panID,8);
 }
+/*********************************************************
+**biref 发送读取ID值命令
+**********************************************************/
+int XBeeReadPanID(void)
+{
+  uint8 panID[1];
+  int8 *cmd = "OP";
+  return XBeeSendATCmd(cmd,panID,0);
+}
+/*********************************************************
+**biref 发送AI命令
+**********************************************************/
+int XBeeReadAI(void)
+{
+  uint8 paramer[1];
+  int8 *cmd = "AI";
+  return XBeeSendATCmd(cmd,paramer,0);
+}
+/*********************************************************
+**biref 发送MY命令
+**********************************************************/
+int XBeeSendMY(void)
+{
+  uint8 paramer[1];
+  int8 *cmd = "MY";
+  return XBeeSendATCmd(cmd,paramer,0);
+}
+/*************************************************************
+**brief 发送SC
+*************************************************************/
+int XBeeSetChannel(void)
+{
+  uint8 paramer[8],i=1;
+  int8 *cmd = "SC";
+  for(i=0;i<8;i++)
+     *(paramer+i) = 0x11;
+  return XBeeSendATCmd(cmd,paramer,2);
+}
+/*************************************************************
+**brief 连接/创建网络指示灯闪烁时间
+**param time   it should be 0x0A-0xFF or 0x00
+*************************************************************/
+int XBeeSetLT(uint8 time)
+{
+  uint8 paramer[1];
+  int8 *cmd = "LT";
+  *paramer = time;
+  return XBeeSendATCmd(cmd,paramer,1);
+}
+/*************************************************************
+**brief  读取信道
+*************************************************************/
+int XBeeReadCH(void)
+{
+  uint8 paramer[0];
+  int8 *cmd = "CH";
+  return XBeeSendATCmd(cmd,paramer,0);
+}
+/*************************************************************
+**brief 复位模块
+*************************************************************/
+int xbeeFR(void)
+{
+  uint8 paramer[8];
+  int8 *cmd = "FR";
+  *(paramer) = 0;
+  return XBeeSendATCmd(cmd,paramer,0);
+}
+/*************************************************************
+**brief 使能更改内容
+*************************************************************/
+int XbeeSendAC(void)
+{
+  uint8 paramer[8];
+  int8 *cmd = "AC";
+  *(paramer) = 0;
+  return XBeeSendATCmd(cmd,paramer,0);
+}
+/*********************************************************
+**biref 发送WR命令,保存更改
+**********************************************************/
+int XBeeSendWR(void)
+{
+  uint8 paramer[1];
+  int8 *cmd = "WR";
+  return XBeeSendATCmd(cmd,paramer,0);
+}
+
+
 
 
 uint8 XBeeApiChecksum(uint8 *begin,uint16 length)
