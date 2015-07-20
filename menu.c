@@ -38,7 +38,7 @@ const char menu[] = "\r\n\
 | test motor         | moto   | moto 0x2001 0x00| 0x01:F 0x02:B |\r\n\
 | switchlock contrl  | lock   | lock 0x2001 0x00|               |\r\n\
 +--------------------+--------+-------------+-------------------+\r\n";
-const unsigned short addresses[2] = { 0x0001,0x0002 };
+const unsigned short addresses[2] = { 0x0003,0x0002 };
 void heart_beat_thread(void *arg)
 {
 	unsigned int address = *(unsigned char *)arg;
@@ -46,7 +46,7 @@ void heart_beat_thread(void *arg)
 	while(1)
 	{
 		heartbeat(addresses,2);
-		usleep(1000000);
+		usleep(600000);
 		pthread_testcancel();
 	}
 }

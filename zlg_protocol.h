@@ -26,7 +26,9 @@ enum cfg_cmd {
 };
 
 enum sen_cmd {
-	cmdSensorCal = 0x00,
+	cmdSensorCalibration = 0x00,
+    	cmdEventReport = 0x01,
+    	cmdBatteryRemainReport = 0x02
 };
 
 enum tst_cmd {

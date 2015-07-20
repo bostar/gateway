@@ -128,7 +128,7 @@ void startSensorCalibration(void)
 	wbuf[0] = 'S';
 	wbuf[1] = 'E';
 	wbuf[2] = 'N';
-	wbuf[3] = cmdSensorCal;
+	wbuf[3] = cmdSensorCalibration;
 	
 	set_temporary_cast_mode(broadcast);
 	WriteComPort(wbuf, 4);
@@ -264,3 +264,4 @@ void switchLockControl(unsigned short DstAddr,unsigned char cmd)
 data:
 	WriteComPort(wbuf, 5);
 }
+
