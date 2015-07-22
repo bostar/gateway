@@ -20,4 +20,5 @@ void server_duty_thread(void);
 void set_node_online(unsigned char *macaddr);
 int networking_over(void);
 void event_report(unsigned short netaddr,unsigned char event);
+void get_channel_panid(unsigned char* channel,unsigned short*panid);
 #endif
