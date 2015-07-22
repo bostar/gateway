@@ -21,6 +21,42 @@ typedef struct {
 }st_parkingState,*pst_parkingState;
 pst_parkingState pstParkingState = NULL;
 
+pst_parkingState search_use_netaddr(unsigned short netaddr)
+{
+    int loop;
+    for(loop = 0;loop < depot_info.depot_size;loop ++)
+    {
+        if(netaddr == pstParkingState[loop].parking_id)
+        {
+            return &pstParkingState[loop];
+        }
+    }
+    return NULL;
+}
+
+void event_report(unsigned short netaddr,unsigned char event)
+{
+    pst_parkingState p;
+    p = search_use_netaddr(netaddr);
+    switch(event)
+    {
+        case en_vehicle_comming:
+        break;
+        case en_vehicle_leave:
+        break;
+        case en_lock_success:
+        break;
+        case en_lock_failed:
+        break;
+        case en_unlock_success:
+        break;
+        case en_unlock_failed:
+        break;
+        default:
+        break;
+    }
+}
+
 int networking_over(void)
 {
     int loop;
@@ -84,7 +120,7 @@ void server_duty_thread(void)
     int len;
     int loop = 0;
     struct timeb tp;
-    static unsigned char ctl;
+    //static unsigned char ctl;
     tcp_init();
 cfg:
     memcpy(wbuf,"size",4); // pkg head
