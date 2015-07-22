@@ -34,6 +34,13 @@ pst_parkingState search_use_netaddr(unsigned short netaddr)
     return NULL;
 }
 
+void get_channel_panid(unsigned char* channel,unsigned short*panid)
+{
+    *channel = 26;//CH15,20,25,26
+    *panid = 0x0001;
+    return;
+}
+
 void event_report(unsigned short netaddr,unsigned char event)
 {
     pst_parkingState p;
