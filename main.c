@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
     }
 #if defined(__USE_ZM516X__)
     printf("start uart_read_thread...\r\n");
-    ret=pthread_create(&id,NULL,(void *) uart_read_thread,NULL);
+    //ret=pthread_create(&id,NULL,(void *) uart_read_thread,NULL);
     if(ret!=0){
         printf ("Create uart_read_thread error!n");
     }
