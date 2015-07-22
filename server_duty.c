@@ -24,6 +24,10 @@ pst_parkingState pstParkingState = NULL;
 pst_parkingState search_use_netaddr(unsigned short netaddr)
 {
     int loop;
+    if(pstParkingState == NULL)
+    {
+        return NULL;
+    }
     for(loop = 0;loop < depot_info.depot_size;loop ++)
     {
         if(netaddr == pstParkingState[loop].parking_id)
@@ -36,6 +40,10 @@ pst_parkingState search_use_netaddr(unsigned short netaddr)
 
 void get_channel_panid(unsigned char* channel,unsigned short*panid)
 {
+    if((channel == NULL) || (panid == NULL))
+    {
+        return ;
+    }
     *channel = 26;//CH15,20,25,26
     *panid = 0x0001;
     return;
@@ -45,6 +53,11 @@ void event_report(unsigned short netaddr,unsigned char event)
 {
     pst_parkingState p;
     p = search_use_netaddr(netaddr);
+    if(p == NULL)
+    {
+        return ;
+    }
+    printf("[SERVER]:event report-netaddr = %04x ,event = %02x;",netaddr,event);
     switch(event)
     {
         case en_vehicle_comming:
