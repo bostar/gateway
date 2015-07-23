@@ -35,19 +35,21 @@ int compareElemAddr(ctl_cmd_t *a,ctl_cmd_t *b)
 		return 0;
 }
 
-int getCtlAddres(unsigned short *addres,unsigned char *num)
+int getCtlAddres(const unsigned short *addres,unsigned char *num)
 {
 	int i,len,num_tmp = 0;
+	unsigned short *address = (unsigned short *)addres;
 	ctl_cmd_t *tmp;
 	tmp = (ctl_cmd_t *)malloc(sizeof(ctl_cmd_t));
+	*num = 0;
 	pthread_mutex_lock(&list_mux);
 	len = ListLength(q);
 	for(i = 1; i <= len; i++)
 	{
 		if(!GetElem(q,i,&tmp))
 		{
-			*addres = tmp->addr;
-			addres ++;
+			*address = tmp->addr;
+			address ++;
 			num_tmp ++;	
 		}
 		else
@@ -62,7 +64,7 @@ int getCtlAddres(unsigned short *addres,unsigned char *num)
 	return 0;
 }
 
-int getCtlCmd(unsigned short address,unsigned char *cmd)
+int getCtlCmd(const unsigned short address,unsigned char *cmd)
 {
 	int num;
 	ctl_cmd_t *tmp;
@@ -80,12 +82,16 @@ int getCtlCmd(unsigned short address,unsigned char *cmd)
 	       	*cmd = tmp->cmd;
 	}
 	else
+	{
 		printf("addres not exit!\r\n");
+		pthread_mutex_unlock(&list_mux);
+		return -1;
+	}
 	pthread_mutex_unlock(&list_mux);
 	return 0;
 }
 
-int putCtlCmd(unsigned short addr,unsigned char cmd)
+int putCtlCmd(const unsigned short addr,const unsigned char cmd)
 {
 	int num;
 	ctl_cmd_t *tmp,*dedata;

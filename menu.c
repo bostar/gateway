@@ -8,6 +8,7 @@
 #include "zlg_cmd.h"
 #include "serial.h"
 #include "zlg_protocol.h"
+#include "ctl_cmd_cache.h"
 
 const char menu[] = "\r\n\
 +********************** ZLG CMD HELP ***************************+\r\n\
@@ -38,15 +39,23 @@ const char menu[] = "\r\n\
 | test motor         | moto   | moto 0x2001 0x00| 0x01:F 0x02:B |\r\n\
 | switchlock contrl  | lock   | lock 0x2001 0x00|               |\r\n\
 +--------------------+--------+-------------+-------------------+\r\n";
-const unsigned short addresses[2] = { 0x0003,0x0002 };
+const unsigned short addresses[20];
 void heart_beat_thread(void *arg)
 {
+	unsigned char address_total;
 	unsigned int address = *(unsigned char *)arg;
 	(void) address;
+	//putCtlCmd(0x0001,0x01);
+	//putCtlCmd(0x0002,0x00);
+	
 	while(1)
 	{
-		heartbeat(addresses,2);
+		if(!getCtlAddres(addresses,&address_total))
+			heartbeat(addresses,address_total);
 		usleep(600000);
+//		putCtlCmd(0x0001,0x01);
+//		putCtlCmd(0x0002,0x00);
+		usleep(400000);
 		pthread_testcancel();
 	}
 }
