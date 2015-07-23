@@ -8,18 +8,36 @@
 #include "zlg_cmd.h"
 #include "serial.h"
 #include "server_duty.h"
+#include "ctl_cmd_cache.h"
+
 unsigned char iEEEAddress[8];
+unsigned short requestAddress;
 
 void mac2str(char *str,const char *ieeeAddress);
 void communicate_thread(void)
 {
 	unsigned char rbuf[255];
 	unsigned char rlen;
-	unsigned short allocLocalAddress = 0x0001;
+	unsigned short allocLocalAddress;
+	unsigned char allocChannel;
+	unsigned short allocPanid;
+	unsigned char ctl_cmd;
 	char macstr[20];
+	unsigned char srcAddress[2];
+
+	if(initCtlCmdCache())
+		printf("init ctl cmd cache failed!\r\n");
+	set_temporary_ShowSrcAddr(show_enable);
+
 	while(1)
 	{
 		pthread_mutex_lock(&mut);
+		rlen = ReadComPort(srcAddress,2);
+		if(rlen == 2)
+		{
+			requestAddress = (unsigned short)srcAddress[0] << 8 | srcAddress[1];
+			printf("requestAddress=0x%04x\r\n",requestAddress);
+		}
 		rlen = ReadComPort(rbuf,100);
 		pthread_mutex_unlock(&mut);
 		if(rlen)
@@ -32,9 +50,11 @@ void communicate_thread(void)
 						memcpy(&iEEEAddress,&rbuf[4],8);
                                                 if(!get_local_addr((unsigned char *)&allocLocalAddress,(unsigned char *)&iEEEAddress))
 						{
+							get_channel_panid(&allocChannel,&allocPanid);
 							ackRegisterNetwork(allocLocalAddress,Allow,0x00,15);
+							//ackRegisterNetwork(allocLocalAddress,Allow,allocPanid,allocChannel);
                                                         usleep(100000);
-						        printf("server alloc address success,node is checking in...\r\n");
+						        printf("server alloc node address:0x%04x success\r\n",allocLocalAddress);
 							set_node_online((unsigned char *)&iEEEAddress);
 							set_temporary_DestAddr(0x0001);
                                                         usleep(100000);
@@ -48,12 +68,28 @@ void communicate_thread(void)
 						printf("0x%s LinkTest ACK...\r\n",macstr);
 					break;
 					case cmdDataRequest:
-						testLink((const char *)iEEEAddress);
+						if(!getCtlCmd(requestAddress,&ctl_cmd))
+							switchLockControl(requestAddress,ctl_cmd);
+						else
+							printf("requestAddress not exit ctl_cmd\r\n");
+						//testLink((const char *)iEEEAddress);
 					break;
 					default:
 					break;
 				}
-				
+			}
+			if(rbuf[0] == 'S' && rbuf[1] == 'E' && rbuf[2] == 'N')
+			{
+				switch(rbuf[3])
+				{
+					case cmdEventReport:
+					 	event_report(requestAddress,rbuf[4]);
+					break;
+					case cmdBatteryRemainReport:
+					break;
+					default:
+					break;
+				}
 			}
 			memset(rbuf,0x0,rlen);
 		}
