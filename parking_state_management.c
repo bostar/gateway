@@ -6,15 +6,21 @@
 typedef enum{
     parking_state_idle = 0x00, // 空闲
     parking_state_prestop = 0x01, // 车来
-    parking_state_stop = 0x03, // 车来超N分钟已上锁
-    parking_state_stop_err = 0x04, // 车来超N分钟但加锁失败（硬件故障）
-    parking_state_booking = 0xfe, // 内部使用
+    parking_state_stop_lock = 0x03, // 车来超N分钟已上锁
+    parking_state_stop_lock_failed = 0x04, // 车来超N分钟但加锁失败（硬件故障）
+    parking_state_booking = 0x81, // 车位被预定
+    parking_state_have_booked_lock = 0x09, // 预定成功，且车位已上锁
     parking_state_booking_busy = 0x1a, // 预定车位失败（被抢占）
-    parking_state_booking_err = 0x1B, // 预定车位，上锁失败（硬件故障）
-    parking_state_have_booked = 0x09, // 预定成功，且车位已上锁
-    parking_state_have_booked_err = 0x1b, // 预定车位，上锁失败（硬件故障）
-    parking_state_have_paid = 0x05, // 支付后解锁成功
-    parking_state_have_paid_err = 0x08 // 支付后解锁硬件异常
+    parking_state_have_booked_lock_failed = 0x1b, // 预定车位，上锁失败（硬件故障）
+    parking_state_booked_coming = 0x82, // 被预定车位解锁，车主到达现场
+    parking_state_booked_unlock = 0x1c, // 被预定车位解锁成功
+    parking_state_booked_unlock_faile = 0x1d, // 被预定车位解锁失败
+    parking_state_unbooking = 0x83, // 取消预定
+    parking_state_unbooking_unlock = 0x1e, // 取消预定成功已解锁
+    parking_state_unbooking_unlock_faile = 0x1f, // 取消预定失败，硬件故障
+    parking_state_have_paid = 0x84, // 已支付
+    parking_state_have_paid_unlock = 0x05, // 支付后解锁成功
+    parking_state_have_paid_unlock_faile = 0x08 // 支付后解锁硬件异常
 }en_parking_state;
 
 typedef enum{
@@ -66,6 +72,56 @@ void parking_init(void)
     }
 }
 
+void parking_state_check_routin(void)
+{
+    int loop;
+    if(pstParkingState == NULL)
+    {
+        return;
+    }
+    for(loop = 0;loop < get_depot_size();loop ++)
+    {
+        switch(pstParkingState[loop].state)
+        {
+            case parking_state_idle: // 空闲
+                break;
+            case parking_state_prestop: // 车来
+                break;
+            case parking_state_stop_lock: // 车来超N分钟已上锁
+                break;
+            case parking_state_stop_lock_failed: // 车来超N分钟但加锁失败（硬件故障）
+                break;
+            case parking_state_booking: // 车位被预定
+                break;
+            case parking_state_have_booked_lock: // 预定成功，且车位已上锁
+                break;
+            case parking_state_booking_busy: // 预定车位失败（被抢占）
+                break;
+            case parking_state_have_booked_lock_failed: // 预定车位，上锁失败（硬件故>障）
+                break;
+            case parking_state_booked_coming: // 被预定车位解锁，车主到达现场
+                break;
+            case parking_state_booked_unlock: // 被预定车位解锁成功
+                break;
+            case parking_state_booked_unlock_faile: // 被预定车位解锁失败
+                break;
+            case parking_state_unbooking: // 取消预定
+                break;
+            case parking_state_unbooking_unlock: // 取消预定成功已解锁
+                break;
+            case parking_state_unbooking_unlock_faile: // 取消预定失败，硬件故障
+                break;
+            case parking_state_have_paid: // 已支付
+                break;
+            case parking_state_have_paid_unlock: // 支付后解锁成功
+                break;
+            case parking_state_have_paid_unlock_faile: // 支付后解锁硬件异常
+                break;
+            default:
+                break;
+        }
+    }
+}
 void event_report(unsigned short netaddr,unsigned char event)
 {
     pst_parkingState p;
