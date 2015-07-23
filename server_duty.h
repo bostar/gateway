@@ -7,7 +7,8 @@ typedef enum{
     en_lock_success,
     en_lock_failed,
     en_unlock_success,
-    en_unlock_failed
+    en_unlock_failed,
+    en_max_event
 }en_parkingEvent,*pen_parkingEvent;
 
 typedef enum{
