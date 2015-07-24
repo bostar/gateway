@@ -1,11 +1,13 @@
 #ifndef __PARKING_STATE_MANAGEMENT_H__
 #define __PARKING_STATE_MANAGEMENT_H__
+#include <time.h>
 
 typedef struct {
     unsigned short parking_id;
     unsigned char parking_mac_addr[8];
     unsigned char state;
     unsigned char online;
+    time_t time;
 }st_parkingState,*pst_parkingState;
 pst_parkingState pstParkingState;
 
@@ -13,6 +15,7 @@ void set_depot_info(int depot_id,int depot_size,unsigned char wireless_channel,u
 int get_depot_size(void);
 int get_depot_id(void);
 void parking_init(void);
+void parking_state_check_routin(void);
 void event_report(unsigned short netaddr,unsigned char event);
 int networking_over(void);
 void set_node_online(unsigned char *macaddr);

@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <sys/timeb.h>
+#include <pthread.h>
 #include "zlg_protocol.h"
 #include "parking_state_management.h"
 static const unsigned char mac_addr[8] = {0xf1,0xf2,0xf3,0xf4,0xf5,0xf6,0xf7,0xf8};
@@ -37,6 +38,8 @@ void server_duty_thread(void)
     int len;
     int loop = 0;
     struct timeb tp;
+    int ret;
+    pthread_t id;
     //static unsigned char ctl;
     tcp_init();
 cfg:
@@ -98,11 +101,20 @@ down:
         printf("[SERVER]send to server err\r\n");
         usleep(1000000);
     }
+    ret=pthread_create(&id,NULL,(void *) parking_state_check_routin,NULL);
+    if(ret!=0){
+        printf ("Create parking_state_check_routin error!n");
+    }
 
     while(1)
     {
-        usleep(100000);
+        //usleep(100000);
+        
         len = tcp_listen(rbuf,sizeof(rbuf));
+        if(len < 0)
+        {
+            continue;
+        }
         if(memcmp("TALL",rbuf,4) != 0)
         {
             printf("[SERVER]cmd err\r\n");
