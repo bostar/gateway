@@ -589,13 +589,14 @@ void set_temporary_DestAddr(unsigned short DestAddr)
 	wbuf[3] = enSetDestAddr; 
 	wbuf[4] = DestAddr >> 8;
 	wbuf[5] = DestAddr;
+
+	printf("start to set DestAddr to 0x%04x\r\n",DestAddr);
+	WriteComPort(wbuf, 6);
 //	do
 //	{
-		printf("start to set DestAddr to 0x%04x\r\n",DestAddr);
-		WriteComPort(wbuf, 6);
                 usleep(100000);
 		rlen = ReadComPort(rbuf,10);
-/*	}while(rlen != 5);
+/*	}while(rlen <= 5);
 	if((rbuf[0] == 0xde)&&(rbuf[1] == 0xdf)&&(rbuf[2] == 0xef))
 	{
 		if(rbuf[3] == enSetDestAddr)
@@ -608,7 +609,7 @@ void set_temporary_DestAddr(unsigned short DestAddr)
 				printf("set DestAddr failed...\r\n");
 		}
 	}
-	printf("set DestAddr error...\r\n"); */
+	printf("set DestAddr error...\r\n");*/ 
 }
 
 void set_temporary_ShowSrcAddr(showSrcAddr_cmd_t cmd)
@@ -622,8 +623,6 @@ void set_temporary_ShowSrcAddr(showSrcAddr_cmd_t cmd)
 	wbuf[3] = enShowSrcAddr;  
 	wbuf[4] = cmd;
 
-	do
-	{
 		switch(cmd)
 		{
 			case show_enable:
@@ -636,9 +635,11 @@ void set_temporary_ShowSrcAddr(showSrcAddr_cmd_t cmd)
 			break;
 		}
 		WriteComPort(wbuf, 5);
+//	do
+//	{
                 usleep(100000);
 		rlen = ReadComPort(rbuf,10);
-	}while(rlen != 5);
+/*	}while(rlen <= 5);
 	if((rbuf[0] == 0xde)&&(rbuf[1] == 0xdf)&&(rbuf[2] == 0xef))
 	{
 		if(rbuf[3] == enShowSrcAddr)
@@ -650,7 +651,7 @@ void set_temporary_ShowSrcAddr(showSrcAddr_cmd_t cmd)
 			}
 		}
 	}
-	printf("set ShowSrcAddr error...\r\n"); 
+	printf("set ShowSrcAddr error...\r\n");*/ 
 }
 
 void set_temporary_io_dir(unsigned short DstAddr,unsigned char IO_Dir)
@@ -813,8 +814,6 @@ void set_temporary_cast_mode(cast_mode_t mode)
 	wbuf[2] = 0xef;
 	wbuf[3] = enSetUnicastOrBroadcast;
 	wbuf[4] = mode;
-//	do
-//	{
 		switch(mode)
 		{
 			case unicast:
@@ -827,9 +826,11 @@ void set_temporary_cast_mode(cast_mode_t mode)
 				break;
 		}
 		WriteComPort(wbuf, 5);
+//	do
+//	{
                 usleep(100000);
 		rlen = ReadComPort(rbuf,10);
-/*	}while(rlen != 5);
+/*	}while(rlen <= 5);
 	if((rbuf[0] == 0xde)&&(rbuf[1] == 0xdf)&&(rbuf[2] == 0xef))
 	{
 		if(rbuf[3] == enSetUnicastOrBroadcast)

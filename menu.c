@@ -32,28 +32,26 @@ const char menu[] = "\r\n\
 +--------------------+--------+-------------+-------------------+\r\n\
 | link test          | AT+T   | AT+T        |                   |\r\n\
 | restore factory cfg| AT+R   | AT+R 0x0001 | 0xFFFF:restore all|\r\n\
-| heart beat test    | AT+H   | AT+H 0x0001 |                   |\r\n\
+| heart beat test    | AT+H   | AT+H        |                   |\r\n\
 | end heart beat test| AT+E   | AT+E        |                   |\r\n\
 | test beep          | beep   | beep 0x2001 1 |  0:silence      |\r\n\
 | test leds          | leds   | leds 0x2001 0xff|               |\r\n\
 | test motor         | moto   | moto 0x2001 0x00| 0x01:F 0x02:B |\r\n\
 | switchlock contrl  | lock   | lock 0x2001 0x00|               |\r\n\
+| test cache contrl  | cach   | cach 0x2001 0x01| 0x00:reverse  |\r\n\
 +--------------------+--------+-------------+-------------------+\r\n";
 const unsigned short addresses[20];
 void heart_beat_thread(void *arg)
 {
 	unsigned char address_total;
-	unsigned int address = *(unsigned char *)arg;
-	(void) address;
-	//putCtlCmd(0x0001,0x01);
 	//putCtlCmd(0x0002,0x00);
+	(void)arg;
 	
 	while(1)
 	{
 		if(!getCtlAddres(addresses,&address_total))
 			heartbeat(addresses,address_total);
 		usleep(600000);
-//		putCtlCmd(0x0001,0x01);
 //		putCtlCmd(0x0002,0x00);
 		usleep(400000);
 		pthread_testcancel();
@@ -237,16 +235,10 @@ void menu_thread(void)
 			{
 				unsigned int temp;
    				int ret;
-				if(!strncmp(&wbuf[strlen(wbuf)-6],"0x",2))
-				{
-					sscanf(&wbuf[strlen(wbuf)-4],"%04x",&temp);
     					ret=pthread_create(&id,NULL,(void *) heart_beat_thread,&temp);
     					if(ret!=0){
         					printf ("Create heart_beat_thread error...\r\n!n");
    					}
-				}
-				else
-					printf("paramter error...\r\n");							
 			}
 			else if(!strncmp(wbuf,"AT+E",4))
 			{
@@ -304,6 +296,19 @@ void menu_thread(void)
 				else
 					printf("paramter error...\r\n");
 			}
+			else if(!strncmp(wbuf,"cach",4))
+			{
+				unsigned int temp1;
+				unsigned int temp2;
+				if(!strncmp(&wbuf[strlen(wbuf)-11],"0x",2) && !strncmp(&wbuf[strlen(wbuf)-4],"0x",2))
+				{
+					sscanf(&wbuf[strlen(wbuf)-9],"%04x",&temp1);
+					sscanf(&wbuf[strlen(wbuf)-2],"%02x",&temp2);
+					putCtlCmd(temp1,temp2);
+				}
+				else
+					printf("paramter error...\r\n");
+			}
 			else
 				printf("Command not found! Input \"?\" to check commands\r\n");
 			memset(wbuf,0x0,strlen(wbuf) + 1);//last is '\n'
@@ -312,3 +317,4 @@ void menu_thread(void)
 		}
 	}
 }
+

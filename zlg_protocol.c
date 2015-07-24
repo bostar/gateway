@@ -35,6 +35,13 @@ void communicate_thread(void)
 		rlen = ReadComPort(srcAddress,2);
 		if(rlen == 2)
 		{
+			if((srcAddress[0] == 0xde && srcAddress[1] == 0xdf) || (srcAddress[0] == 0xab && srcAddress[1] == 0xbc))
+			{
+				printf("detect 0xdedf or 0xabbc,and continue\r\n");
+				rlen = ReadComPort(rbuf,100);
+				pthread_mutex_unlock(&mut);
+				continue;
+			}
 			requestAddress = (unsigned short)srcAddress[0] << 8 | srcAddress[1];
 			printf("requestAddress=0x%04x\r\n",requestAddress);
 		}
