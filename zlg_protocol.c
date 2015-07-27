@@ -27,12 +27,12 @@ void communicate_thread(void)
 
 	if(initCtlCmdCache())
 		printf("init ctl cmd cache failed!\r\n");
-	set_temporary_ShowSrcAddr(show_enable);
+	//set_temporary_ShowSrcAddr(show_enable);
 
 	while(1)
 	{
 		pthread_mutex_lock(&mut);
-		rlen = ReadComPort(srcAddress,2);
+	/*	rlen = ReadComPort(srcAddress,2);
 		if(rlen == 2)
 		{
 			if((srcAddress[0] == 0xde && srcAddress[1] == 0xdf) || (srcAddress[0] == 0xab && srcAddress[1] == 0xbc))
@@ -44,7 +44,7 @@ void communicate_thread(void)
 			}
 			requestAddress = (unsigned short)srcAddress[0] << 8 | srcAddress[1];
 			printf("requestAddress=0x%04x\r\n",requestAddress);
-		}
+		}*/
 		rlen = ReadComPort(rbuf,100);
 		pthread_mutex_unlock(&mut);
 		if(rlen)
@@ -55,10 +55,10 @@ void communicate_thread(void)
 				{
 					case cmdCheckIn:
 						memcpy(&iEEEAddress,&rbuf[4],8);
-                                                if(!get_local_addr((unsigned char *)&allocLocalAddress,(unsigned char *)&iEEEAddress))
+                                                if(1)//!get_local_addr((unsigned char *)&allocLocalAddress,(unsigned char *)&iEEEAddress))
 						{
-							get_channel_panid(&allocChannel,&allocPanid);
-							ackRegisterNetwork(allocLocalAddress,Allow,0x00,15);
+						//	get_channel_panid(&allocChannel,&allocPanid);
+							ackRegisterNetwork(0x0001,Allow,0x00,15);
 							//ackRegisterNetwork(allocLocalAddress,Allow,allocPanid,allocChannel);
                                                         usleep(100000);
 						        printf("server alloc node address:0x%04x success\r\n",allocLocalAddress);
@@ -75,11 +75,11 @@ void communicate_thread(void)
 						printf("0x%s LinkTest ACK...\r\n",macstr);
 					break;
 					case cmdDataRequest:
+						requestAddress = (unsigned short)rbuf[4] << 8 | rbuf[5];
 						if(!getCtlCmd(requestAddress,&ctl_cmd))
 							switchLockControl(requestAddress,ctl_cmd);
 						else
 							printf("requestAddress not exit ctl_cmd\r\n");
-						//testLink((const char *)iEEEAddress);
 					break;
 					default:
 					break;
@@ -87,6 +87,8 @@ void communicate_thread(void)
 			}
 			if(rbuf[0] == 'S' && rbuf[1] == 'E' && rbuf[2] == 'N')
 			{
+				requestAddress = (unsigned short)rbuf[5] << 8 | rbuf[6];
+
 				switch(rbuf[3])
 				{
 					case cmdEventReport:
