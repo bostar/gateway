@@ -88,6 +88,18 @@ unsigned char xbee_gpio_get(int gpio)
     return 0;
 }
 
+/*******************************************
+**brief 创建网络
+*******************************************/
+void XBeeCreateNet(void)
+{
+	XBeeSetPanID(NO_RES);   //设置ID的值
+	XBeeSetChannel(NO_RES); //设置信道
+	XBeeSetZS(NO_RES);
+	XbeeSendAC(NO_RES);
+	XBeeSendWR(NO_RES);
+	XBeeReadAI(RES);
+}
 
 
 

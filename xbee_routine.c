@@ -5,9 +5,9 @@
 #include "xbee_bsp.h"
 #include "xbee_atcmd.h"
 
-//#define _cycle
+#define _cycle
 
-unsigned char rbuf[255];
+uint8 rbuf[255];
 int len;
 
 void _fprintt(int8* sss)
@@ -31,21 +31,9 @@ void xbee_routine_thread(void)
     while(1)
     {
 #endif
-        printf("\r\n");
-    /*    XBeeSetPanID();
-        _fprintt("ID");
-        XBeeSetChannel();
-        _fprintt("SC");
-        XBeeSendWR();
-        _fprintt("WR");
-        XbeeSendAC();
-        _fprintt("AC");   */
-        XBeeReadCH();
-        _fprintt("CH");
-        XBeeReadPanID();
-        _fprintt("Read ID");
-        XBeeReadAI();
-        _fprintt("AI");
+		printf("\r\n");
+		XBeeSendNC(RES);
+        _fprintt("receive ");
   
         printf("**********the end**********\r\n");
 #if defined _cycle

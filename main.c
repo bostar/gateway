@@ -14,7 +14,7 @@
 #define LEN	1000
 
 //#define __USE_ZM516X__
-//#define __USE_XBEE__
+#define __USE_XBEE__
 
 #if !defined(__USE_ZM516X__) && !defined(__USE_XBEE__)
 #define __USE_ZM516X__
@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 {
     int ret=0;
     pthread_t id;
-    ret=pthread_create(&id,NULL,(void *) server_duty_thread,NULL);
+    //ret=pthread_create(&id,NULL,(void *) server_duty_thread,NULL);
     if(ret!=0){
         printf ("Create server_duty_thread error!n");
     }

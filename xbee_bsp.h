@@ -1,7 +1,7 @@
 #ifndef __XBEE_BSP_H__
 #define __XBEE_BSP_H__
 #include "xbee_vari_type.h"
-
+#include "xbee_atcmd.h"
 
 void xbee_gpio_init(void);
 void xbee_serial_port_init(void);
