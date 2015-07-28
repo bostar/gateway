@@ -121,7 +121,7 @@ down:
         }
         for(loop = 0;loop < get_depot_size();loop ++)
         {
-            set_parking_state(loop,rbuf[16 + loop]);
+            set_parking_state(loop + 1,rbuf[16 + loop]);
         }
     }
 }
