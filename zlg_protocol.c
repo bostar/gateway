@@ -48,8 +48,6 @@ void communicate_thread(void)
         	printf ("Create heart_beat_thread error...\r\n!n");
    	}
 
-	if(initCtlCmdCache())
-		printf("init ctl cmd cache failed!\r\n");
 //	set_temporary_ShowSrcAddr(show_enable);
 
 	while(1)

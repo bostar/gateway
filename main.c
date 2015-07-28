@@ -63,6 +63,8 @@ int main(int argc, char *argv[])
 {
     int ret;
     pthread_t id;
+	if(initCtlCmdCache())
+		printf("init ctl cmd cache failed!\r\n");
     ret=pthread_create(&id,NULL,(void *) server_duty_thread,NULL);
     if(ret!=0){
         printf ("Create server_duty_thread error!n");
