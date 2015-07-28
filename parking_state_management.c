@@ -120,12 +120,12 @@ void parking_state_check_routin(void)
         pthread_mutex_unlock(&parking_info_mutex);
         return;
     }
-    printf("=========== parking state ==============\r\n");
+    //printf("=========== parking state ==============\r\n");
     for(loop = 0;loop < get_depot_size();loop ++)
     {
-        printf("[SERVER:]%04x ",pstParkingState[loop].parking_id);
-        printf("%s",parking_state_string[pstParkingState[loop].state]);
-        printf("\r\n");
+       // printf("[SERVER:]%04x ",pstParkingState[loop].parking_id);
+       // printf("%s",parking_state_string[pstParkingState[loop].state]);
+       // printf("\r\n");
         switch(pstParkingState[loop].state)
         {
             case parking_state_idle: // 空闲
@@ -461,7 +461,7 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
         pthread_mutex_unlock(&parking_info_mutex);
         return 1;
     }
- 
+printf("0x%04x,state is 0x%02x",parking_id,state); 
     switch(state)
     {
         case parking_state_booking:
