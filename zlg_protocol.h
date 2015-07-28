@@ -49,6 +49,7 @@ enum motor_cmd {
 };
 extern unsigned char iEEEAddress[8];
 void communicate_thread(void);
+void heart_beat_thread(void *arg);
 
 void ackRegisterNetwork(unsigned short NetAddress,ackCmd_t cmd,unsigned short panid,unsigned char channel);
 //void changeNodeType(devTypeCmd_t deviceType);

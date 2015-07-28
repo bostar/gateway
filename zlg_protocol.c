@@ -12,8 +12,24 @@
 
 unsigned char iEEEAddress[8];
 unsigned short requestAddress;
+const unsigned short addresses[20];
 
 void mac2str(char *str,const char *ieeeAddress);
+
+void heart_beat_thread(void *arg)
+{
+	unsigned char address_total;
+	(void)arg;
+	
+	while(1)
+	{
+		if(!getCtlAddres(addresses,&address_total))
+			heartbeat(addresses,address_total);
+		usleep(1000000);
+		pthread_testcancel();
+	}
+}
+
 void communicate_thread(void)
 {
 	unsigned char rbuf[255];
@@ -25,14 +41,21 @@ void communicate_thread(void)
 	char macstr[20];
 	unsigned char srcAddress[2];
 
+    	pthread_t id;
+   	int ret;
+//    	ret=pthread_create(&id,NULL,(void *) heart_beat_thread,NULL);
+    	if(ret!=0){
+        	printf ("Create heart_beat_thread error...\r\n!n");
+   	}
+
 	if(initCtlCmdCache())
 		printf("init ctl cmd cache failed!\r\n");
-	//set_temporary_ShowSrcAddr(show_enable);
+//	set_temporary_ShowSrcAddr(show_enable);
 
 	while(1)
 	{
 		pthread_mutex_lock(&mut);
-	/*	rlen = ReadComPort(srcAddress,2);
+/*		rlen = ReadComPort(srcAddress,2);
 		if(rlen == 2)
 		{
 			if((srcAddress[0] == 0xde && srcAddress[1] == 0xdf) || (srcAddress[0] == 0xab && srcAddress[1] == 0xbc))
@@ -55,14 +78,18 @@ void communicate_thread(void)
 				{
 					case cmdCheckIn:
 						memcpy(&iEEEAddress,&rbuf[4],8);
-                                                if(1)//!get_local_addr((unsigned char *)&allocLocalAddress,(unsigned char *)&iEEEAddress))
+                                                if(!get_local_addr((unsigned char *)&allocLocalAddress,(unsigned char *)&iEEEAddress))
 						{
-						//	get_channel_panid(&allocChannel,&allocPanid);
-							ackRegisterNetwork(0x0001,Allow,0x00,15);
+							get_channel_panid(&allocChannel,&allocPanid);
+							ackRegisterNetwork(allocLocalAddress,Allow,0x00,15);
 							//ackRegisterNetwork(allocLocalAddress,Allow,allocPanid,allocChannel);
                                                         usleep(100000);
 						        printf("server alloc node address:0x%04x success\r\n",allocLocalAddress);
 							set_node_online((unsigned char *)&iEEEAddress);
+							if(networking_over())
+							{
+								printf("networking over!start to change gateway cfg...\r\n");
+							}
 							set_temporary_DestAddr(0x0001);
                                                         usleep(100000);
 						}
@@ -88,7 +115,6 @@ void communicate_thread(void)
 			if(rbuf[0] == 'S' && rbuf[1] == 'E' && rbuf[2] == 'N')
 			{
 				requestAddress = (unsigned short)rbuf[5] << 8 | rbuf[6];
-
 				switch(rbuf[3])
 				{
 					case cmdEventReport:

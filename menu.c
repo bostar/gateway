@@ -40,23 +40,6 @@ const char menu[] = "\r\n\
 | switchlock contrl  | lock   | lock 0x2001 0x00|               |\r\n\
 | test cache contrl  | cach   | cach 0x2001 0x01| 0x00:reverse  |\r\n\
 +--------------------+--------+-------------+-------------------+\r\n";
-const unsigned short addresses[20];
-void heart_beat_thread(void *arg)
-{
-	unsigned char address_total;
-	//putCtlCmd(0x0002,0x00);
-	(void)arg;
-	
-	while(1)
-	{
-		if(!getCtlAddres(addresses,&address_total))
-			heartbeat(addresses,address_total);
-		usleep(600000);
-//		putCtlCmd(0x0002,0x00);
-		usleep(400000);
-		pthread_testcancel();
-	}
-}
 
 void menu_thread(void)
 {
