@@ -20,7 +20,7 @@ void get_channel_panid(unsigned char* channel,unsigned short*panid)
     return;
 }
 
-static void swap(unsigned char len,unsigned char *array)
+void swap(unsigned char len,unsigned char *array)
 {
     int k;
     unsigned char temp;
@@ -88,30 +88,34 @@ down:
 
     }
     
-    /* send all parking info */
-    memcpy(wbuf,"data",4); // pkg head
-    ftime(&tp);
-    memcpy(&wbuf[4],(void *)&tp,8);
-    swap(8,&wbuf[4]);
-    *(int*)&wbuf[12] = get_depot_id();
-    swap(4,&wbuf[12]);
-    len = 16 + get_all_parking_state(&wbuf[16]);
-    while((tcp_send_to_server(len,wbuf)) < len)
-    {
-        printf("[SERVER]send to server err\r\n");
-        usleep(1000000);
-    }
     ret=pthread_create(&id,NULL,(void *) parking_state_check_routin,NULL);
     if(ret!=0){
         printf ("Create parking_state_check_routin error!n");
     }
+    /*ret=pthread_create(&id,NULL,(void *) pkg,NULL);
+    if(ret!=0){
+        printf ("Create parking_state_check_routin error!n");
+    }*/
 
     while(1)
     {
-        //usleep(100000);
-        
+        usleep(2000000);
+        /* send all parking info */
+        memcpy(wbuf,"data",4); // pkg head
+        ftime(&tp);
+        memcpy(&wbuf[4],(void *)&tp,8);
+        swap(8,&wbuf[4]);
+        *(int*)&wbuf[12] = get_depot_id();
+        swap(4,&wbuf[12]);
+        len = 16 + get_all_parking_state(&wbuf[16]);
+        while((tcp_send_to_server(len,wbuf)) < len)
+        {
+             printf("[SERVER]send to server err\r\n");
+             usleep(1000000);
+        }
+
         len = tcp_listen(rbuf,sizeof(rbuf));
-        if(len < 0)
+        if(len <= 0)
         {
             continue;
         }

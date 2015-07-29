@@ -10,7 +10,7 @@ typedef struct {
     time_t time;
 }st_parkingState,*pst_parkingState;
 pst_parkingState pstParkingState;
-
+int pkg(unsigned char *);
 void set_depot_info(int depot_id,int depot_size,unsigned char wireless_channel,unsigned short net_id);
 int get_depot_size(void);
 int get_depot_id(void);

@@ -6,7 +6,10 @@
 #include "server_duty.h"
 #include "parking_state_management.h"
 #include "ctl_cmd_cache.h"
+#include <sys/timeb.h>
+#include "listener.h"
 
+extern void swap(unsigned char len,unsigned char *array);
 typedef enum{
     parking_state_idle = 0x00, // 空闲
     parking_state_prestop = 0x01, // 车来
@@ -16,15 +19,15 @@ typedef enum{
     parking_state_booking_lock = 0x09, // 预定成功，且车位已上锁
     parking_state_booking_busy = 0x1a, // 预定车位失败（被抢占）
     parking_state_booking_lock_failed = 0x1b, // 预定车位，上锁失败（硬件故障）
-    //parking_state_booked_coming = 0x82, // 被预定车位解锁，车主到达现场
+    parking_state_booked_coming = 0x82, // 被预定车位解锁，车主到达现场
     parking_state_booked_coming_unlock = 0x1c, // 被预定车位解锁成功
     parking_state_booked_coming_unlock_failed = 0x1d, // 被预定车位解锁失败
     parking_state_booked_coming_lock = 0xf1, // 被预定车位，车到达，已上锁
     parking_state_booked_coming_lock_failed = 0xf2, // 被预定车位，车到达，上锁失败
-    //parking_state_unbooking = 0x83, // 取消预定
+    parking_state_unbooking = 0x83, // 取消预定
     parking_state_unbooking_unlock = 0x1e, // 取消预定成功已解锁
     parking_state_unbooking_unlock_failed = 0x1f, // 取消预定失败，硬件故障
-    //parking_state_have_paid = 0x84, // 已支付
+    parking_state_have_paid = 0x84, // 已支付
     parking_state_have_paid_unlock = 0x05, // 支付后解锁成功
     parking_state_have_paid_unlock_failed = 0x08, // 支付后解锁硬件异常
     en_parking_state_max = 0xff
@@ -93,15 +96,15 @@ char* const parking_state_string[en_parking_state_max] = {
     [parking_state_booking_lock] = "parking_state_booking_lock", // 预定成功，且车位已上锁
     [parking_state_booking_busy] = "parking_state_booking_busy", // 预定车位失败（被抢占）
     [parking_state_booking_lock_failed] = "parking_state_booking_lock_failed", // 预定车位，上锁失败（硬件故障）
-    //[parking_state_booked_coming] = "parking_state_booked_coming", // 被预定车位解锁，车主到达现场
+    [parking_state_booked_coming] = "parking_state_booked_coming", // 被预定车位解锁，车主到达现场
     [parking_state_booked_coming_unlock] = "parking_state_booked_coming_unlock", // 被预定车位解锁成功
     [parking_state_booked_coming_unlock_failed] = "parking_state_booked_coming_unlock_failed", // 被预定车位解锁失败
     [parking_state_booked_coming_lock] = "parking_state_booked_coming_lock", // 被预定车位，车到达，已上锁
     [parking_state_booked_coming_lock_failed] = "parking_state_booked_coming_lock_failed", // 被预定车位，车到达，上锁>失败
-    //[parking_state_unbooking] = "parking_state_unbooking", // 取消预定
+    [parking_state_unbooking] = "parking_state_unbooking", // 取消预定
     [parking_state_unbooking_unlock] = "parking_state_unbooking_unlock", // 取消预定成功已解锁
     [parking_state_unbooking_unlock_failed] = "parking_state_unbooking_unlock_failed", // 取消预定失败，硬件故障
-    //[parking_state_have_paid] = "parking_state_have_paid", // 已支付
+    [parking_state_have_paid] = "parking_state_have_paid", // 已支付
     [parking_state_have_paid_unlock] = "parking_state_have_paid_unlock", // 支付后解锁成功
     [parking_state_have_paid_unlock_failed] = "parking_state_have_paid_unlock_failed", // 支付后解锁硬件异常
 };
@@ -110,6 +113,7 @@ void parking_state_check_routin(void)
 {
     int loop;
     time_t time_in_second;
+
     while(1)
     {
     usleep(1000000);
@@ -118,90 +122,116 @@ void parking_state_check_routin(void)
     if(pstParkingState == NULL)
     {
         pthread_mutex_unlock(&parking_info_mutex);
-        return;
+        continue;
     }
-    //printf("=========== parking state ==============\r\n");
+    printf("=========== parking state ==============\r\n");
     for(loop = 0;loop < get_depot_size();loop ++)
     {
-       // printf("[SERVER:]%04x ",pstParkingState[loop].parking_id);
-       // printf("%s",parking_state_string[pstParkingState[loop].state]);
-       // printf("\r\n");
+        printf("[SERVER:]%04x ",pstParkingState[loop].parking_id);
+        printf("%s",parking_state_string[pstParkingState[loop].state]);
+        printf("\r\n");
         switch(pstParkingState[loop].state)
         {
             case parking_state_idle: // 空闲
                 break;
             case parking_state_prestop: // 车来
-                if(time_in_second - pstParkingState[loop].time > 3) // second
+                if(time_in_second - pstParkingState[loop].time > 5) // second
                 {
                     putCtlCmd(pstParkingState[loop].parking_id,en_order_lock);
+                    pstParkingState[loop].time = time((time_t*)NULL);
                 }
                 break;
             case parking_state_stop_lock: // 车来超N分钟已上锁
                 break;
             case parking_state_stop_lock_failed: // 车来超N分钟但加锁失败（硬件故障）
-                if(time_in_second - pstParkingState[loop].time > 3) // second
+                if(time_in_second - pstParkingState[loop].time > 5) // second
                 {
                     putCtlCmd(pstParkingState[loop].parking_id,en_order_lock);
+                    pstParkingState[loop].time = time((time_t*)NULL);
                 }
                 break;
             case parking_state_booking: // 车位被预定
+                if(time_in_second - pstParkingState[loop].time > 5) // secon    d
+                {
+                    putCtlCmd(pstParkingState[loop].parking_id,en_order_lock    );
+                    pstParkingState[loop].time = time((time_t*)NULL);
+                }
+
                 break;
             case parking_state_booking_lock: // 预定成功，且车位已上锁
                 break;
             case parking_state_booking_busy: // 预定车位失败（被抢占）
                 break;
             case parking_state_booking_lock_failed: // 预定车位，上锁失败（硬件故>障）
-                if(time_in_second - pstParkingState[loop].time > 3) // second
+                if(time_in_second - pstParkingState[loop].time > 5) // second
                 {
                     putCtlCmd(pstParkingState[loop].parking_id,en_order_lock);
+                    pstParkingState[loop].time = time((time_t*)NULL);
                 }
                 break;
-            /*case parking_state_booked_coming: // 被预定车位解锁，车主到达现场
-                if(time_in_second - pstParkingState[loop].time > 3) // second
+            case parking_state_booked_coming: // 被预定车位解锁，车主到达现场
+                if(time_in_second - pstParkingState[loop].time > 5) // second
                 {
                     putCtlCmd(pstParkingState[loop].parking_id,en_order_unlock);
+                    pstParkingState[loop].time = time((time_t*)NULL);
                 }
-                break;*/
+                break;
             case parking_state_booked_coming_unlock: // 被预定车位解锁成功
-                if(time_in_second - pstParkingState[loop].time > 3) // second
+                if(time_in_second - pstParkingState[loop].time > 5) // second
                 {
                     pstParkingState[loop].state = parking_state_idle;
+                    pstParkingState[loop].time = time((time_t*)NULL);
                 }
-                pstParkingState[loop].time = time((time_t*)NULL);
-                pstParkingState[loop].state = parking_state_prestop;
+                //pstParkingState[loop].time = time((time_t*)NULL);
+                //pstParkingState[loop].state = parking_state_prestop;
                 break;
             case parking_state_booked_coming_unlock_failed: // 被预定车位解锁失败
-                if(time_in_second - pstParkingState[loop].time > 3) // second
+                if(time_in_second - pstParkingState[loop].time > 5) // second
                 {
                     putCtlCmd(pstParkingState[loop].parking_id,en_order_unlock);
+                    pstParkingState[loop].time = time((time_t*)NULL);
                 }
                 break;
             case parking_state_booked_coming_lock: // 被预定车位，车到达，已上锁
                 break;
             case parking_state_booked_coming_lock_failed: // 被预定车位，车到达，上锁失败
-                if(time_in_second - pstParkingState[loop].time > 3) // second
+                if(time_in_second - pstParkingState[loop].time > 5) // second
                 {
                     putCtlCmd(pstParkingState[loop].parking_id,en_order_lock);
+                    pstParkingState[loop].time = time((time_t*)NULL);
                 }
                 break;
-            /*case parking_state_unbooking: // 取消预定
-                break;*/
+            case parking_state_unbooking: // 取消预定
+                if(time_in_second - pstParkingState[loop].time > 5) // secon    d
+                {
+                    putCtlCmd(pstParkingState[loop].parking_id,en_order_unlock);
+                    pstParkingState[loop].time = time((time_t*)NULL);
+                }
+                break;
             case parking_state_unbooking_unlock: // 取消预定成功已解锁
                 break;
             case parking_state_unbooking_unlock_failed: // 取消预定失败，硬件故障
-                if(time_in_second - pstParkingState[loop].time > 3) // second
+                if(time_in_second - pstParkingState[loop].time > 5) // second
                 {
                     putCtlCmd(pstParkingState[loop].parking_id,en_order_unlock);
+                    pstParkingState[loop].time = time((time_t*)NULL);
                 }
                 break;
-            /*case parking_state_have_paid: // 已支付
-                break;*/
+            case parking_state_have_paid: // 已支付
+                if(time_in_second - pstParkingState[loop].time > 5) // secon    d               
+                {   
+                    putCtlCmd(pstParkingState[loop].parking_id,en_order_unlock);
+                    pstParkingState[loop].time = time((time_t*)NULL);
+                }
+
+                break;
             case parking_state_have_paid_unlock: // 支付后解锁成功
                 break;
             case parking_state_have_paid_unlock_failed: // 支付后解锁硬件异常
-                if(time_in_second - pstParkingState[loop].time > 3) // second
+                if(time_in_second - pstParkingState[loop].time > 5) // second
                 {
                     putCtlCmd(pstParkingState[loop].parking_id,en_order_unlock);
+                    pstParkingState[loop].time = time((time_t*)NULL);
                 }
                 break;
             default:
@@ -221,13 +251,13 @@ void event_report(unsigned short netaddr,unsigned char event)
     printf("[SERVER:]%04x ",netaddr);
     printf("%s",event_string[event]);
     pthread_mutex_lock(&parking_info_mutex);
+
     p = search_use_netaddr(netaddr);
     if(p == NULL)
     {
         pthread_mutex_unlock(&parking_info_mutex);
         return ;
     }
-    printf("[SERVER]:event report-netaddr = %04x ,event = %02x;",netaddr,event);
     switch(event)
     {
         case en_vehicle_comming:
@@ -238,6 +268,7 @@ void event_report(unsigned short netaddr,unsigned char event)
         }
         else if(p->state == parking_state_booked_coming_unlock)
         {
+            p->state = parking_state_idle;
             p->time = time_in_second;
         }
         else
@@ -254,6 +285,18 @@ void event_report(unsigned short netaddr,unsigned char event)
         {
             p->state = parking_state_idle;
         }
+        /*if(p->state == parking_state_have_paid)
+        {
+            p->state = parking_state_prestop;
+            p->time = time_in_second; // second
+        }*/
+        if(p->state == parking_state_have_paid)
+        {
+            p->state = parking_state_idle;
+            p->time = time_in_second; // second
+        }
+
+
         if(p->state == parking_state_have_paid_unlock)
         {
             p->state = parking_state_idle;
@@ -284,39 +327,37 @@ void event_report(unsigned short netaddr,unsigned char event)
         {
             p->state = parking_state_booking_lock_failed;
         }
-        if(p->state == parking_state_booked_coming_unlock)
-        {
-            p->state = parking_state_booked_coming_lock_failed;
-        }
         break;
         case en_unlock_success:
-        /*if(p->state == parking_state_booked_coming)
+        if(p->state == parking_state_booked_coming)
         {
             p->state = parking_state_booked_coming_unlock;
-        }*/
-        /*if(p->state == parking_state_have_paid)
+        }
+        if(p->state == parking_state_have_paid)
         {
             p->state = parking_state_have_paid_unlock;
-        }*/
-        /*if(p->state == parking_state_unbooking)
+            p->time = time_in_second; // second
+            
+        }
+        if(p->state == parking_state_unbooking)
         {
             p->state = parking_state_idle;
-        }*/
+        }
         break;
         case en_unlock_failed:
         p->time = time_in_second;
-        /*if(p->state == parking_state_booked_coming)
+        if(p->state == parking_state_booked_coming)
         {
             p->state = parking_state_booked_coming_unlock_failed;
-        }*/
-        /*if(p->state == parking_state_have_paid)
+        }
+        if(p->state == parking_state_have_paid)
         {
             p->state = parking_state_have_paid_unlock_failed;
         }
         if(p->state == parking_state_unbooking)
         {
             p->state = parking_state_unbooking_unlock_failed;
-        }*/
+        }
         break;
         default:
         break;
@@ -445,7 +486,7 @@ int get_all_parking_state(unsigned char* buf)
     }
     for(loop = 0;loop < depot_info.depot_size;loop ++)
     {
-        buf[loop] = pstParkingState->state;
+        buf[loop] = pstParkingState[loop].state;
     }
     pthread_mutex_unlock(&parking_info_mutex);
     return loop;
@@ -454,6 +495,8 @@ int get_all_parking_state(unsigned char* buf)
 int set_parking_state(unsigned short parking_id,unsigned char state)
 {
     pst_parkingState p;
+
+    printf("==========0x%04x,state is 0x%02x\r\n",parking_id,state); 
     pthread_mutex_lock(&parking_info_mutex);
     p = search_use_netaddr(parking_id);
     if((p == NULL) || (p->state == state))
@@ -461,40 +504,40 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
         pthread_mutex_unlock(&parking_info_mutex);
         return 1;
     }
-printf("0x%04x,state is 0x%02x",parking_id,state); 
+    printf("==========0x%04x,state is 0x%02x\r\n",parking_id,state); 
     switch(state)
     {
         case parking_state_booking:
-            //if(p->state == parking_state_idle)
+            if(p->state == parking_state_idle)
             {
                 p->state = parking_state_booking;
                 putCtlCmd(parking_id,en_order_lock);
             }
-            //else
-            {
-              //  p->state = parking_state_booking_busy;
-            }
-            break;
-        case parking_state_idle:
-            //if(p->state == parking_state_booking_lock)
-            {
-                p->state = parking_state_idle;
-                p->time = time((time_t)NULL);
-                putCtlCmd(parking_id,en_order_unlock);
-            }
-            //else
+            else
             {
                 //p->state = parking_state_booking_busy;
             }
             break;
-        /*case parking_state_unbooking:
+        case parking_state_booked_coming:
+            if((p->state == parking_state_booking) || (p->state == parking_state_booking_lock))
+            {
+                p->state = parking_state_booked_coming;
+                p->time = time((time_t)NULL);
+                putCtlCmd(parking_id,en_order_unlock);
+            }
+            else
+            {
+                //p->state = parking_state_booking_busy;
+            }
+            break;
+        case parking_state_unbooking:
             if((p->state == parking_state_booking) 
                || (p->state == parking_state_booking_lock)
-               || (p->state == parking_state_booking_busy) 
+               //|| (p->state == parking_state_booking_busy) 
                || (p->state == parking_state_booking_lock_failed)
-               || (p->state == parking_state_booked_coming_unlock)
+               //|| (p->state == parking_state_booked_coming_unlock)
                || (p->state == parking_state_booked_coming_unlock_failed)
-               || (p->state == parking_state_booked_coming_lock)
+               //|| (p->state == parking_state_booked_coming_lock)
                || (p->state == parking_state_booked_coming_lock_failed))
             {
                 p->state = parking_state_unbooking;
@@ -509,14 +552,18 @@ printf("0x%04x,state is 0x%02x",parking_id,state);
             switch(p->state)
             {
                 case parking_state_stop_lock:
+                    p->state = parking_state_have_paid;
+                    p->time = time((time_t)NULL);
                     putCtlCmd(parking_id,en_order_unlock);
                     break;
                 case parking_state_booked_coming_lock:
+                    p->state = parking_state_have_paid;
+                    p->time = time((time_t)NULL);
                     putCtlCmd(parking_id,en_order_unlock);
                     break;
                 default:
                     break;
-            }*/
+            }
         default:
             break;
     }
