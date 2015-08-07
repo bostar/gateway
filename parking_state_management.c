@@ -79,10 +79,10 @@ void parking_init(void)
     
     for(loop = 0;loop < depot_info.depot_size;loop ++)
     {
-        pstParkingState->parking_id = loop + 1;
-        memset(pstParkingState->parking_mac_addr,0,8);
-        pstParkingState->state = parking_state_idle;
-        pstParkingState->online = enOffline;
+        pstParkingState[loop].parking_id = loop + 1;
+        memset(pstParkingState[loop].parking_mac_addr,0,8);
+        pstParkingState[loop].state = parking_state_idle;
+        pstParkingState[loop].online = enOffline;
     }
     pthread_mutex_unlock(&parking_info_mutex);
 }
@@ -393,6 +393,7 @@ int networking_over(void)
 
 void set_node_online(unsigned char *macaddr)
 {
+#if 1
     int loop = 0;
     pthread_mutex_lock(&parking_info_mutex);
     if(pstParkingState == NULL)
@@ -413,10 +414,30 @@ void set_node_online(unsigned char *macaddr)
         pstParkingState[loop].online = 1;
     }
     pthread_mutex_unlock(&parking_info_mutex);
+#else
+    int loop = 0;
+    pthread_mutex_lock(&parking_info_mutex);
+    if(pstParkingState == NULL)
+    {
+        pthread_mutex_unlock(&parking_info_mutex);
+        return;
+    }
+
+    for(loop = 0;loop < depot_info.depot_size;loop ++)
+    {
+        if(memcmp(pstParkingState[loop].parking_mac_addr,macaddr,8) == 0)
+        {
+            pstParkingState[loop].online = 1;
+            break;
+        }
+    }
+    pthread_mutex_unlock(&parking_info_mutex);
+#endif
 }
 
 int get_local_addr(unsigned char *local_addr,unsigned char* long_addr)
 {
+#if 1
     pthread_mutex_lock(&parking_info_mutex);
     if(pstParkingState == NULL)
     {
@@ -429,6 +450,29 @@ int get_local_addr(unsigned char *local_addr,unsigned char* long_addr)
         pthread_mutex_unlock(&parking_info_mutex);
         return 0;
     }
+#else
+    int loop = 0;
+    pthread_mutex_lock(&parking_info_mutex);
+    if(pstParkingState == NULL)
+    {
+        pthread_mutex_unlock(&parking_info_mutex);
+        return -1;
+    }
+    else
+    {
+        for(loop = 0;loop < depot_info.depot_size;loop ++)
+        {
+            if(memcmp(pstParkingState[loop].parking_mac_addr,long_addr,8) == 0)
+            {
+                *(unsigned short*)local_addr = pstParkingState[loop].parking_id;
+                pthread_mutex_unlock(&parking_info_mutex);
+                return 0;
+            }
+        }
+        pthread_mutex_unlock(&parking_info_mutex);
+        return -1;
+    }
+#endif
 }
 
 pst_parkingState search_use_netaddr(unsigned short netaddr)

@@ -122,6 +122,7 @@ down:
         if(memcmp("TALL",rbuf,4) != 0)
         {
             printf("[SERVER]cmd err\r\n");
+            continue;
         }
         for(loop = 0;loop < get_depot_size();loop ++)
         {
