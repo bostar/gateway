@@ -817,10 +817,10 @@ void set_temporary_cast_mode(cast_mode_t mode)
 		switch(mode)
 		{
 			case unicast:
-				printf("start to set cast mode to unicast mode...\r\n");
+				printf("####start to set cast mode to unicast mode...\r\n");
 				break;
 			case broadcast:
-				printf("start to set cast mode to broadcast mode...\r\n");
+				printf("####start to set cast mode to broadcast mode...\r\n");
 				break;
 			default:
 				break;

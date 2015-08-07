@@ -8,7 +8,6 @@
 #include "ctl_cmd_cache.h"
 #include <sys/timeb.h>
 #include "listener.h"
-
 extern void swap(unsigned char len,unsigned char *array);
 typedef enum{
     parking_state_idle = 0x00, // 空闲
@@ -58,6 +57,7 @@ void set_depot_info(int depot_id,int depot_size,unsigned char wireless_channel,u
 
 int get_depot_size(void)
 {
+    //printf("depot_size is %d\r\n",depot_info.depot_size);
     return depot_info.depot_size;
 }
 
@@ -393,7 +393,7 @@ int networking_over(void)
 
 void set_node_online(unsigned char *macaddr)
 {
-#if 1
+#if 0
     int loop = 0;
     pthread_mutex_lock(&parking_info_mutex);
     if(pstParkingState == NULL)
@@ -437,7 +437,7 @@ void set_node_online(unsigned char *macaddr)
 
 int get_local_addr(unsigned char *local_addr,unsigned char* long_addr)
 {
-#if 1
+#if 0
     pthread_mutex_lock(&parking_info_mutex);
     if(pstParkingState == NULL)
     {
@@ -505,12 +505,12 @@ void parking_id_macaddr_mapping(unsigned short parking_id,unsigned char *macaddr
         pthread_mutex_unlock(&parking_info_mutex);
         return;
     }
-
+printf("mapping\r\n");
     for(loop = 0;loop < depot_info.depot_size;loop ++)
     {
-        if(pstParkingState->parking_id == parking_id)
+        if(pstParkingState[loop].parking_id == parking_id)
         {
-            memcpy(pstParkingState->parking_mac_addr,macaddr,8);
+            memcpy(pstParkingState[loop].parking_mac_addr,macaddr,8);
             printf("parking_id = %d;parking_mac_addr = 0x%08x%08x\r\n",pstParkingState[loop].parking_id,*(unsigned int*)&pstParkingState[loop].parking_mac_addr[4],*(unsigned int*)&pstParkingState[loop].parking_mac_addr[0]);
             pthread_mutex_unlock(&parking_info_mutex);
             return;

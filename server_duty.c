@@ -82,7 +82,7 @@ down:
     for(loop = 0;loop < get_depot_size();loop ++)
     {
         swap(2,&rbuf[8 + loop * 2 + loop * 8]);
-        swap(8,&rbuf[8 + 2 + loop * 2 + loop * 8]);
+        //swap(8,&rbuf[8 + 2 + loop * 2 + loop * 8]);
         parking_id_macaddr_mapping(*(unsigned short *)&rbuf[8 + loop * 2 + loop * 8],
                                    &rbuf[8 + 2 + loop * 2 + loop * 8]);
 
@@ -113,7 +113,6 @@ down:
              printf("[SERVER]send to server err\r\n");
              usleep(1000000);
         }
-
         len = tcp_listen(rbuf,sizeof(rbuf));
         if(len <= 0)
         {

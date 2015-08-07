@@ -41,12 +41,8 @@ void communicate_thread(void)
 	char macstr[20];
 	unsigned char srcAddress[2];
 
-    	pthread_t id;
+    pthread_t id;
    	int ret;
-//    	ret=pthread_create(&id,NULL,(void *) heart_beat_thread,NULL);
-    	if(ret!=0){
-        	printf ("Create heart_beat_thread error...\r\n!n");
-   	}
 
 //	set_temporary_ShowSrcAddr(show_enable);
 
@@ -70,26 +66,31 @@ void communicate_thread(void)
 		pthread_mutex_unlock(&mut);
 		if(rlen)
 		{
+            printf("recevie form node %d bytes\r\n",rlen);
 			if(rbuf[0] == 'C' && rbuf[1] == 'F' && rbuf[2] == 'G')
 			{
 				switch(rbuf[3])
 				{
 					case cmdCheckIn:
 						memcpy(&iEEEAddress,&rbuf[4],8);
-                                                if(!get_local_addr((unsigned char *)&allocLocalAddress,(unsigned char *)&iEEEAddress))
+						mac2str(macstr,(const char *)iEEEAddress);
+                        printf("node ieee address is:0x%s\r\n",macstr);
+                        if(!get_local_addr((unsigned char *)&allocLocalAddress,(unsigned char *)&iEEEAddress))
 						{
 							get_channel_panid(&allocChannel,&allocPanid);
 							ackRegisterNetwork(allocLocalAddress,Allow,0x00,15);
 							//ackRegisterNetwork(allocLocalAddress,Allow,allocPanid,allocChannel);
-                                                        usleep(100000);
-						        printf("server alloc node address:0x%04x success\r\n",allocLocalAddress);
+                            usleep(100000);
+						    printf("server alloc node address:0x%04x success\r\n",allocLocalAddress);
 							set_node_online((unsigned char *)&iEEEAddress);
 							if(networking_over())
 							{
-								printf("networking over!start to change gateway cfg...\r\n");
-							}
-							set_temporary_DestAddr(0x0001);
-                                                        usleep(100000);
+                                ret=pthread_create(&id,NULL,(void *) heart_beat_thread,NULL);
+                                if(ret!=0)
+                                {
+                                    printf ("Create heart_beat_thread error...\r\n!n");
+   	                            }
+                            } 
 						}
 						else
 							printf("server can not alloc address\r\n");
@@ -112,14 +113,18 @@ void communicate_thread(void)
 			}
 			if(rbuf[0] == 'S' && rbuf[1] == 'E' && rbuf[2] == 'N')
 			{
-				requestAddress = (unsigned short)rbuf[5] << 8 | rbuf[6];
 				switch(rbuf[3])
 				{
 					case cmdEventReport:
+				    requestAddress = (unsigned short)rbuf[5] << 8 | rbuf[6];
 					 	event_report(requestAddress,rbuf[4]);
 					break;
 					case cmdBatteryRemainReport:
+				    requestAddress = (unsigned short)rbuf[5] << 8 | rbuf[6];
 					break;
+                    case 0x03:
+                    printf("-----------------------------voltage is:0x%04x\r\n",rbuf[4] << 8| rbuf[5]);
+                    break;
 					default:
 					break;
 				}
@@ -299,7 +304,7 @@ void heartbeat(const unsigned short *needRequestAddresses,unsigned char nodes)
 	memcpy(&wbuf[5],needRequestAddresses,nodes*2); 
 
 	set_temporary_cast_mode(broadcast);
-        //usleep(100000);
+    usleep(100000);
 	WriteComPort(wbuf, 5+nodes*2);
 	printf("heart heat:node ");
 	for(i = 0;i < nodes; i++)
@@ -311,25 +316,25 @@ void heartbeat(const unsigned short *needRequestAddresses,unsigned char nodes)
 
 void switchLockControl(unsigned short DstAddr,unsigned char cmd)
 {
-        static unsigned short addrcpy = 0;
+    static unsigned short addrcpy = 0;
 	unsigned char wbuf[5];
 	wbuf[0] = 'C';
-        wbuf[1] = 'T';
-        wbuf[2] = 'L';
-        wbuf[3] = 0x00;//cmd
-        wbuf[4] = cmd;
+    wbuf[1] = 'T';
+    wbuf[2] = 'L';
+    wbuf[3] = 0x00;//cmd
+    wbuf[4] = cmd;
         
+	set_temporary_cast_mode(unicast);
+    usleep(100000);
 	if(DstAddr == addrcpy)
-        {
-           goto data;
-        }
+    {
+        goto data;
+    }
 
 	printf("tags...\r\n");
 	set_temporary_DestAddr(DstAddr);
-        usleep(100000);
-	set_temporary_cast_mode(unicast);
-        usleep(100000);
-        addrcpy = DstAddr;
+    usleep(100000);
+    addrcpy = DstAddr;
 data:
 	WriteComPort(wbuf, 5);
 }

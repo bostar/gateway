@@ -63,5 +63,6 @@ void testBeep(unsigned short DstAddr,unsigned char cmd);
 void testLed(unsigned short DstAddr,unsigned char ioLevel);
 void testMotor(unsigned short DstAddr,unsigned char cmd);
 void switchLockControl(unsigned short DstAddr,unsigned char cmd);
+void mac2str(char *str,const char *ieeeAddress);
 
 #endif
