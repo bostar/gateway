@@ -99,19 +99,23 @@ down:
 
     while(1)
     {
-        usleep(2000000);
-        /* send all parking info */
-        memcpy(wbuf,"data",4); // pkg head
-        ftime(&tp);
-        memcpy(&wbuf[4],(void *)&tp,8);
-        swap(8,&wbuf[4]);
-        *(int*)&wbuf[12] = get_depot_id();
-        swap(4,&wbuf[12]);
-        len = 16 + get_all_parking_state(&wbuf[16]);
-        while((tcp_send_to_server(len,wbuf)) < len)
+        if(need_to_send_to_sever == 1)
         {
-             printf("[SERVER]send to server err\r\n");
-             usleep(1000000);
+            //usleep(2000000);
+            /* send all parking info */
+            memcpy(wbuf,"data",4); // pkg head
+            ftime(&tp);
+            memcpy(&wbuf[4],(void *)&tp,8);
+            swap(8,&wbuf[4]);
+            *(int*)&wbuf[12] = get_depot_id();
+            swap(4,&wbuf[12]);
+            len = 16 + get_all_parking_state(&wbuf[16]);
+            while((tcp_send_to_server(len,wbuf)) < len)
+            {
+                 printf("[SERVER]send to server err\r\n");
+                 usleep(1000000);
+            }
+            need_to_send_to_sever = 0;
         }
         len = tcp_listen(rbuf,sizeof(rbuf));
         if(len <= 0)

@@ -46,6 +46,8 @@ static struct{
 
 pst_parkingState pstParkingState = NULL;
 pthread_mutex_t parking_info_mutex = PTHREAD_MUTEX_INITIALIZER;
+unsigned char need_to_send_to_sever = 1;
+
 void set_depot_info(int depot_id,int depot_size,unsigned char wireless_channel,unsigned short net_id)
 {
     depot_info.depot_id = depot_id;
@@ -82,6 +84,7 @@ void parking_init(void)
         pstParkingState[loop].parking_id = loop + 1;
         memset(pstParkingState[loop].parking_mac_addr,0,8);
         pstParkingState[loop].state = parking_state_idle;
+        need_to_send_to_sever = 1;
         pstParkingState[loop].online = enOffline;
     }
     pthread_mutex_unlock(&parking_info_mutex);
@@ -179,6 +182,7 @@ void parking_state_check_routin(void)
             case parking_state_booked_coming_unlock: // 被预定车位解锁成功
                 if(time_in_second - pstParkingState[loop].time > 5) // second
                 {
+                    need_to_send_to_sever = 1;
                     pstParkingState[loop].state = parking_state_idle;
                     pstParkingState[loop].time = time((time_t*)NULL);
                 }
@@ -263,11 +267,13 @@ void event_report(unsigned short netaddr,unsigned char event)
         case en_vehicle_comming:
         if(p->state == parking_state_idle)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_prestop;
             p->time = time_in_second; // second
         }
         else if(p->state == parking_state_booked_coming_unlock)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_idle;
             p->time = time_in_second;
         }
@@ -279,19 +285,23 @@ void event_report(unsigned short netaddr,unsigned char event)
         case en_vehicle_leave:
         if(p->state == parking_state_prestop)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_idle;
         }
         if(p->state == parking_state_booked_coming_unlock)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_idle;
         }
         /*if(p->state == parking_state_have_paid)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_prestop;
             p->time = time_in_second; // second
         }*/
         if(p->state == parking_state_have_paid)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_idle;
             p->time = time_in_second; // second
         }
@@ -299,6 +309,7 @@ void event_report(unsigned short netaddr,unsigned char event)
 
         if(p->state == parking_state_have_paid_unlock)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_idle;
         }
         
@@ -306,14 +317,17 @@ void event_report(unsigned short netaddr,unsigned char event)
         case en_lock_success:
         if(p->state == parking_state_prestop)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_stop_lock;
         }
         if(p->state == parking_state_booking)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_booking_lock;
         }
         if(p->state == parking_state_booked_coming_unlock)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_booked_coming_lock;
         }
         break;
@@ -321,26 +335,31 @@ void event_report(unsigned short netaddr,unsigned char event)
         p->time =  time_in_second;
         if(p->state == parking_state_prestop)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_stop_lock_failed;
         }
         if(p->state == parking_state_booking)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_booking_lock_failed;
         }
         break;
         case en_unlock_success:
         if(p->state == parking_state_booked_coming)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_booked_coming_unlock;
         }
         if(p->state == parking_state_have_paid)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_have_paid_unlock;
             p->time = time_in_second; // second
             
         }
         if(p->state == parking_state_unbooking)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_idle;
         }
         break;
@@ -348,14 +367,17 @@ void event_report(unsigned short netaddr,unsigned char event)
         p->time = time_in_second;
         if(p->state == parking_state_booked_coming)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_booked_coming_unlock_failed;
         }
         if(p->state == parking_state_have_paid)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_have_paid_unlock_failed;
         }
         if(p->state == parking_state_unbooking)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_unbooking_unlock_failed;
         }
         break;
@@ -427,7 +449,9 @@ void set_node_online(unsigned char *macaddr)
     {
         if(memcmp(pstParkingState[loop].parking_mac_addr,macaddr,8) == 0)
         {
+            pstParkingState[loop].state = parking_state_idle;
             pstParkingState[loop].online = 1;
+            need_to_send_to_sever = 1;
             break;
         }
     }
