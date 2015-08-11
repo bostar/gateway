@@ -28,7 +28,9 @@ typedef enum{
     parking_state_unbooking_unlock_failed = 0x1f, // 取消预定失败，硬件故障
     parking_state_have_paid = 0x84, // 已支付
     parking_state_have_paid_unlock = 0x05, // 支付后解锁成功
+    parking_state_have_paid_relock = 0xf3, // 支付解锁后车未离开重新加锁计费
     parking_state_have_paid_unlock_failed = 0x08, // 支付后解锁硬件异常
+    parking_state_have_paid_relock_failed = 0xf4, // 支付解锁后车未离开重新加锁失败
     en_parking_state_max = 0xff
 }en_parking_state;
 
@@ -110,6 +112,8 @@ char* const parking_state_string[en_parking_state_max] = {
     [parking_state_have_paid] = "parking_state_have_paid", // 已支付
     [parking_state_have_paid_unlock] = "parking_state_have_paid_unlock", // 支付后解锁成功
     [parking_state_have_paid_unlock_failed] = "parking_state_have_paid_unlock_failed", // 支付后解锁硬件异常
+    [parking_state_have_paid_relock] = "parking_state_have_paid_relock", // 支付解锁后车未离开重新加锁计费
+    [parking_state_have_paid_relock_failed] = "parking_state_have_paid_relock_failed", // 支付解锁后车未离开重新加锁失败
 };
 
 void parking_state_check_routin(void)
@@ -230,6 +234,27 @@ void parking_state_check_routin(void)
 
                 break;
             case parking_state_have_paid_unlock: // 支付后解锁成功
+                if(time_in_second - pstParkingState[loop].time > 5) // secon    d               
+                {
+                    putCtlCmd(pstParkingState[loop].parking_id,en_order_lock);
+                    pstParkingState[loop].time = time((time_t*)NULL);
+                    pstParkingState[loop].state = parking_state_have_paid_relock;
+                }
+                break;
+            case parking_state_have_paid_relock: // 支付解锁后车未离开重新加锁计费
+                if(time_in_second - pstParkingState[loop].time > 5) // secon    d               
+                {
+                    putCtlCmd(pstParkingState[loop].parking_id,en_order_lock);
+                    pstParkingState[loop].time = time((time_t*)NULL);
+                    pstParkingState[loop].state = parking_state_have_paid_relock_failed;
+                }
+                break;
+            case parking_state_have_paid_relock_failed: // 支付解锁后车未离开重新加锁计费
+                if(time_in_second - pstParkingState[loop].time > 5) // secon    d               
+                {
+                    putCtlCmd(pstParkingState[loop].parking_id,en_order_lock);
+                    pstParkingState[loop].time = time((time_t*)NULL);
+                }
                 break;
             case parking_state_have_paid_unlock_failed: // 支付后解锁硬件异常
                 if(time_in_second - pstParkingState[loop].time > 5) // second
@@ -330,6 +355,15 @@ void event_report(unsigned short netaddr,unsigned char event)
             need_to_send_to_sever = 1;
             p->state = parking_state_booked_coming_lock;
         }
+        if(p->state == parking_state_have_paid_relock)
+        {
+            need_to_send_to_sever = 1;
+            p->state = parking_state_stop_lock;
+        }
+        if(p->state == parking_state_have_paid_relock_failed)
+        {
+            p->state = parking_state_stop_lock;
+        }
         break;
         case en_lock_failed:
         p->time =  time_in_second;
@@ -342,6 +376,15 @@ void event_report(unsigned short netaddr,unsigned char event)
         {
             need_to_send_to_sever = 1;
             p->state = parking_state_booking_lock_failed;
+        }
+        if(p->state == parking_state_have_paid_relock)
+        {
+            need_to_send_to_sever = 1;
+            p->state = parking_state_have_paid_relock_failed;
+        }
+        if(p->state == parking_state_have_paid_relock_failed)
+        {
+
         }
         break;
         case en_unlock_success:
