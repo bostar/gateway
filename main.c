@@ -11,6 +11,7 @@
 #include "zlg_protocol.h"
 #include "xbee_routine.h"
 #include <sys/timeb.h>
+#include "ctl_cmd_cache.h"
 #define LEN	1000
 
 //#define __USE_ZM516X__

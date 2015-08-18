@@ -59,6 +59,7 @@ void testLink(const char * ieeeAddress);
 void restoreFactoryConfig(unsigned short DstAddr);
 void heartbeat(const unsigned short *needRequestAddresses,unsigned char nodes);
 void startSensorCalibration(void);
+void ackEventReport(unsigned short DstAddr);
 void testBeep(unsigned short DstAddr,unsigned char cmd);
 void testLed(unsigned short DstAddr,unsigned char ioLevel);
 void testMotor(unsigned short DstAddr,unsigned char cmd);

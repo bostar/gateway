@@ -83,7 +83,6 @@ int getCtlCmd(const unsigned short address,unsigned char *cmd)
 	}
 	else
 	{
-		printf("addres not exit!\r\n");
 		pthread_mutex_unlock(&list_mux);
 		return -1;
 	}

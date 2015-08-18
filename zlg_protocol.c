@@ -39,29 +39,13 @@ void communicate_thread(void)
 	unsigned short allocPanid;
 	unsigned char ctl_cmd;
 	char macstr[20];
-	unsigned char srcAddress[2];
 
-    pthread_t id;
-   	int ret;
-
-//	set_temporary_ShowSrcAddr(show_enable);
+//    pthread_t id;
+//   	static int ret = 0xff;
 
 	while(1)
 	{
 		pthread_mutex_lock(&mut);
-/*		rlen = ReadComPort(srcAddress,2);
-		if(rlen == 2)
-		{
-			if((srcAddress[0] == 0xde && srcAddress[1] == 0xdf) || (srcAddress[0] == 0xab && srcAddress[1] == 0xbc))
-			{
-				printf("detect 0xdedf or 0xabbc,and continue\r\n");
-				rlen = ReadComPort(rbuf,100);
-				pthread_mutex_unlock(&mut);
-				continue;
-			}
-			requestAddress = (unsigned short)srcAddress[0] << 8 | srcAddress[1];
-			printf("requestAddress=0x%04x\r\n",requestAddress);
-		}*/
 		rlen = ReadComPort(rbuf,100);
 		pthread_mutex_unlock(&mut);
 		if(rlen)
@@ -74,7 +58,7 @@ void communicate_thread(void)
 					case cmdCheckIn:
 						memcpy(&iEEEAddress,&rbuf[4],8);
 						mac2str(macstr,(const char *)iEEEAddress);
-                        printf("node ieee address is:0x%s\r\n",macstr);
+                        printf("check in node ieee address is:0x%s\r\n",macstr);
                         if(!get_local_addr((unsigned char *)&allocLocalAddress,(unsigned char *)&iEEEAddress))
 						{
 							get_channel_panid(&allocChannel,&allocPanid);
@@ -85,11 +69,15 @@ void communicate_thread(void)
 							set_node_online((unsigned char *)&iEEEAddress);
 							if(networking_over())
 							{
+/*                                if(ret == 0)
+                                    break;
                                 ret=pthread_create(&id,NULL,(void *) heart_beat_thread,NULL);
                                 if(ret!=0)
                                 {
                                     printf ("Create heart_beat_thread error...\r\n!n");
    	                            }
+ */
+                                printf ("***********************networking_over...\r\n!n");
                             } 
 						}
 						else
@@ -102,10 +90,11 @@ void communicate_thread(void)
 					break;
 					case cmdDataRequest:
 						requestAddress = (unsigned short)rbuf[4] << 8 | rbuf[5];
+//						printf("node 0x%04x is requesting data...\r\n",requestAddress);
 						if(!getCtlCmd(requestAddress,&ctl_cmd))
 							switchLockControl(requestAddress,ctl_cmd);
 						else
-							printf("requestAddress not exit ctl_cmd\r\n");
+							printf("cache not exist node 0x%04x ctl_cmd\r\n",requestAddress);
 					break;
 					default:
 					break;
@@ -116,14 +105,17 @@ void communicate_thread(void)
 				switch(rbuf[3])
 				{
 					case cmdEventReport:
-				    requestAddress = (unsigned short)rbuf[5] << 8 | rbuf[6];
+				        requestAddress = (unsigned short)rbuf[5] << 8 | rbuf[6];
+                        ackEventReport(requestAddress);
+                        printf("node 0x%04x is reporting event...\r\n",requestAddress);
 					 	event_report(requestAddress,rbuf[4]);
 					break;
 					case cmdBatteryRemainReport:
-				    requestAddress = (unsigned short)rbuf[5] << 8 | rbuf[6];
+				        requestAddress = (unsigned short)rbuf[5] << 8 | rbuf[6];
 					break;
                     case 0x03:
-                    printf("-----------------------------voltage is:0x%04x\r\n",rbuf[4] << 8| rbuf[5]);
+				        requestAddress = (unsigned short)rbuf[6] << 8 | rbuf[7];
+                        printf("-------------------node 0x%04x: voltage is:0x%04x\r\n",requestAddress,rbuf[4] << 8| rbuf[5]);
                     break;
 					default:
 					break;
@@ -168,6 +160,7 @@ void ackRegisterNetwork(unsigned short NetAddress,ackCmd_t cmd,unsigned short pa
 
  	set_temporary_DestAddr(0xfffe);
 	set_temporary_cast_mode(unicast);
+    usleep(100000);
 	WriteComPort((unsigned char *)wbuf, 18);
 
 	mac2str(str,(const char *)iEEEAddress);
@@ -189,6 +182,7 @@ void testLink(const char * ieeeAddress)
 	memcpy(&wbuf[4],ieeeAddress,8);
 	
 	set_temporary_cast_mode(unicast);
+    usleep(100000);
 	WriteComPort( wbuf, 12);
 	
 	mac2str(str,ieeeAddress);
@@ -205,9 +199,27 @@ void startSensorCalibration(void)
 	wbuf[3] = cmdSensorCalibration;
 	
 	set_temporary_cast_mode(broadcast);
+    usleep(100000);
 	WriteComPort(wbuf, 4);
 	
 	printf("taking sensor calibration...\r\n"); 
+}
+
+void ackEventReport(unsigned short DstAddr)
+{
+    unsigned char wbuf[5];
+    
+    wbuf[0] = 'S';
+    wbuf[1] = 'E';
+    wbuf[2] = 'N';
+    wbuf[3] = 0x04;//cmd
+    wbuf[4] = 0x00;//success 
+
+    set_temporary_DestAddr(DstAddr);
+	set_temporary_cast_mode(unicast);
+    usleep(100000);
+	WriteComPort(wbuf, 5);
+    printf("have acked node 0x%04x event report_______\r\n",DstAddr);
 }
 
 void testBeep(unsigned short DstAddr,unsigned char cmd)
@@ -222,6 +234,7 @@ void testBeep(unsigned short DstAddr,unsigned char cmd)
 	
 	set_temporary_DestAddr(DstAddr);
 	set_temporary_cast_mode(unicast);
+    usleep(100000);
 	WriteComPort(wbuf, 5);
 	
 	if(cmd == cmdSilence)
@@ -242,6 +255,7 @@ void testLed(unsigned short DstAddr,unsigned char ioLevel)
 	
 	set_temporary_DestAddr(DstAddr);
 	set_temporary_cast_mode(unicast);
+    usleep(100000);
 	WriteComPort(wbuf, 5);
 	
 	printf("led value is : 0x%02x\r\n",ioLevel);
@@ -259,6 +273,7 @@ void testMotor(unsigned short DstAddr,unsigned char cmd)
 	
 	set_temporary_DestAddr(DstAddr);
 	set_temporary_cast_mode(unicast);
+    usleep(100000);
 	WriteComPort(wbuf, 5);
 	
 	switch(cmd)
@@ -316,7 +331,6 @@ void heartbeat(const unsigned short *needRequestAddresses,unsigned char nodes)
 
 void switchLockControl(unsigned short DstAddr,unsigned char cmd)
 {
-    static unsigned short addrcpy = 0;
 	unsigned char wbuf[5];
 	wbuf[0] = 'C';
     wbuf[1] = 'T';
@@ -325,17 +339,22 @@ void switchLockControl(unsigned short DstAddr,unsigned char cmd)
     wbuf[4] = cmd;
         
 	set_temporary_cast_mode(unicast);
-    usleep(100000);
-	if(DstAddr == addrcpy)
-    {
-        goto data;
-    }
-
-	printf("tags...\r\n");
 	set_temporary_DestAddr(DstAddr);
     usleep(100000);
-    addrcpy = DstAddr;
-data:
 	WriteComPort(wbuf, 5);
 }
 
+void ackNoControlCmd(unsigned short DstAddr)
+{
+    unsigned char wbuf[5];
+    wbuf[0] = 'C';
+    wbuf[1] = 'T';
+    wbuf[2] = 'L';
+    wbuf[3] = 0x01;//cmd
+    wbuf[4] = 0x00;
+
+	set_temporary_cast_mode(unicast);
+	set_temporary_DestAddr(DstAddr);
+    usleep(100000);
+	WriteComPort(wbuf, 5);
+}
