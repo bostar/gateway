@@ -148,7 +148,7 @@ void parking_state_check_routin(void)
             case parking_state_idle: // 空闲
                 break;
             case parking_state_prestop: // 车来
-                if(time_in_second - pstParkingState[loop].time > 5) // second
+                if(time_in_second - pstParkingState[loop].time > freetime * 60) // second
                 {
                     putCtlCmd(pstParkingState[loop].parking_id,en_order_lock);
                     pstParkingState[loop].time = time((time_t*)NULL);
@@ -240,7 +240,7 @@ void parking_state_check_routin(void)
 
                 break;
             case parking_state_have_paid_unlock: // 支付后解锁成功
-                if(time_in_second - pstParkingState[loop].time > 5) // secon    d               
+                if(time_in_second - pstParkingState[loop].time > freetime) // secon    d               
                 {
                     putCtlCmd(pstParkingState[loop].parking_id,en_order_lock);
                     pstParkingState[loop].time = time((time_t*)NULL);

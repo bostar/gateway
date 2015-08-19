@@ -8,6 +8,7 @@
 #include "zlg_protocol.h"
 #include "parking_state_management.h"
 static const unsigned char mac_addr[8] = {0xf1,0xf2,0xf3,0xf4,0xf5,0xf6,0xf7,0xf8};
+unsigned short freetime = 1;
 
 void get_channel_panid(unsigned char* channel,unsigned short*panid)
 {
@@ -72,13 +73,14 @@ cfg:
 down:
     usleep(1000000);
     /* download the parking info of this depot */
-    len = tcp_listen(rbuf,sizeof(rbuf));
+    len = tcp_listen(rbuf,8 + get_depot_size() * 10);
     if(memcmp("DOWN",rbuf,4) != 0)
     {
         printf("[SERVER]is not download parking info cmd\r\n");
         usleep(1000000);
         goto down;
     }
+
     for(loop = 0;loop < get_depot_size();loop ++)
     {
         swap(2,&rbuf[8 + loop * 2 + loop * 8]);
@@ -87,7 +89,19 @@ down:
                                    &rbuf[8 + 2 + loop * 2 + loop * 8]);
 
     }
-    
+time:
+    len = tcp_listen(rbuf,10);
+    if(memcmp("TIME",rbuf,4) != 0)
+    {
+        printf("[SERVER]is not TIME cmd\r\n");
+        usleep(1000000);
+        goto time;
+    }
+    swap(2,&rbuf[8]);
+    freetime = *(unsigned short*)&rbuf[8];
+    printf("[SERVER]free time is %d minute\r\n",freetime);
+
+
     ret=pthread_create(&id,NULL,(void *) parking_state_check_routin,NULL);
     if(ret!=0){
         printf ("Create parking_state_check_routin error!n");
