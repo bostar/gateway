@@ -74,13 +74,13 @@ int tcp_listen(unsigned char *revbuf,int bufsize)
 {
     int num;
     bzero(revbuf,bufsize);
-    num = recv(sockfd, revbuf, bufsize, 0);
+    num = recv(sockfd, revbuf, bufsize, MSG_DONTWAIT);
 
     switch(num)
     {
         case -1:
-            printf("ERROR: Receive string error!\n");
-            close(sockfd);
+            //printf("ERROR: Receive string error!\n");
+            //close(sockfd);
             return (0);
 
         case  0:
@@ -100,10 +100,10 @@ int tcp_listen(unsigned char *revbuf,int bufsize)
 int tcp_send_to_server(int len,unsigned char *bytes)
 {
     int num;
-    if((num = send(sockfd, bytes, len, 0)) == -1)
+    if((num = send(sockfd, bytes, len, MSG_DONTWAIT )) == -1)
     {
         printf("ERROR: Failed to sent string.\n");
-        close(sockfd);
+        //close(sockfd);
         exit(1);
     }
     printf("OK: Sent %d bytes sucessful\n", num);

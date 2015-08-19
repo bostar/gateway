@@ -7,7 +7,8 @@
 #include <pthread.h>
 #include "zlg_protocol.h"
 #include "parking_state_management.h"
-static const unsigned char mac_addr[8] = {0xf1,0xf2,0xf3,0xf4,0xf5,0xf6,0xf7,0xf8};
+static const unsigned char mac_addr[8] = {0xE1,0xE2,0xE3,0xE4,0xE5,0xE6,0xE7,0xE8};
+unsigned short freetime = 1;
 
 void get_channel_panid(unsigned char* channel,unsigned short*panid)
 {
@@ -72,22 +73,35 @@ cfg:
 down:
     usleep(1000000);
     /* download the parking info of this depot */
-    len = tcp_listen(rbuf,sizeof(rbuf));
+    len = tcp_listen(rbuf,8 + get_depot_size() * 10);
     if(memcmp("DOWN",rbuf,4) != 0)
     {
         printf("[SERVER]is not download parking info cmd\r\n");
         usleep(1000000);
         goto down;
     }
+
     for(loop = 0;loop < get_depot_size();loop ++)
     {
         swap(2,&rbuf[8 + loop * 2 + loop * 8]);
-        swap(8,&rbuf[8 + 2 + loop * 2 + loop * 8]);
+        //swap(8,&rbuf[8 + 2 + loop * 2 + loop * 8]);
         parking_id_macaddr_mapping(*(unsigned short *)&rbuf[8 + loop * 2 + loop * 8],
                                    &rbuf[8 + 2 + loop * 2 + loop * 8]);
 
     }
-    
+time:
+    len = tcp_listen(rbuf,10);
+    if(memcmp("TIME",rbuf,4) != 0)
+    {
+        printf("[SERVER]is not TIME cmd\r\n");
+        usleep(1000000);
+        goto time;
+    }
+    swap(2,&rbuf[8]);
+    freetime = *(unsigned short*)&rbuf[8];
+    printf("[SERVER]free time is %d minute\r\n",freetime);
+
+
     ret=pthread_create(&id,NULL,(void *) parking_state_check_routin,NULL);
     if(ret!=0){
         printf ("Create parking_state_check_routin error!n");
@@ -99,21 +113,24 @@ down:
 
     while(1)
     {
-        usleep(2000000);
-        /* send all parking info */
-        memcpy(wbuf,"data",4); // pkg head
-        ftime(&tp);
-        memcpy(&wbuf[4],(void *)&tp,8);
-        swap(8,&wbuf[4]);
-        *(int*)&wbuf[12] = get_depot_id();
-        swap(4,&wbuf[12]);
-        len = 16 + get_all_parking_state(&wbuf[16]);
-        while((tcp_send_to_server(len,wbuf)) < len)
+        if(need_to_send_to_sever == 1)
         {
-             printf("[SERVER]send to server err\r\n");
-             usleep(1000000);
+            //usleep(2000000);
+            /* send all parking info */
+            memcpy(wbuf,"data",4); // pkg head
+            ftime(&tp);
+            memcpy(&wbuf[4],(void *)&tp,8);
+            swap(8,&wbuf[4]);
+            *(int*)&wbuf[12] = get_depot_id();
+            swap(4,&wbuf[12]);
+            len = 16 + get_all_parking_state(&wbuf[16]);
+            while((tcp_send_to_server(len,wbuf)) < len)
+            {
+                 printf("[SERVER]send to server err\r\n");
+                 usleep(1000000);
+            }
+            need_to_send_to_sever = 0;
         }
-
         len = tcp_listen(rbuf,sizeof(rbuf));
         if(len <= 0)
         {
@@ -122,6 +139,7 @@ down:
         if(memcmp("TALL",rbuf,4) != 0)
         {
             printf("[SERVER]cmd err\r\n");
+            continue;
         }
         for(loop = 0;loop < get_depot_size();loop ++)
         {

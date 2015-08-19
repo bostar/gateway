@@ -8,7 +8,6 @@
 #include "xbee_protocol.h"
 #include <sys/timeb.h>
 #include "listener.h"
-
 extern void swap(unsigned char len,unsigned char *array);
 typedef enum{
     parking_state_idle = 0x00, // 空闲
@@ -29,7 +28,9 @@ typedef enum{
     parking_state_unbooking_unlock_failed = 0x1f, // 取消预定失败，硬件故障
     parking_state_have_paid = 0x84, // 已支付
     parking_state_have_paid_unlock = 0x05, // 支付后解锁成功
+    parking_state_have_paid_relock = 0xf3, // 支付解锁后车未离开重新加锁计费
     parking_state_have_paid_unlock_failed = 0x08, // 支付后解锁硬件异常
+    parking_state_have_paid_relock_failed = 0xf4, // 支付解锁后车未离开重新加锁失败
     en_parking_state_max = 0xff
 }en_parking_state;
 
@@ -47,6 +48,8 @@ static struct{
 
 pst_parkingState pstParkingState = NULL;
 pthread_mutex_t parking_info_mutex = PTHREAD_MUTEX_INITIALIZER;
+unsigned char need_to_send_to_sever = 1;
+
 void set_depot_info(int depot_id,int depot_size,unsigned char wireless_channel,unsigned short net_id)
 {
     depot_info.depot_id = depot_id;
@@ -58,6 +61,7 @@ void set_depot_info(int depot_id,int depot_size,unsigned char wireless_channel,u
 
 int get_depot_size(void)
 {
+    //printf("depot_size is %d\r\n",depot_info.depot_size);
     return depot_info.depot_size;
 }
 
@@ -79,10 +83,12 @@ void parking_init(void)
     
     for(loop = 0;loop < depot_info.depot_size;loop ++)
     {
-        pstParkingState->parking_id = loop + 1;
-        memset(pstParkingState->parking_mac_addr,0,8);
-        pstParkingState->state = parking_state_idle;
-        pstParkingState->online = enOffline;
+        pstParkingState[loop].parking_id = loop + 1;
+        memset(pstParkingState[loop].parking_mac_addr,0,8);
+        pstParkingState[loop].netaddr = 0;
+        pstParkingState[loop].state = parking_state_idle;
+        need_to_send_to_sever = 1;
+        pstParkingState[loop].online = enOffline;
     }
     pthread_mutex_unlock(&parking_info_mutex);
 }
@@ -107,6 +113,13 @@ char* const parking_state_string[en_parking_state_max] = {
     [parking_state_have_paid] = "parking_state_have_paid", // 已支付
     [parking_state_have_paid_unlock] = "parking_state_have_paid_unlock", // 支付后解锁成功
     [parking_state_have_paid_unlock_failed] = "parking_state_have_paid_unlock_failed", // 支付后解锁硬件异常
+    [parking_state_have_paid_relock] = "parking_state_have_paid_relock", // 支付解锁后车未离开重新加锁计费
+    [parking_state_have_paid_relock_failed] = "parking_state_have_paid_relock_failed", // 支付解锁后车未离开重新加锁失败
+};
+
+char* const parking_online_string[2] = {
+    [enOnline] = "online",
+    [enOffline] = "offline",
 };
 
 void parking_state_check_routin(void)
@@ -128,6 +141,7 @@ void parking_state_check_routin(void)
     for(loop = 0;loop < get_depot_size();loop ++)
     {
         printf("[SERVER:]%04x ",pstParkingState[loop].parking_id);
+        printf("%s; ",parking_online_string[pstParkingState[loop].online]);
         printf("%s",parking_state_string[pstParkingState[loop].state]);
         printf("\r\n");
         switch(pstParkingState[loop].state)
@@ -135,9 +149,9 @@ void parking_state_check_routin(void)
             case parking_state_idle: // 空闲
                 break;
             case parking_state_prestop: // 车来
-                if(time_in_second - pstParkingState[loop].time > 5) // second
+                if(time_in_second - pstParkingState[loop].time > freetime * 60) // second
                 {
-                    putCtlCmd(pstParkingState[loop].parking_id,en_order_lock);
+                    XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_lock);
                     pstParkingState[loop].time = time((time_t*)NULL);
                 }
                 break;
@@ -146,14 +160,14 @@ void parking_state_check_routin(void)
             case parking_state_stop_lock_failed: // 车来超N分钟但加锁失败（硬件故障）
                 if(time_in_second - pstParkingState[loop].time > 5) // second
                 {
-                    putCtlCmd(pstParkingState[loop].parking_id,en_order_lock);
+                    XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_lock);
                     pstParkingState[loop].time = time((time_t*)NULL);
                 }
                 break;
             case parking_state_booking: // 车位被预定
                 if(time_in_second - pstParkingState[loop].time > 5) // secon    d
                 {
-                    putCtlCmd(pstParkingState[loop].parking_id,en_order_lock    );
+                    XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_lock);
                     pstParkingState[loop].time = time((time_t*)NULL);
                 }
 
@@ -165,20 +179,21 @@ void parking_state_check_routin(void)
             case parking_state_booking_lock_failed: // 预定车位，上锁失败（硬件故>障）
                 if(time_in_second - pstParkingState[loop].time > 5) // second
                 {
-                    putCtlCmd(pstParkingState[loop].parking_id,en_order_lock);
+                    XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_lock);
                     pstParkingState[loop].time = time((time_t*)NULL);
                 }
                 break;
             case parking_state_booked_coming: // 被预定车位解锁，车主到达现场
                 if(time_in_second - pstParkingState[loop].time > 5) // second
                 {
-                    putCtlCmd(pstParkingState[loop].parking_id,en_order_unlock);
+                    XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_unlock);
                     pstParkingState[loop].time = time((time_t*)NULL);
                 }
                 break;
             case parking_state_booked_coming_unlock: // 被预定车位解锁成功
                 if(time_in_second - pstParkingState[loop].time > 5) // second
                 {
+                    need_to_send_to_sever = 1;
                     pstParkingState[loop].state = parking_state_idle;
                     pstParkingState[loop].time = time((time_t*)NULL);
                 }
@@ -188,7 +203,7 @@ void parking_state_check_routin(void)
             case parking_state_booked_coming_unlock_failed: // 被预定车位解锁失败
                 if(time_in_second - pstParkingState[loop].time > 5) // second
                 {
-                    putCtlCmd(pstParkingState[loop].parking_id,en_order_unlock);
+                    XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_unlock);
                     pstParkingState[loop].time = time((time_t*)NULL);
                 }
                 break;
@@ -197,14 +212,14 @@ void parking_state_check_routin(void)
             case parking_state_booked_coming_lock_failed: // 被预定车位，车到达，上锁失败
                 if(time_in_second - pstParkingState[loop].time > 5) // second
                 {
-                    putCtlCmd(pstParkingState[loop].parking_id,en_order_lock);
+                    XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_lock);
                     pstParkingState[loop].time = time((time_t*)NULL);
                 }
                 break;
             case parking_state_unbooking: // 取消预定
                 if(time_in_second - pstParkingState[loop].time > 5) // secon    d
                 {
-                    putCtlCmd(pstParkingState[loop].parking_id,en_order_unlock);
+                    XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_unlock);
                     pstParkingState[loop].time = time((time_t*)NULL);
                 }
                 break;
@@ -213,24 +228,45 @@ void parking_state_check_routin(void)
             case parking_state_unbooking_unlock_failed: // 取消预定失败，硬件故障
                 if(time_in_second - pstParkingState[loop].time > 5) // second
                 {
-                    putCtlCmd(pstParkingState[loop].parking_id,en_order_unlock);
+                    XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_unlock);
                     pstParkingState[loop].time = time((time_t*)NULL);
                 }
                 break;
             case parking_state_have_paid: // 已支付
                 if(time_in_second - pstParkingState[loop].time > 5) // secon    d               
-                {   
-                    putCtlCmd(pstParkingState[loop].parking_id,en_order_unlock);
+                {
+                    XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_unlock);
                     pstParkingState[loop].time = time((time_t*)NULL);
                 }
 
                 break;
             case parking_state_have_paid_unlock: // 支付后解锁成功
+                if(time_in_second - pstParkingState[loop].time > freetime) // secon    d               
+                {
+                    XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_lock);
+                    pstParkingState[loop].time = time((time_t*)NULL);
+                    pstParkingState[loop].state = parking_state_have_paid_relock;
+                }
+                break;
+            case parking_state_have_paid_relock: // 支付解锁后车未离开重新加锁计费
+                if(time_in_second - pstParkingState[loop].time > 5) // secon    d               
+                {
+                    XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_lock);
+                    pstParkingState[loop].time = time((time_t*)NULL);
+                    pstParkingState[loop].state = parking_state_have_paid_relock_failed;
+                }
+                break;
+            case parking_state_have_paid_relock_failed: // 支付解锁后车未离开重新加锁计费
+                if(time_in_second - pstParkingState[loop].time > 5) // secon    d               
+                {
+                    XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_lock);
+                    pstParkingState[loop].time = time((time_t*)NULL);
+                }
                 break;
             case parking_state_have_paid_unlock_failed: // 支付后解锁硬件异常
                 if(time_in_second - pstParkingState[loop].time > 5) // second
                 {
-                    putCtlCmd(pstParkingState[loop].parking_id,en_order_unlock);
+                    XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_unlock);
                     pstParkingState[loop].time = time((time_t*)NULL);
                 }
                 break;
@@ -246,7 +282,6 @@ char * const event_string[en_max_event] = {"en_vehicle_comming\r\n","en_vehicle_
 
 void event_report(unsigned short netaddr,unsigned char event)
 {
-#if 0
     pst_parkingState p;
     time_t time_in_second = time((time_t *)NULL);
     printf("[SERVER:]%04x ",netaddr);
@@ -264,11 +299,13 @@ void event_report(unsigned short netaddr,unsigned char event)
         case en_vehicle_comming:
         if(p->state == parking_state_idle)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_prestop;
             p->time = time_in_second; // second
         }
         else if(p->state == parking_state_booked_coming_unlock)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_idle;
             p->time = time_in_second;
         }
@@ -280,19 +317,23 @@ void event_report(unsigned short netaddr,unsigned char event)
         case en_vehicle_leave:
         if(p->state == parking_state_prestop)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_idle;
         }
         if(p->state == parking_state_booked_coming_unlock)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_idle;
         }
         /*if(p->state == parking_state_have_paid)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_prestop;
             p->time = time_in_second; // second
         }*/
         if(p->state == parking_state_have_paid)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_idle;
             p->time = time_in_second; // second
         }
@@ -300,6 +341,7 @@ void event_report(unsigned short netaddr,unsigned char event)
 
         if(p->state == parking_state_have_paid_unlock)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_idle;
         }
         
@@ -307,41 +349,67 @@ void event_report(unsigned short netaddr,unsigned char event)
         case en_lock_success:
         if(p->state == parking_state_prestop)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_stop_lock;
         }
         if(p->state == parking_state_booking)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_booking_lock;
         }
         if(p->state == parking_state_booked_coming_unlock)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_booked_coming_lock;
+        }
+        if(p->state == parking_state_have_paid_relock)
+        {
+            need_to_send_to_sever = 1;
+            p->state = parking_state_stop_lock;
+        }
+        if(p->state == parking_state_have_paid_relock_failed)
+        {
+            p->state = parking_state_stop_lock;
         }
         break;
         case en_lock_failed:
         p->time =  time_in_second;
         if(p->state == parking_state_prestop)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_stop_lock_failed;
         }
         if(p->state == parking_state_booking)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_booking_lock_failed;
+        }
+        if(p->state == parking_state_have_paid_relock)
+        {
+            need_to_send_to_sever = 1;
+            p->state = parking_state_have_paid_relock_failed;
+        }
+        if(p->state == parking_state_have_paid_relock_failed)
+        {
+
         }
         break;
         case en_unlock_success:
         if(p->state == parking_state_booked_coming)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_booked_coming_unlock;
         }
         if(p->state == parking_state_have_paid)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_have_paid_unlock;
             p->time = time_in_second; // second
             
         }
         if(p->state == parking_state_unbooking)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_idle;
         }
         break;
@@ -349,14 +417,17 @@ void event_report(unsigned short netaddr,unsigned char event)
         p->time = time_in_second;
         if(p->state == parking_state_booked_coming)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_booked_coming_unlock_failed;
         }
         if(p->state == parking_state_have_paid)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_have_paid_unlock_failed;
         }
         if(p->state == parking_state_unbooking)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_unbooking_unlock_failed;
         }
         break;
@@ -364,8 +435,6 @@ void event_report(unsigned short netaddr,unsigned char event)
         break;
     }
     pthread_mutex_unlock(&parking_info_mutex);
-#endif
-    return;
 }
 
 int networking_over(void)
@@ -396,6 +465,7 @@ int networking_over(void)
 
 void set_node_online(unsigned char *macaddr)
 {
+#if 0
     int loop = 0;
     pthread_mutex_lock(&parking_info_mutex);
     if(pstParkingState == NULL)
@@ -416,6 +486,27 @@ void set_node_online(unsigned char *macaddr)
         pstParkingState[loop].online = 1;
     }
     pthread_mutex_unlock(&parking_info_mutex);
+#else
+    int loop = 0;
+    pthread_mutex_lock(&parking_info_mutex);
+    if(pstParkingState == NULL)
+    {
+        pthread_mutex_unlock(&parking_info_mutex);
+        return;
+    }
+
+    for(loop = 0;loop < depot_info.depot_size;loop ++)
+    {
+        if(memcmp(pstParkingState[loop].parking_mac_addr,macaddr,8) == 0)
+        {
+            pstParkingState[loop].state = parking_state_idle;
+            pstParkingState[loop].online = 1;
+            need_to_send_to_sever = 1;
+            break;
+        }
+    }
+    pthread_mutex_unlock(&parking_info_mutex);
+#endif
 }
 
 int get_local_addr(unsigned char *local_addr,unsigned char* long_addr)
@@ -433,8 +524,29 @@ int get_local_addr(unsigned char *local_addr,unsigned char* long_addr)
         pthread_mutex_unlock(&parking_info_mutex);
         return 0;
     }
+#else
+    int loop = 0;
+    pthread_mutex_lock(&parking_info_mutex);
+    if(pstParkingState == NULL)
+    {
+        pthread_mutex_unlock(&parking_info_mutex);
+        return -1;
+    }
+    else
+    {
+        for(loop = 0;loop < depot_info.depot_size;loop ++)
+        {
+            if(memcmp(pstParkingState[loop].parking_mac_addr,long_addr,8) == 0)
+            {
+                pstParkingState[loop].netaddr = *(unsigned short*)local_addr;
+                pthread_mutex_unlock(&parking_info_mutex);
+                return 0;
+            }
+        }
+        pthread_mutex_unlock(&parking_info_mutex);
+        return -1;
+    }
 #endif
-    return 1;
 }
 
 pst_parkingState search_use_netaddr(unsigned short netaddr)
@@ -467,12 +579,12 @@ void parking_id_macaddr_mapping(unsigned short parking_id,unsigned char *macaddr
         pthread_mutex_unlock(&parking_info_mutex);
         return;
     }
-
+printf("mapping\r\n");
     for(loop = 0;loop < depot_info.depot_size;loop ++)
     {
-        if(pstParkingState->parking_id == parking_id)
+        if(pstParkingState[loop].parking_id == parking_id)
         {
-            memcpy(pstParkingState->parking_mac_addr,macaddr,8);
+            memcpy(pstParkingState[loop].parking_mac_addr,macaddr,8);
             printf("parking_id = %d;parking_mac_addr = 0x%08x%08x\r\n",pstParkingState[loop].parking_id,*(unsigned int*)&pstParkingState[loop].parking_mac_addr[4],*(unsigned int*)&pstParkingState[loop].parking_mac_addr[0]);
             pthread_mutex_unlock(&parking_info_mutex);
             return;
@@ -517,7 +629,7 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
             if(p->state == parking_state_idle)
             {
                 p->state = parking_state_booking;
-                putCtlCmd(parking_id,en_order_lock);
+                XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_lock);
             }
             else
             {
@@ -529,7 +641,7 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
             {
                 p->state = parking_state_booked_coming;
                 p->time = time((time_t)NULL);
-                putCtlCmd(parking_id,en_order_unlock);
+                XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_unlock);
             }
             else
             {
@@ -547,7 +659,7 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
                || (p->state == parking_state_booked_coming_lock_failed))
             {
                 p->state = parking_state_unbooking;
-                putCtlCmd(parking_id,en_order_unlock);
+                XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_unlock);
             }
             else
             {
@@ -560,12 +672,12 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
                 case parking_state_stop_lock:
                     p->state = parking_state_have_paid;
                     p->time = time((time_t)NULL);
-                    putCtlCmd(parking_id,en_order_unlock);
+                    XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_unlock);
                     break;
                 case parking_state_booked_coming_lock:
                     p->state = parking_state_have_paid;
                     p->time = time((time_t)NULL);
-                    putCtlCmd(parking_id,en_order_unlock);
+                    XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_unlock);
                     break;
                 default:
                     break;
