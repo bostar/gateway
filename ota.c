@@ -5,6 +5,7 @@
 #include <string.h> 
 #include <stdlib.h>
 #include "zlg_cmd.h"
+#include "server_duty.h"
 
 #define fireware_file_path	"/mnt/SimpleBLEPeripheral.bin"
 
@@ -42,28 +43,28 @@ void ota_thread(void)
     unsigned char *oat_data = malloc(256 * 1024);
     if(oat_data == NULL)
     {
-        printf("malloc error!\r\n");
+        printf("[OTA]:malloc error!\r\n");
         return;
     }
     fd = open(fireware_file_path,O_RDONLY);
     if(fd < 0)
     {
-        printf("open file error!\r\n");
+        printf("[OTA]:open file error!\r\n");
         return;
     }
     len = read(fd,oat_data ,256 * 1024); 
-    printf("first 16 byte is :\r\n");
+    printf("[OTA]:first 16 byte is :\r\n");
     for(loop = 0;loop < 16;loop ++)
     {
         printf("%02x",oat_data[loop]);
     }
     pkgnum = (len % 64)?(len / 64 + 1): (len / 64);
-
-    printf("file length is %d bytes; sum of pkg is %d\r\n",len,pkgnum);
-    printf("set byte which was not used as 0xff\r\n");
+    printf("\r\n");
+    printf("[OTA]:file length is %d bytes; sum of pkg is %d\r\n",len,pkgnum);
+    printf("[OTA]:set byte which was not used as 0xff\r\n");
     for(loop = len;loop < ((unsigned int)pkgnum * 64);loop ++)
     {
-        printf("file one byte\r\n");
+        printf("[OTA]:file one byte\r\n");
         oat_data[loop] = 0xff;
     }
 
@@ -80,14 +81,19 @@ void ota_thread(void)
         }
     }
     
-    printf("crcword is %d;loop = %d\r\n",crcword,loop);
+    printf("[OTA]:crcword is %d;loop = %d\r\n",crcword,loop);
     crcword = crc16(crcword,0);
-    printf("crcword is %d\r\n",crcword);
+    printf("[OTA]:crcword is %d\r\n",crcword);
     crcword = crc16(crcword,0);
-    printf("crcword is %d\r\n",crcword);
+    printf("[OTA]:crcword is %d\r\n",crcword);
 
+    while(!networking_over())
+    {
+        printf("[OTA]:wait untile all node is online\r\n");
+        usleep(5 * 1000000);
+    }
     /* ota begin */
-    printf("ota begin ...\r\n");
+    printf("[OTA]:ota begin ...\r\n");
     wbuf[0] = 'O';
     wbuf[1] = 'T';
     wbuf[2] = 'A';
@@ -116,7 +122,7 @@ void ota_thread(void)
         {
             wbuf[70] ^= wbuf[loop1]; // end byte
         }
-        printf("pkg %d\r",loop);
+        printf("[OTA]:pkg %d\r",loop);
         sendtonode(destaddr,wbuf,71);
         usleep(50000);
     }
