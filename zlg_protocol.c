@@ -16,19 +16,6 @@ const unsigned short addresses[20];
 
 void mac2str(char *str,const char *ieeeAddress);
 
-void heart_beat_thread(void *arg)
-{
-	unsigned char address_total;
-	(void)arg;
-	
-	while(1)
-	{
-		if(!getCtlAddres(addresses,&address_total))
-			heartbeat(addresses,address_total);
-		usleep(1000000);
-		pthread_testcancel();
-	}
-}
 
 void communicate_thread(void)
 {
@@ -40,13 +27,12 @@ void communicate_thread(void)
 	unsigned char ctl_cmd;
 	char macstr[20];
 
-//    pthread_t id;
-//   	static int ret = 0xff;
+	set_temporary_cast_mode(broadcast);
 
 	while(1)
 	{
 		pthread_mutex_lock(&mut);
-		rlen = ReadComPort(rbuf,100);
+		rlen = ReadComPort(rbuf,255);
 		pthread_mutex_unlock(&mut);
 		if(rlen)
 		{
@@ -69,14 +55,6 @@ void communicate_thread(void)
 							set_node_online((unsigned char *)&iEEEAddress);
 							if(networking_over())
 							{
-/*                                if(ret == 0)
-                                    break;
-                                ret=pthread_create(&id,NULL,(void *) heart_beat_thread,NULL);
-                                if(ret!=0)
-                                {
-                                    printf ("Create heart_beat_thread error...\r\n!n");
-   	                            }
- */
                                 printf ("***********************networking_over...\r\n!n");
                             } 
 						}
@@ -158,8 +136,8 @@ void ackRegisterNetwork(unsigned short NetAddress,ackCmd_t cmd,unsigned short pa
 	wbuf[16] = panid;
 	wbuf[17] = channel;
 
- 	set_temporary_DestAddr(0xfffe);
-	set_temporary_cast_mode(unicast);
+// 	set_temporary_DestAddr(0xfffe);
+//	set_temporary_cast_mode(unicast);
     usleep(100000);
 	WriteComPort((unsigned char *)wbuf, 18);
 
@@ -181,8 +159,8 @@ void testLink(const char * ieeeAddress)
 	wbuf[3] = cmdLinkTest;
 	memcpy(&wbuf[4],ieeeAddress,8);
 	
-	set_temporary_cast_mode(unicast);
-    usleep(100000);
+//	set_temporary_cast_mode(unicast);
+//    usleep(100000);
 	WriteComPort( wbuf, 12);
 	
 	mac2str(str,ieeeAddress);
@@ -198,8 +176,8 @@ void startSensorCalibration(void)
 	wbuf[2] = 'N';
 	wbuf[3] = cmdSensorCalibration;
 	
-	set_temporary_cast_mode(broadcast);
-    usleep(100000);
+//	set_temporary_cast_mode(broadcast);
+//    usleep(100000);
 	WriteComPort(wbuf, 4);
 	
 	printf("taking sensor calibration...\r\n"); 
@@ -207,35 +185,39 @@ void startSensorCalibration(void)
 
 void ackEventReport(unsigned short DstAddr)
 {
-    unsigned char wbuf[5];
+    unsigned char wbuf[7];
     
     wbuf[0] = 'S';
     wbuf[1] = 'E';
     wbuf[2] = 'N';
     wbuf[3] = 0x04;//cmd
     wbuf[4] = 0x00;//success 
+    wbuf[5] = DstAddr >> 8;
+    wbuf[6] = DstAddr;
 
-    set_temporary_DestAddr(DstAddr);
-	set_temporary_cast_mode(unicast);
-    usleep(100000);
-	WriteComPort(wbuf, 5);
+//    set_temporary_DestAddr(DstAddr);
+//	set_temporary_cast_mode(unicast);
+//    usleep(100000);
+	WriteComPort(wbuf, 7);
     printf("have acked node 0x%04x event report_______\r\n",DstAddr);
 }
 
 void testBeep(unsigned short DstAddr,unsigned char cmd)
 {
-	unsigned char wbuf[5];
+	unsigned char wbuf[7];
 	
 	wbuf[0] = 'T';
 	wbuf[1] = 'S';
 	wbuf[2] = 'T';
 	wbuf[3] = cmdBeepTest;
 	wbuf[4] = cmd;
+    wbuf[5] = DstAddr >> 8;
+    wbuf[6] = DstAddr;
 	
-	set_temporary_DestAddr(DstAddr);
-	set_temporary_cast_mode(unicast);
-    usleep(100000);
-	WriteComPort(wbuf, 5);
+//	set_temporary_DestAddr(DstAddr);
+//	set_temporary_cast_mode(unicast);
+//    usleep(100000);
+	WriteComPort(wbuf, 7);
 	
 	if(cmd == cmdSilence)
 		printf("node 0x%04x beep start to silence...\r\n",DstAddr);
@@ -245,36 +227,40 @@ void testBeep(unsigned short DstAddr,unsigned char cmd)
 
 void testLed(unsigned short DstAddr,unsigned char ioLevel)
 {
-	unsigned char wbuf[5];
+	unsigned char wbuf[7];
 	
 	wbuf[0] = 'T';
 	wbuf[1] = 'S';
 	wbuf[2] = 'T';
 	wbuf[3] = cmdLedTest;
 	wbuf[4] = ioLevel;
+    wbuf[5] = DstAddr >> 8;
+    wbuf[6] = DstAddr;
 	
-	set_temporary_DestAddr(DstAddr);
-	set_temporary_cast_mode(unicast);
-    usleep(100000);
-	WriteComPort(wbuf, 5);
+//	set_temporary_DestAddr(DstAddr);
+//	set_temporary_cast_mode(unicast);
+//    usleep(100000);
+	WriteComPort(wbuf, 7);
 	
 	printf("led value is : 0x%02x\r\n",ioLevel);
 }
 
 void testMotor(unsigned short DstAddr,unsigned char cmd)
 {
-	unsigned char wbuf[5];
+	unsigned char wbuf[7];
 	
 	wbuf[0] = 'T';
 	wbuf[1] = 'S';
 	wbuf[2] = 'T';
 	wbuf[3] = cmdMotorTest;
 	wbuf[4] = cmd;
+    wbuf[5] = DstAddr >> 8;
+    wbuf[6] = DstAddr;
 	
-	set_temporary_DestAddr(DstAddr);
-	set_temporary_cast_mode(unicast);
-    usleep(100000);
-	WriteComPort(wbuf, 5);
+//	set_temporary_DestAddr(DstAddr);
+//	set_temporary_cast_mode(unicast);
+//    usleep(100000);
+	WriteComPort(wbuf, 7);
 	
 	switch(cmd)
 	{
@@ -295,53 +281,35 @@ void testMotor(unsigned short DstAddr,unsigned char cmd)
 
 void restoreFactoryConfig(unsigned short DstAddr)
 {
-	unsigned char wbuf[4];
+	unsigned char wbuf[6];
 	wbuf[0] = 'C';
 	wbuf[1] = 'F';
 	wbuf[2] = 'G';
  	wbuf[3] = cmdRestoreFactoryConfig;
-	
-	set_temporary_DestAddr(DstAddr);
-        usleep(100000);
-	WriteComPort(wbuf, 4);
+	wbuf[4] = DstAddr >> 8;
+    wbuf[5] = DstAddr;
+
+//	set_temporary_DestAddr(DstAddr);
+//        usleep(100000);
+	WriteComPort(wbuf, 6);
 	printf("restore node 0x%04x factory config...\r\n",DstAddr);
 }
 
-void heartbeat(const unsigned short *needRequestAddresses,unsigned char nodes)
-{
-	int i;
-	unsigned char wbuf[5+nodes*2];
-	wbuf[0] = 'C';
-	wbuf[1] = 'F';
-	wbuf[2] = 'G';
-	wbuf[3] = cmdHeartBeatPkg;
-	wbuf[4] = nodes;
-	memcpy(&wbuf[5],needRequestAddresses,nodes*2); 
-
-	set_temporary_cast_mode(broadcast);
-    usleep(100000);
-	WriteComPort(wbuf, 5+nodes*2);
-	printf("heart heat:node ");
-	for(i = 0;i < nodes; i++)
-	{
-		printf("0x%04x ",*((unsigned short *)needRequestAddresses+i));
-	}
-	printf("need request data...\r\n");
-} 
-
 void switchLockControl(unsigned short DstAddr,unsigned char cmd)
 {
-	unsigned char wbuf[5];
+	unsigned char wbuf[7];
 	wbuf[0] = 'C';
     wbuf[1] = 'T';
     wbuf[2] = 'L';
     wbuf[3] = 0x00;//cmd
     wbuf[4] = cmd;
+    wbuf[5] = DstAddr >> 8;
+    wbuf[6] = DstAddr;
         
-	set_temporary_cast_mode(unicast);
-	set_temporary_DestAddr(DstAddr);
-    usleep(100000);
-	WriteComPort(wbuf, 5);
+//	set_temporary_cast_mode(unicast);
+//	set_temporary_DestAddr(DstAddr);
+//    usleep(100000);
+	WriteComPort(wbuf, 7);
 }
 
 void ackNoControlCmd(unsigned short DstAddr)
@@ -353,8 +321,8 @@ void ackNoControlCmd(unsigned short DstAddr)
     wbuf[3] = 0x01;//cmd
     wbuf[4] = 0x00;
 
-	set_temporary_cast_mode(unicast);
-	set_temporary_DestAddr(DstAddr);
-    usleep(100000);
+//	set_temporary_cast_mode(unicast);
+//	set_temporary_DestAddr(DstAddr);
+//    usleep(100000);
 	WriteComPort(wbuf, 5);
 }
