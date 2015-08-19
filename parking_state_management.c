@@ -116,6 +116,11 @@ char* const parking_state_string[en_parking_state_max] = {
     [parking_state_have_paid_relock_failed] = "parking_state_have_paid_relock_failed", // 支付解锁后车未离开重新加锁失败
 };
 
+char* const parking_online_string[2] = {
+    [enOnline] = "online",
+    [enOffline] = "offline",
+};
+
 void parking_state_check_routin(void)
 {
     int loop;
@@ -135,6 +140,7 @@ void parking_state_check_routin(void)
     for(loop = 0;loop < get_depot_size();loop ++)
     {
         printf("[SERVER:]%04x ",pstParkingState[loop].parking_id);
+        printf("%s; ",parking_online_string[pstParkingState[loop].online]);
         printf("%s",parking_state_string[pstParkingState[loop].state]);
         printf("\r\n");
         switch(pstParkingState[loop].state)
