@@ -345,7 +345,7 @@ void event_report(unsigned short netaddr,unsigned char event)
             need_to_send_to_sever = 1;
             p->state = parking_state_stop_lock;
         }
-        if(p->state == parking_state_booking)
+        if(p->state == parking_state_booking || p->state == parking_state_booking_lock_failed)
         {
             need_to_send_to_sever = 1;
             p->state = parking_state_booking_lock;
@@ -388,19 +388,19 @@ void event_report(unsigned short netaddr,unsigned char event)
         }
         break;
         case en_unlock_success:
-        if(p->state == parking_state_booked_coming)
+        if(p->state == parking_state_booked_coming || p->state == parking_state_booked_coming_unlock_failed)
         {
             need_to_send_to_sever = 1;
             p->state = parking_state_booked_coming_unlock;
         }
-        if(p->state == parking_state_have_paid)
+        if(p->state == parking_state_have_paid || p->state == parking_state_have_paid_unlock_failed)
         {
             need_to_send_to_sever = 1;
             p->state = parking_state_have_paid_unlock;
             p->time = time_in_second; // second
             
         }
-        if(p->state == parking_state_unbooking)
+        if(p->state == parking_state_unbooking || p->state == parking_state_unbooking_unlock_failed)
         {
             need_to_send_to_sever = 1;
             p->state = parking_state_idle;
