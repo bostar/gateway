@@ -9,6 +9,8 @@
 #include "serial.h"
 #include "zlg_protocol.h"
 #include "ctl_cmd_cache.h"
+#include <semaphore.h>
+#include "ota.h"
 
 const char menu[] = "\r\n\
 +********************** ZLG CMD HELP ***************************+\r\n\
@@ -31,6 +33,7 @@ const char menu[] = "\r\n\
 | help               | ?      |             |                   |\r\n\
 +--------------------+--------+-------------+-------------------+\r\n\
 | link test          | AT+T   | AT+T        |                   |\r\n\
+| ota start          | AT+O   | AT+O        |                   |\r\n\
 | restore factory cfg| AT+R   | AT+R 0x0001 | 0xFFFF:restore all|\r\n\
 | test beep          | beep   | beep 0x2001 1 |  0:silence      |\r\n\
 | test leds          | leds   | leds 0x2001 0xff|               |\r\n\
@@ -199,6 +202,10 @@ void menu_thread(void)
 			else if(!strncmp(wbuf,"AT+T",4))
 			{
 				testLink((const char *)iEEEAddress);
+			}
+			else if(!strncmp(wbuf,"AT+O",4))
+			{
+                sem_post(&ota_begin);
 			}
 			else if(!strncmp(wbuf,"AT+R",4))
 			{

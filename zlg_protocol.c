@@ -28,6 +28,7 @@ void communicate_thread(void)
 	char macstr[20];
 
 	set_temporary_cast_mode(broadcast);
+    usleep(100000);
 
 	while(1)
 	{
@@ -101,7 +102,7 @@ void communicate_thread(void)
 			}
 			memset(rbuf,0x0,rlen);
 		}
-		usleep(10000);
+        usleep(10000);
 	}
 }
 

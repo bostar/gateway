@@ -5,6 +5,7 @@
 #include <string.h> 
 #include <stdlib.h>
 #include "zlg_cmd.h"
+#include "serial.h"
 #include "server_duty.h"
 #include <semaphore.h> //包含信号量相关头文件
 
@@ -15,7 +16,9 @@ sem_t ota_begin;
 
 void sendtonode(unsigned short destaddr,unsigned char *data,int len)
 {
-    send_data_to_remote_node(destaddr,data,len);
+    //send_data_to_remote_node(destaddr,data,len);
+    WriteComPort(data, len);
+    printf("Send over \r\n");
 
 }
 
@@ -133,9 +136,10 @@ void ota_thread(void)
             {
                 wbuf[70] ^= wbuf[loop1]; // end byte
             }
-            printf("[OTA]:pkg %d\r",loop);
-            sendtonode(0xffff,wbuf,71);
-            usleep(50000);
+            //sendtonode(0xffff,wbuf,71);
+            WriteComPort(wbuf, 71);
+            printf("[OTA]:pkg %d over\r\n",loop);
+            usleep(100000);
         }
 #endif
         /* image enable and reset */

@@ -12,6 +12,7 @@
 #include "xbee_routine.h"
 #include <sys/timeb.h>
 #include "ctl_cmd_cache.h"
+#include "ota.h"
 #define LEN	1000
 
 //#define __USE_ZM516X__
@@ -84,6 +85,11 @@ int main(int argc, char *argv[])
         printf ("Create xbee_routine_thread error!n");
     }
 #endif
+    printf("start ota_thread...\r\n");
+    ret=pthread_create(&id,NULL,(void *) ota_thread,NULL);
+    if(ret!=0){
+        printf ("Create ota_thread error!n");
+    }
 
     while(1)
     {

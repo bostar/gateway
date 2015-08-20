@@ -814,8 +814,8 @@ void set_temporary_cast_mode(cast_mode_t mode)
 	wbuf[2] = 0xef;
 	wbuf[3] = enSetUnicastOrBroadcast;
 	wbuf[4] = mode;
-	do
-	{
+//	do
+//	{
 		switch(mode)
 		{
 			case unicast:
@@ -828,9 +828,9 @@ void set_temporary_cast_mode(cast_mode_t mode)
 				break;
 		}
 		WriteComPort(wbuf, 5);
-        usleep(100000);
+        usleep(1000000);
 		rlen = ReadComPort(rbuf,255);
-	}while(rlen <= 5);
+/*	}while(rlen <= 5);
 	if((rbuf[0] == 0xde)&&(rbuf[1] == 0xdf)&&(rbuf[2] == 0xef))
 	{
 		if(rbuf[3] == enSetUnicastOrBroadcast)
@@ -843,7 +843,7 @@ void set_temporary_cast_mode(cast_mode_t mode)
 				printf("set cast mode failed...\r\n");
 		}
 	}
-	printf("set cast mode error...\r\n");
+	printf("set cast mode error...\r\n");*/
 }
 
 unsigned char read_temporary_node_rssi(unsigned short DstAddr)
