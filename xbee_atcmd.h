@@ -12,6 +12,14 @@ typedef enum
 
 typedef enum
 {
+  Disable     =     0,
+  PinSleep    =     1,
+  CycSleep    =     4,
+  PinCyc      =     5,
+}SleepType;
+
+typedef enum
+{
   Default       =  0,
   DisableACK    =  0x01,
   EnableAPS     =  0x20,
@@ -117,10 +125,13 @@ int16 XBeeSendSH();
 int16 XBeeSendSL();    
 int16 XBeeSetNJ(uint8 time,uint8 IsRes);             
 int16 XBeeSetLT(uint8 time,uint8 IsRes);
+uint16 XBeeSetSP(uint16 num,IsResp IsRes);
+uint16 XBeeSetSN(uint16 num,IsResp IsRes);
+uint16 XBeeSetST(uint16 num,IsResp IsRes);
 
 int16 XBeeTransReq(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,uint16 len,IsResp IsRes); //xbee发送数据请求
 int16 XBeeBoardcastTrans(uint8 *data,uint16 len,IsResp IsRes);  
-
+int16 XBeeUnicastTrans(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,uint16 len,IsResp IsRes);
 
 
 

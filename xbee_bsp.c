@@ -96,10 +96,49 @@ void XBeeCreateNet(void)
 	XBeeSetPanID(NO_RES);   //设置ID的值
 	XBeeSetChannel(NO_RES); //设置信道
 	XBeeSetZS(NO_RES);
+	XBeeSetNJ(0xFF,NO_RES);
 	XbeeSendAC(NO_RES);
 	XBeeSendWR(NO_RES);
-	XBeeReadAI(RES);
+	//XBeeReadAI(RES);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

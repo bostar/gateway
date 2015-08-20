@@ -12,5 +12,6 @@ unsigned char xbee_gpio_get(int gpio);
 
 void XBeeOpenBuzzer();
 void XBeeCloseBuzzer();
+void XBeeCreateNet(void);
 
 #endif

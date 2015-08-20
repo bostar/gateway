@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 {
     int ret=0;
     pthread_t id;
-    //ret=pthread_create(&id,NULL,(void *) server_duty_thread,NULL);
+    ret=pthread_create(&id,NULL,(void *) server_duty_thread,NULL);
     if(ret!=0){
         printf ("Create server_duty_thread error!n");
     }
