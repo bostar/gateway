@@ -571,6 +571,27 @@ pst_parkingState search_use_netaddr(unsigned short netaddr)
     return NULL;
 }
 
+pst_parkingState search_use_parking_id(unsigned short parking_id)
+{
+    int loop;
+    //pthread_mutex_lock(&parking_info_mutex);
+    if(pstParkingState == NULL)
+    {
+        //pthread_mutex_unlock(&parking_info_mutex);
+        return NULL;
+    }
+    for(loop = 0;loop < depot_info.depot_size;loop ++)
+    {
+        if(parking_id == pstParkingState[loop].parking_id)
+        {
+            //pthread_mutex_unlock(&parking_info_mutex);
+            return &pstParkingState[loop];
+        }
+    }
+    //pthread_mutex_lock(&parking_info_mutex);
+    return NULL;
+}
+
 void parking_id_macaddr_mapping(unsigned short parking_id,unsigned char *macaddr)
 {
     int loop = 0;
@@ -617,7 +638,7 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
 
     printf("==========0x%04x,state is 0x%02x\r\n",parking_id,state); 
     pthread_mutex_lock(&parking_info_mutex);
-    p = search_use_netaddr(parking_id);
+    p = search_use_parking_id(parking_id);
     if((p == NULL) || (p->state == state))
     {
         pthread_mutex_unlock(&parking_info_mutex);
