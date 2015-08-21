@@ -560,7 +560,7 @@ pst_parkingState search_use_netaddr(unsigned short netaddr)
     }
     for(loop = 0;loop < depot_info.depot_size;loop ++)
     {
-        if(netaddr == pstParkingState[loop].parking_id)
+        if(netaddr == pstParkingState[loop].netaddr)
         {
             //pthread_mutex_unlock(&parking_info_mutex);
             return &pstParkingState[loop];
