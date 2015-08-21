@@ -14,13 +14,12 @@
 uint8 rbuf[255];
 int16 len;
 //static uint8 NetState=0;
-uint8 IdleCnt=0;
 //uint8 XBeeCnt=0;
 
 void TestPrintf(int8* sss,int16 lens,uint8 *buf)
 {
    	int loop=0;
-	printf("serialport recv data %s:len = %d;string is:\n",sss,lens);
+	printf("\033[34m\033[1m数据序列 %s:数据长度 = %d; 数据内容:\033[0m\n",sss,lens);
 	for( loop = 0;loop < lens;loop ++)
 		printf("0x%02x ",buf[loop]);
 	printf("\n");
@@ -59,30 +58,17 @@ void xbee_routine_thread(void)
     while(1)
     {
 #endif	
-#if 0
-		static uint8 i=0;
-		uint8 adr[8],rf[4],net_adr[2];
-		uint16 netadr;
-		if(i==0)
-		{
-			i++;
-			*adr	=	0x00;	*(adr+1)=	0x13;
-			*(adr+2)=	0xa2;	*(adr+3)=	0x00;
-			*(adr+4)=	0x40;	*(adr+5)=	0xa1;
-			*(adr+6)=	0xa6;	*(adr+7)=	0x97;
-			netadr	=	0x2ffe;
-			*(net_adr)=	0x2f;	*(net_adr+1)=0xfe;
-			*(rf)	=	0x11;	*(rf+1)	=	0x12;
-			*(rf+2)	=	0x13;	*(rf+3)	=	0x14;
-			XBeePutCtlCmd(adr,netadr, 0);
-		}
-#endif
+		static uint16 IdleCnt=0;
+
 		len = UartRevDataProcess(rbuf);  
 		//len = xbee_serial_port_read(rbuf);
 		IdleCnt++;
-		printf("  %d \n",IdleCnt);
+		printf("\033[36m调用次数%d\033[0m\n",IdleCnt);
 		if(len)
+		{
+			printf("\033[34m\033[1m收到数据: \033[0m");	
 			TestPrintf("1",len,rbuf);
+		}
 #if 1
 		if(len)
 		{
@@ -120,10 +106,9 @@ void xbee_routine_thread(void)
 			}
 		}  
 #endif
-		usleep(1000000);	
-	if(len>0)
-		printf("**********the end**********\n");		
-	//	TheEnd: IdleCnt++;
+		//usleep(200000);	
+		if(len>0)
+			printf("**********the end**********\n");		
 #if defined _cycle
     }
 #endif

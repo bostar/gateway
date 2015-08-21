@@ -149,7 +149,8 @@ void parking_state_check_routin(void)
             case parking_state_idle: // 空闲
                 break;
             case parking_state_prestop: // 车来
-                if(time_in_second - pstParkingState[loop].time > freetime * 60) // second
+                //if(time_in_second - pstParkingState[loop].time > freetime * 60) // second
+				if(time_in_second - pstParkingState[loop].time > 3) // second
                 {
                     XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_lock);
                     pstParkingState[loop].time = time((time_t*)NULL);

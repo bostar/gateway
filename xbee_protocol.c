@@ -51,16 +51,15 @@ void XBeeProcessCFG(uint8 *rbuf)
 	{
 		case net_request:
 			temp = get_local_addr(rbuf+12,rbuf+4); //调用API 查询是否属于网络
-			printf("查询返回值是%d \n",temp);
-			if(get_local_addr(rbuf+12,rbuf+4) == 1)	//属于该网络,允许加入网络，并设定允许加入网络时间
-			//if(1)			
+			if(temp == 0)	//属于该网络,允许加入网络，并设定允许加入网络时间		
 			{
 				XBeeJionEnable((rbuf+4),(rbuf+12)); //
-				//set_node_online(rbuf+4);
-				XBeeSendTimeout(0xc8); //限时加入网络2m
-				XBeeSendSenserInit((rbuf+4),(rbuf+12)); 
+				printf("\033[33m\033[1m已发送允许入网指令 \033[0m \n");		
+				set_node_online(rbuf+4);
+				//XBeeSendTimeout(0xc8); //限时加入网络2m
+				//XBeeSendSenserInit((rbuf+4),(rbuf+12)); 
 			}	
-			else
+			else if(temp == -1)
 				XBeeJionDisable((rbuf+19),(rbuf+27));
 			break;
 		default:
@@ -101,19 +100,37 @@ void XBeeProcessSEN(uint8 *rbuf)
 {
 	switch(*(rbuf+18))
 	{
-		case lock_event:
+		case 1:
 			if(*(rbuf+19) == ParkingUsed)
+			{	
+				printf("\033[33m\033[1m有车辆进入停车位\033[0m \n");
 				event_report( char_to_int(rbuf+12),en_vehicle_comming);
+			}
 			else if(*(rbuf+19) == ParkingUnUsed)
+			{
+				printf("\033[33m\033[1m当前车位状态为空\033[0m \n");
 				event_report( char_to_int(rbuf+12),en_vehicle_leave);
+			}
 			else if(*(rbuf+19) == ParkLockSuccess)
+			{	
+				printf("\033[33m\033[1m车位锁定成功 \033[0m \n");
 				event_report( char_to_int(rbuf+12),en_lock_success);
+			}
 			else if(*(rbuf+19) == ParkLockFailed)
+			{
+				printf("\033[33m\033[1m车位锁定失败 \033[0m \n");	
 				event_report( char_to_int(rbuf+12),en_lock_failed);
+			}			
 			else if(*(rbuf+19) == ParkUnlockSuccess)
+			{
+				printf("\033[33m\033[1m车位解锁成功 \033[0m \n");
 				event_report( char_to_int(rbuf+12),en_unlock_success);
+			}			
 			else if(*(rbuf+19) == ParkUnlockFailed)
+			{
+				printf("\033[33m\033[1m车位解锁失败 \033[0m \n");
 				event_report( char_to_int(rbuf+12),en_unlock_failed);
+			}
 			break;
 		case bat_event:
 			break;
@@ -190,8 +207,9 @@ int16 XBeePutCtlCmd(uint8 *ieeeadr,uint16 netadr,uint8 lockstate)
 	data[3]  =  0x00;
 	data[4]  =  lockstate;
 	uint8 netadr_s[2];
-	netadr_s[0] = (uint8)(netadr>>8);
-	netadr_s[1] = (uint8)netadr;
+	netadr_s[1] = (uint8)(netadr>>8);
+	netadr_s[0] = (uint8)netadr;
+	printf("\033[33m发送锁控制指令完成！\n");
 	return XBeeTransReq(ieeeadr,netadr_s,Default,data,5,RES);
 }
 /**************************************************************
@@ -207,27 +225,6 @@ int16 XBeeSendSenserInit(uint8 *ieeeadr,uint8 *net_adr)
 	data[3]    =      0;
 	return XBeeTransReq(ieeeadr,net_adr,Default,data,4,NO_RES);
 }
-/**********************************************************
-**brief 锁控制命令
-**param netadr 目标锁的16位网络抵制
-		lockstate 0x00  解锁
-				  0x01  上锁
-××reval 发送数据的长度
-**********************************************************/
-int16 putCtlCmd(uint16 netadr,uint8 lockstate)
-{
-	uint8 net_adr[2],adr[8],data[5],i;		
-	for(i=0;i<8;i++)
-		adr[i] = 0;
-	net_adr[1] = (uint8)netadr; //大端序，小端序
-	net_adr[0] = (uint8)(netadr>>8);
-	data[0]  =  'C';	
-	data[0]  =  'T';
-	data[1]  =  'L';
-	data[3]  =  0x00;
-	data[4]  =  lockstate;
-	return XBeeUnicastTrans(adr,net_adr,Default,data,5,RES);
-}
 
 /***************************************************************
 **brief 两个字节合并一个unt16
@@ -235,8 +232,8 @@ int16 putCtlCmd(uint16 netadr,uint8 lockstate)
 uint16 char_to_int(uint8 *data)
 {
 	uint16 reval=0;
-	reval |= (uint16)*(data+1);
-	reval |= ((uint16)*data << 8);
+	reval |= (uint16)*(data);
+	reval |= ((uint16)*(data+1) << 8);
 	return reval;
 }
 

@@ -81,7 +81,7 @@ int16 XBeeTransReq(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,u
   	frame->net_adr[0]      = *(net_adr);
   	frame->net_adr[1]      = *(net_adr+1);
 #if defined USE_PRINTF
-	printf("api cmd is:");
+	printf("发送数据:\n");
 	for(cnt=0;cnt<20;cnt++)
 		printf("0x%02x ",*(wbuf+cnt));
 	printf("\r\n");
@@ -93,10 +93,10 @@ int16 XBeeTransReq(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,u
     	*((uint8*)frame + 17 + cnt) = *(rf_data + cnt);
   	*(((uint8*)frame)+17+len) = XBeeApiChecksum(((uint8*)frame)+3,14+len);
 #if 1
-  	printf("发送的数据帧:");
+	printf("\033[32m\033[1m发送数据: \033[0m \n");	
   	for(cnt=0;cnt<18+len;cnt++)
     	printf("0x%02x ",*(((uint8*)frame)+cnt));
-  	printf("\r\n");
+  	printf("\n");
 #endif
   	return WriteComPort((uint8*)frame,18+len);
 }
@@ -214,7 +214,7 @@ int16 XbeeSendAC(uint8 IsRes)
 }
 /*********************************************************
 **biref 发送WR命令,保存更改
-**********************************************************/
+********************************************ad**/
 int16 XBeeSendWR(uint8 IsRes)
 {
   	uint8 paramer[1];
