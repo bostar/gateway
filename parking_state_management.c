@@ -190,7 +190,7 @@ void parking_state_check_routin(void)
                 }
                 break;
             case parking_state_booked_coming_unlock: // 被预定车位解锁成功
-                if(time_in_second - pstParkingState[loop].time > 5) // second
+                if(time_in_second - pstParkingState[loop].time > 15) // second
                 {
                     need_to_send_to_sever = 1;
                     pstParkingState[loop].state = parking_state_idle;
