@@ -100,18 +100,18 @@ void ota_thread(void)
         crcword = crc16(crcword,0);
         printf("[OTA]:crcword is %d\r\n",crcword);
 #if 1
-        while(!networking_over())
+        /*while(!networking_over())
         {
             printf("[OTA]:wait untile all node is online\r\n");
             usleep(5 * 1000000);
-        }
+        }*/
         /* ota begin */
         printf("[OTA]:ota begin ...\r\n");
         wbuf[0] = 'O';
         wbuf[1] = 'T';
         wbuf[2] = 'A';
         wbuf[3] = 0x00; // cmd word
-        *(unsigned short *)&wbuf[4] = *(unsigned short *)&oat_data[94]; // version
+        *(unsigned short *)&wbuf[4] = *(unsigned short *)&oat_data[0x94]; // version
         printf("[OTA]:fireware version is 0x%04x\r\n",*(unsigned short *)&wbuf[4]);
         wbuf[6] = (unsigned char)pkgnum; // pkgnum low byte
         wbuf[7] = (unsigned char)(pkgnum >> 8); // pkgnum high byte
@@ -158,7 +158,8 @@ void ota_thread(void)
         {
             wbuf[6] ^= wbuf[loop]; // end byte
         }
-        sendtonode(0xffff,wbuf,7);
+        WriteComPort(wbuf,7);
+        
         sem_post(&ota_over);
     }
 }
