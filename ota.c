@@ -44,7 +44,7 @@ void ota_thread(void)
 {
     int fd;int len;
     unsigned int loop,loop1;
-    unsigned short pkgnum,crcword;
+    unsigned short pkgnum,crcword,crcwordold = 0,version = 0,versionold = 0;
     //unsigned char destaddr[2];
     unsigned char wbuf[255];
     unsigned char *oat_data = malloc(256 * 1024);
@@ -99,6 +99,21 @@ void ota_thread(void)
         printf("[OTA]:crcword is %d\r\n",crcword);
         crcword = crc16(crcword,0);
         printf("[OTA]:crcword is %d\r\n",crcword);
+
+        /* 0xff is not to download to dest node*/
+        for(loop = len - 1;loop > 0;loop --)
+        {
+            if(oat_data[loop] == 0xff)
+            {
+                continue;
+            }
+            else
+            {
+                pkgnum = ((loop + 1) % 64)?((loop + 1) / 64 + 1): ((loop + 1) / 64);
+                break;
+            }
+        }
+        printf("[OTA]:delete 0xff in bin file,the pkgnum is %d\r\n",pkgnum);
 #if 1
         /*while(!networking_over())
         {
@@ -111,17 +126,41 @@ void ota_thread(void)
         wbuf[1] = 'T';
         wbuf[2] = 'A';
         wbuf[3] = 0x00; // cmd word
+        version = *(unsigned short *)&oat_data[0x94]; // version
         *(unsigned short *)&wbuf[4] = *(unsigned short *)&oat_data[0x94]; // version
         printf("[OTA]:fireware version is 0x%04x\r\n",*(unsigned short *)&wbuf[4]);
         wbuf[6] = (unsigned char)pkgnum; // pkgnum low byte
         wbuf[7] = (unsigned char)(pkgnum >> 8); // pkgnum high byte
         
-        for(loop = 0;loop < 5;loop ++)
+        for(loop = 0;loop < 40 + 10;loop ++)
         {
             WriteComPort(wbuf, 8);
-            usleep(1000000);
+            usleep(50000);
         }
 #endif
+        if((crcwordold != crcword) || (versionold != version))
+        {
+            printf("[OTA]:fireware has changed!,erase all flash\r\n");
+            versionold = version;
+            crcwordold = crcword;
+            /* handshake erase all flash */
+            wbuf[0] = 0xfe;
+            wbuf[1] = 0x02;
+            wbuf[2] = 0x4d;
+            wbuf[3] = 0x04; // cmd word
+            wbuf[4] = 0;
+            wbuf[5] = 0;
+            wbuf[6] = 0x00;
+            for(loop = 1;loop < 6;loop ++)
+            {
+                wbuf[6] ^= wbuf[loop]; // end byte
+            }
+            for(loop = 0;loop < 3;loop ++)
+            {
+                WriteComPort(wbuf,7);
+                usleep(1000000);
+            }
+        }
 #if 1    
         /* transfer ota datas ... */
         for(loop = 0;loop < pkgnum;loop ++)
@@ -159,7 +198,9 @@ void ota_thread(void)
             wbuf[6] ^= wbuf[loop]; // end byte
         }
         WriteComPort(wbuf,7);
-        
+        printf("[OTA]:wait for caculate crc\r\n");
+        usleep(45000000); 
+        printf("[OTA]:update over\r\n");
         sem_post(&ota_over);
     }
 }
