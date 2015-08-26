@@ -398,6 +398,7 @@ void event_report(unsigned short netaddr,unsigned char event)
         {
             need_to_send_to_sever = 1;
             p->state = parking_state_booked_coming_unlock;
+            p->time = time_in_second; // second
         }
         if(p->state == parking_state_have_paid || p->state == parking_state_have_paid_unlock_failed)
         {
