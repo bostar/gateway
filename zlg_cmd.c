@@ -72,7 +72,7 @@ void read_local_cfg(void)
         usleep(100000);
         len = ReadComPort(rbuf,255);
         printf("device response data length is %d\r\n",len);
-    }while(len < 65);
+    }while(len < 74);
     
     memcpy(&stDevInfo,&rbuf[4],65);
     
@@ -165,6 +165,7 @@ void read_local_cfg(void)
         printf("unknown\r\n");
         break;
     }
+    printf("firmware version is:0x%04x\r\n",(unsigned short)rbuf[72] << 8 | rbuf[73]);
 	printf("----------end-of-device-info--------------\r\n");
     //printf("write local cfg\r\n");
     //write_local_cfg();
@@ -458,6 +459,7 @@ void get_remote_info(unsigned short DstAddr)
         printf("unknown\r\n");
         break;
     }
+    printf("firmware version is:0x%04x\r\n",(unsigned short)rbuf[72] << 8 | rbuf[73]);
 	printf("-------end-of-remote-device-info-------\r\n");
 	
 }
