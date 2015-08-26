@@ -305,7 +305,7 @@ void event_report(unsigned short netaddr,unsigned char event)
         else if(p->state == parking_state_booked_coming_unlock)
         {
             need_to_send_to_sever = 1;
-            p->state = parking_state_idle;
+            p->state = parking_state_prestop;
             p->time = time_in_second;
         }
         else
