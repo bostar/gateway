@@ -2,7 +2,18 @@
 #define __XBEE_AT_CMD_H__
 #include "xbee_vari_type.h"
 
-
+typedef enum
+{
+    at_command_response         =   0x88,
+    modem_status                =   0x8a,
+    transmit_status             =   0x8b,
+    receive_packet              =   0x90,
+    route_record_indicator      =   0xa1,
+    mto_route_request_indcator  =   0xa3,
+    remoto_command_response     =   0x97,
+    node_identification         =   0x95,
+    explicit_rx_indeicator      =   0x91
+}APIFrameType;
 
 typedef enum
 {
@@ -107,27 +118,29 @@ typedef enum
 
 
 int16 XBeeSetIO(XBeeIOParam ioparam,IOStatus state);	//配置IO口
-int16 XBeeScanParam(ATCommandType AtCmd);  //发送读取xbee参数指令
 uint8 XBeeApiChecksum(uint8 *begin,uint16 length);  //求checksum
-int16 XBeeSendATCmd(int8* atcmd,uint8* pparam,uint8 len,uint8 IsRes);   //发送zt指令
+int16 XBeeSendATCmd(int8* atcmd,uint8* pparam,uint8 len,uint8 IsRes);   //发送at指令
 int16 XBeeSetPanID(uint8 IsRes);   //设置ID的值
-int16 XBeeReadPanID(uint8 IsRes);  //读取ID
 int16 XBeeSetChannel(uint8 IsRes); //设置信道
 int16 XbeeFR(uint8 IsRes);  //
-int16 XBeeReadAI(uint8 IsRes);
 int16 XBeeSendWR(uint8 IsRes);
 int16 XBeeSendMY(uint8 IsRes);
 int16 XBeeReadCH(uint8 IsRes);
 int16 XbeeSendAC(uint8 IsRes);  
 int16 XBeeSendNC(uint8 IsRes); 
-int16 XBeeSetZS(uint8 IsRes);    
-int16 XBeeSendSH();
-int16 XBeeSendSL();    
-int16 XBeeSetNJ(uint8 time,uint8 IsRes);             
+int16 XBeeSetZS(uint8 data,uint8 IsRes);   
+int16 XBeeSetNJ(uint8 time,uint8 IsRes);  //实际时间=time * 1s               
 int16 XBeeSetLT(uint8 time,uint8 IsRes);
-uint16 XBeeSetSP(uint16 num,IsResp IsRes);
-uint16 XBeeSetSN(uint16 num,IsResp IsRes);
-uint16 XBeeSetST(uint16 num,IsResp IsRes);
+int16 XBeeSetSP(uint16 num,IsResp IsRes);
+int16 XBeeSetSN(uint16 num,IsResp IsRes);
+int16 XBeeSetST(uint16 num,IsResp IsRes);
+
+int16 XBeeReadNJ(void);
+int16 XBeeReadSH(void);
+int16 XBeeReadSL(void); 
+int16 XBeeReadAI(void);
+int16 XBeeReadPanID(void);  //读取ID
+int16 XBeeReadAT(int8 *at_cmd);  //发送读取xbee参数指令
 
 int16 XBeeTransReq(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,uint16 len,IsResp IsRes); //xbee发送数据请求
 int16 XBeeBoardcastTrans(uint8 *data,uint16 len,IsResp IsRes);  
