@@ -18,6 +18,7 @@
 #define ttyO4  4
 #define ttyO5  5
 
+static unsigned char wbuf[100],rbuf[255];
 const unsigned short broadcastAddr = 0xffff;
 
 void write_local_cfg(void);
@@ -49,11 +50,11 @@ void init_zlg_zm516x(void)
     sleep_zm516x(0);
     read_local_cfg();
     write_local_cfg();    
+	set_temporary_cast_mode(broadcast);
 }
 
 void read_local_cfg(void)
 {
-    unsigned char wbuf[255],rbuf[255];
     int len = 0;
     
     char str1[33];
@@ -253,7 +254,6 @@ void send_data_to_remote_node(unsigned char *destAddr,unsigned char *data,int le
 void set_channel_nv(unsigned char nv)
 {
     unsigned char i,sum = 0;  
-    unsigned char wbuf[6],rbuf[5];
     unsigned char rlen = 0;
     wbuf[0] = 0xab;
     wbuf[1] = 0xbc;
@@ -287,7 +287,6 @@ void set_channel_nv(unsigned char nv)
 void search_node(void)
 {
     unsigned char i, sum = 0;
-    unsigned char wbuf[5],rbuf[13];
     unsigned char rlen = 0;
     //char inputbuf[2];
     wbuf[0] = 0xab;
@@ -335,7 +334,6 @@ void search_node(void)
 void get_remote_info(unsigned short DstAddr)
 {
     unsigned char i,sum = 0;
-    unsigned char wbuf[7],rbuf[74];
     unsigned char rlen = 0;
 	
     char str1[33];
@@ -467,7 +465,6 @@ void get_remote_info(unsigned short DstAddr)
 void write_remote_cfg(unsigned short DstAddr, dev_info_t *DevInfo )
 {
     unsigned char i,sum = 0;
-    unsigned char wbuf[72],rbuf[7];
     unsigned char rlen = 0;
 	
     wbuf[0] = 0xab;
@@ -506,7 +503,6 @@ void write_remote_cfg(unsigned short DstAddr, dev_info_t *DevInfo )
 void reset_node(unsigned short DstAddr)
 {
     unsigned char i, sum = 0;
-    unsigned char wbuf[9];
 	
     wbuf[0] = 0xab;
     wbuf[1] = 0xbc;
@@ -527,7 +523,6 @@ void reset_node(unsigned short DstAddr)
 void restore_factory_settings(unsigned short DstAddr)
 {
     unsigned char i, sum = 0;
-    unsigned char wbuf[9];
 	
     wbuf[0] = 0xab;
     wbuf[1] = 0xbc;
@@ -547,7 +542,6 @@ void restore_factory_settings(unsigned short DstAddr)
 
 void set_temporary_channel(unsigned char channel)
 {
-	unsigned char wbuf[5],rbuf[5];
 	unsigned char rlen = 0;
 	wbuf[0] = 0xde;
 	wbuf[1] = 0xdf;
@@ -577,7 +571,6 @@ void set_temporary_channel(unsigned char channel)
 
 void set_temporary_DestAddr(unsigned short DestAddr)
 {
-	unsigned char wbuf[6],rbuf[5];
 	unsigned char rlen = 0;
 	static unsigned char lastDestAddr = 0x00;
 	
@@ -616,7 +609,6 @@ void set_temporary_DestAddr(unsigned short DestAddr)
 
 void set_temporary_ShowSrcAddr(showSrcAddr_cmd_t cmd)
 {
-	unsigned char wbuf[5],rbuf[5];
 	unsigned char rlen = 0;
 	
 	wbuf[0] = 0xde;
@@ -658,7 +650,6 @@ void set_temporary_ShowSrcAddr(showSrcAddr_cmd_t cmd)
 
 void set_temporary_io_dir(unsigned short DstAddr,unsigned char IO_Dir)
 {
-	unsigned char wbuf[7],rbuf[7];
 	unsigned char rlen = 0;
 	
 	wbuf[0] = 0xde;
@@ -694,7 +685,6 @@ void set_temporary_io_dir(unsigned short DstAddr,unsigned char IO_Dir)
 
 unsigned char read_temporary_io_level(unsigned short DstAddr)
 {
-	unsigned char wbuf[6],rbuf[7];
 	unsigned char rlen = 0;
 	
 	wbuf[0] = 0xde;
@@ -725,7 +715,6 @@ unsigned char read_temporary_io_level(unsigned short DstAddr)
 
 void set_temporary_io_level(unsigned short DstAddr,unsigned char IO_Level)
 {
-	unsigned char wbuf[7],rbuf[7];
 	unsigned char rlen = 0;
 	
 	wbuf[0] = 0xde;
@@ -759,7 +748,6 @@ void set_temporary_io_level(unsigned short DstAddr,unsigned char IO_Level)
 
 unsigned short read_temporary_adc_value(unsigned short DstAddr)
 {
-	unsigned char wbuf[7],rbuf[8];
 	unsigned char rlen = 0;
 	
 	wbuf[0] = 0xde;
@@ -790,8 +778,6 @@ unsigned short read_temporary_adc_value(unsigned short DstAddr)
 
 void enter_sleep_mode(void)
 {
-	unsigned char wbuf[5];
-	
 	wbuf[0] = 0xde;
 	wbuf[1] = 0xdf;
 	wbuf[2] = 0xef;
@@ -803,7 +789,6 @@ void enter_sleep_mode(void)
 
 void set_temporary_cast_mode(cast_mode_t mode)
 {
-	unsigned char wbuf[5],rbuf[5];
 	unsigned char rlen = 0;
 	static unsigned char mode_last = 0xff;
 
@@ -850,7 +835,6 @@ void set_temporary_cast_mode(cast_mode_t mode)
 
 unsigned char read_temporary_node_rssi(unsigned short DstAddr)
 {
-	unsigned char wbuf[6],rbuf[5];
 	unsigned char rlen = 0;
 	
 	wbuf[0] = 0xde;
