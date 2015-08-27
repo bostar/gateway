@@ -359,6 +359,11 @@ void event_report(unsigned short netaddr,unsigned char event)
             need_to_send_to_sever = 1;
             p->state = parking_state_stop_lock;
         }
+        if(p->state == parking_state_stop_lock_failed)
+        {
+            need_to_send_to_sever = 1;
+            p->state = parking_state_stop_lock;
+        }
         if(p->state == parking_state_booking || p->state == parking_state_booking_lock_failed)
         {
             need_to_send_to_sever = 1;
