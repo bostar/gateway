@@ -331,6 +331,13 @@ void event_report(unsigned short netaddr,unsigned char event)
             putCtlCmd(p->parking_id,en_order_unlock);
             //p->time = time_in_second; // second
         }
+        if(p->state == parking_state_have_paid_relock_failed)
+        {
+            need_to_send_to_sever = 1;
+            p->state = parking_state_idle;
+            putCtlCmd(p->parking_id,en_order_unlock);
+            //p->time = time_in_second; // second
+        }
         if(p->state == parking_state_have_paid)
         {
             need_to_send_to_sever = 1;
