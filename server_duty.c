@@ -6,6 +6,7 @@
 #include <sys/timeb.h>
 #include <pthread.h>
 #include "zlg_protocol.h"
+#include <time.h>
 #include "parking_state_management.h"
 static const unsigned char mac_addr[8] = {0xf1,0xf2,0xf3,0xf4,0xf5,0xf6,0xf7,0xf8};
 unsigned short freetime = 1;
@@ -39,6 +40,7 @@ void server_duty_thread(void)
     int len;
     int loop = 0;
     struct timeb tp;
+    time_t time_out = time((time_t*)NULL);
     int ret;
     pthread_t id;
     //static unsigned char ctl;
@@ -113,8 +115,9 @@ time:
 
     while(1)
     {
-        if(need_to_send_to_sever == 1)
+        if((need_to_send_to_sever == 1) || (time((time_t*)NULL) - time_out > 2))
         {
+            time_out = time((time_t*)NULL);
             //usleep(2000000);
             /* send all parking info */
             memcpy(wbuf,"data",4); // pkg head
