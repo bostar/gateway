@@ -644,6 +644,13 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
     printf("==========0x%04x,state is 0x%02x\r\n",parking_id,state); 
     switch(state)
     {
+        case parking_state_idle:
+            if(p->state == parking_state_booking_lock_failed)
+            {
+                p->state = parking_state_idle;
+                putCtlCmd(parking_id,en_order_unlock);
+            }
+            break;
         case parking_state_booking:
             if(p->state == parking_state_idle)
             {
