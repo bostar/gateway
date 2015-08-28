@@ -134,19 +134,56 @@ time:
             }
             need_to_send_to_sever = 0;
         }
-        len = tcp_listen(rbuf,sizeof(rbuf));
+        memset(rbuf,0,255);
+        len = tcp_listen(rbuf,4);
         if(len <= 0)
         {
+            usleep(2000);
             continue;
         }
-        if(memcmp("TALL",rbuf,4) != 0)
+        if(memcmp("TALL",rbuf,4) == 0)
         {
-            printf("[SERVER]cmd err\r\n");
-            continue;
+            printf("[SERVER]TALL cmd\r\n");
+            len = tcp_listen(&rbuf[4],16 + get_depot_size() - 4);
+            for(loop = 0;loop < get_depot_size();loop ++)
+            {
+                set_parking_state(loop + 1,rbuf[16 + loop]);
+            }
         }
-        for(loop = 0;loop < get_depot_size();loop ++)
+        else if(memcmp("SIZE",rbuf,4) == 0)
         {
-            set_parking_state(loop + 1,rbuf[16 + loop]);
+            printf("[SERVER]SIZE cmd\r\n");
+            len = tcp_listen(&rbuf[4],15 - 4);
+            swap(4,&rbuf[4]);
+            swap(4,&rbuf[8]);
+            swap(4,&rbuf[14]);
+            set_depot_info(*(int *)(&rbuf[4]),*(int *)(&rbuf[8]),rbuf[12],*(int *)(&rbuf[14]));
+        }
+        else if(memcmp("DOWN",rbuf,4) == 0)
+        {
+            printf("[SERVER]DOWN cmd\r\n");
+            len = tcp_listen(&rbuf[4],8 + get_depot_size() * 10 - 4);
+            for(loop = 0;loop < get_depot_size();loop ++)
+            {
+                swap(2,&rbuf[8 + loop * 2 + loop * 8]);
+                parking_id_macaddr_mapping(*(unsigned short *)&rbuf[8 + loop * 2 + loop * 8],
+                                           &rbuf[8 + 2 + loop * 2 + loop * 8]);
+
+            }
+
+        }
+        else if(memcmp("TIME",rbuf,4) == 0)
+        {
+            printf("[SERVER]TIME cmd\r\n");
+            len = tcp_listen(&rbuf[4],6);
+            swap(2,&rbuf[8]);
+            freetime = *(unsigned short*)&rbuf[8];
+            printf("[SERVER]free time is %d minute\r\n",freetime);
+
+        }
+        else
+        {
+            printf("[SERVER]unknown cmd\r\n");
         }
     }
 }
