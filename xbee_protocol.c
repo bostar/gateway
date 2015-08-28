@@ -56,7 +56,6 @@ void XBeeProcessCFG(uint8 *rbuf)
 				XBeeJionEnable((rbuf+4),(rbuf+12)); //
 				printf("\033[33m\033[1m已发送允许入网指令 \033[0m \n");	
 				set_node_online(rbuf+4);
-				printf("\033[33m\033[1m0x%02x %02x \033[0m \n",*(rbuf+12),*(rbuf+13));
 				printf("\033[33m\033[1m已将锁加入网络 \033[0m \n");	
 				//XBeeSendTimeout(0xc8); //限时加入网络2m
 				//XBeeSendSenserInit((rbuf+4),(rbuf+12)); 

@@ -100,8 +100,59 @@ int16 XBeeTransReq(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,u
 #endif
   	return WriteComPort((uint8*)frame,18+len);
 }
-
-
+/*********************************************************
+**brief 发送源路由请求
+**param mac_adr 目标的物理地址
+		net_adr 目标网络地址 比如 0xEEFF 对应网络地址 0xEE 0xFF
+		num 目标与发送者间的节点数量
+		... 中间节点的网络地址  顺序从目标到发送者排列
+			比如 从发送者A到目标E的节点顺序为 A B C D E
+			中间节点的网络地址	B	0xAABB
+							C	0xCCDD
+							D	0xEEFF
+			输入参数的排列顺序为	EEFF CCDD AABB  
+*********************************************************/
+int16 XBeeCreatSourceRout(uint8 *mac_adr,uint16 net_adr,uint16 num,...)
+{
+	static uint8 wbuf_temp[128],wbuf_len=0,i=0;
+	uint16 lenth=0;
+	va_list arg_ptr; 
+	uint16 nArgValue = num;
+    uint8 nArgCout=0;   		//可变参数的数目
+	
+	wbuf_len = 18 + num*2;
+	lenth = wbuf_len - 4;
+	*(wbuf_temp) = 0x7E;		
+	*(wbuf_temp + 1) = (uint8)(lenth >> 8);
+	*(wbuf_temp + 2) = (uint8)lenth;
+	*(wbuf_temp + 3) = 0x21;
+	*(wbuf_temp + 4) = 0;
+	for(i=0;i<8;i++)
+		*(wbuf_temp + i +5) = *(mac_adr+i);
+	*(wbuf_temp + 13) = (uint8)(net_adr >> 8);
+	*(wbuf_temp + 14) = (uint8)net_adr;
+	*(wbuf_temp + 15) = 0;
+	*(wbuf_temp + 16) = num;
+    va_start(arg_ptr,num);   	//以固定参数的地址为起点确定变参的内存起始地址。
+    do 
+	{
+		++nArgCout;
+        nArgValue = (uint16)va_arg(arg_ptr,int);   //得到下一个可变参数的值
+		*(wbuf_temp + 15 + nArgCout*2) = (uint8)(nArgValue >> 8);
+		*(wbuf_temp + 16 + nArgCout*2) = (uint8)nArgValue;		
+	} while(nArgCout < num);   
+	*(wbuf_temp + wbuf_len-1) = 0;
+	for(i=3;i<wbuf_len-1;i++)
+		*(wbuf_temp + wbuf_len-1) += *(wbuf_temp + i);
+	*(wbuf_temp + wbuf_len-1) = 0xff - *(wbuf_temp + wbuf_len-1);
+#if 0
+	printf("\n"); 
+	for(i=0;i<wbuf_len;i++)
+		printf("\033[33m0x%02x \033[0m",*(wbuf_temp+i));
+	printf("\n"); 
+#endif
+	return WriteComPort(wbuf_temp,wbuf_len);
+}
 
 /*********************************************************
 **biref 设置ID的值
@@ -292,6 +343,16 @@ int16 XBeeSetST(uint16 time,IsResp IsRes)
   paramer[0]=(uint8)(time>>8);
   paramer[1]=(uint8)time;
   return XBeeSendATCmd(cmd,paramer,2,IsRes);
+}
+/*********************************************************
+**brief 设置AR
+*********************************************************/
+int16 XBeeSetAR(uint8 data,IsResp IsRes)
+{
+	uint8 paramer[2];
+	int8 *cmd = "AR";
+  	paramer[0]=data;
+  	return XBeeSendATCmd(cmd,paramer,1,IsRes);
 }
 /*********************************************************
 **biref 发送读取SM命令

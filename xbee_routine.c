@@ -7,7 +7,6 @@
 #include "xbee_routine.h"
 #include <pthread.h>
 
-#define _cycle
 
 uint8 rbuf[255];
 int16 len;
@@ -17,7 +16,7 @@ static uint8 NetState=0;
 void TestPrintf(int8* sss,int16 lens,uint8 *buf)
 {
    	int loop=0;
-	printf("\033[34m\033[1m数据序列--%s:数据长度--%d; 数据内容:\033[0m\n",sss,lens);
+	printf("\033[34m数据序列--%s:数据长度--%d; 数据内容:\033[0m\n",sss,lens);
 	for( loop = 0;loop < lens;loop ++)
 		printf("0x%02x ",buf[loop]);
 	printf("\n");
@@ -25,10 +24,8 @@ void TestPrintf(int8* sss,int16 lens,uint8 *buf)
 
 void xbee_routine_thread(void)
 {
-    //int loop = 0;
     xbee_gpio_init();
-    xbee_serial_port_init();	
-#if 1  
+    xbee_serial_port_init();	 
 	if(NetState != IN_NET)   //创建网络
 	{
 		XBeeCreateNet();
@@ -49,22 +46,18 @@ void xbee_routine_thread(void)
 		XBeeSetSP(100,NO_RES);
 		NetState = IN_NET;
 		printf("\n\033[33m组建网络完成！\033[0m\n");
-	}
-#endif		
-#if defined _cycle 
+	}	
     while(1)
-    {
-#endif	
+    {	
 		static uint16 IdleCnt=0;
 		IdleCnt++;
 		printf("\033[36m调用次数%d\033[0m\n",IdleCnt);
 		len = UartRevDataProcess(rbuf);  
 		if(len)
 		{
-			printf("\033[34m\033[1m收到数据: \033[0m");	
+			printf("\033[34m收到数据: \033[0m");	
 			TestPrintf("1",len,rbuf);
 		}
-#if 1
 		if(len)
 		{
 			switch(rbuf[3])
@@ -79,9 +72,6 @@ void xbee_routine_thread(void)
 					if(rbuf[15]=='O' && rbuf[16]=='T' && rbuf[17]=='A')
 					{}
 					break;
-				case route_record_indicator:
-					
-					break;
 				case at_command_response:
 					if(rbuf[5]=='N' && rbuf[6]=='J')
         			{}
@@ -94,26 +84,43 @@ void xbee_routine_thread(void)
 					break;
 				case transmit_status:
 					break;
+				case route_record_indicator:
+					
+					break;
 				case modem_status:
 					break;
 				default:
 					break;
 			}
 			len = 0;
-		}  
-#endif
-#if 0
-		XBeeReadAT("NJ");
-		usleep(1000000);
-#endif	
-		if(len>0)
-			printf("**********the end**********\n");		
-#if defined _cycle
+		}  	
     }
-#endif
 }
 
+void xbee_routine_thread_test(void)
+{
+	xbee_gpio_init();
+    xbee_serial_port_init();
 
+	while(1)
+	{
+		static uint16 IdleCnt=0;
+		IdleCnt++;
+		printf("\033[36m调用次数%d\033[0m\n",IdleCnt);
+		len = UartRevDataProcess(rbuf);  
+		if(len)
+		{
+			printf("\033[34m收到数据: \033[0m");	
+			TestPrintf("1",len,rbuf);
+		}
+		if(IdleCnt%10 == 0 || IdleCnt == 1)
+		{
+			XBeeReadAT("ND");		
+			XBeeReadAT("NC");
+			XBeeSetAR(10,NO_RES);
+		}	
+	}
+}
 
 
 

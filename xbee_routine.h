@@ -24,5 +24,6 @@ extern uint8 rbuf[];
 
 
 void xbee_routine_thread(void);
+void xbee_routine_thread_test(void);
 
 #endif

@@ -14,9 +14,10 @@
 #define LEN	1000
 
 //#define __USE_ZM516X__
-#define __USE_XBEE__
+//#define __USE_XBEE__
+#define __XBEE_TEST__
 
-#if !defined(__USE_ZM516X__) && !defined(__USE_XBEE__)
+#if !defined(__USE_ZM516X__) && !defined(__USE_XBEE__) && !defined(__XBEE_TEST__)
 #define __USE_ZM516X__
 #endif
 
@@ -81,7 +82,13 @@ int main(int argc, char *argv[])
         printf ("Create xbee_routine_thread error!n");
     }
 #endif
-
+#if defined __XBEE_TEST__
+	printf("\033[33mstart xbee_routine_thread_test...\033[0m\r\n");
+    ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_test,NULL);
+    if(ret!=0){
+        printf ("Create xbee_routine_thread error!n");
+    }
+#endif
     while(1)
     {
         usleep(10000);

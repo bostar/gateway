@@ -1,6 +1,7 @@
 #ifndef __XBEE_AT_CMD_H__
 #define __XBEE_AT_CMD_H__
 #include "xbee_vari_type.h"
+#include "stdarg.h"
 
 typedef enum
 {
@@ -134,6 +135,7 @@ int16 XBeeSetLT(uint8 time,uint8 IsRes);
 int16 XBeeSetSP(uint16 num,IsResp IsRes);
 int16 XBeeSetSN(uint16 num,IsResp IsRes);
 int16 XBeeSetST(uint16 num,IsResp IsRes);
+int16 XBeeSetAR(uint8 data,IsResp IsRes);
 
 int16 XBeeReadNJ(void);
 int16 XBeeReadSH(void);
@@ -145,7 +147,7 @@ int16 XBeeReadAT(int8 *at_cmd);  //发送读取xbee参数指令
 int16 XBeeTransReq(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,uint16 len,IsResp IsRes); //xbee发送数据请求
 int16 XBeeBoardcastTrans(uint8 *data,uint16 len,IsResp IsRes);  
 int16 XBeeUnicastTrans(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,uint16 len,IsResp IsRes);
-
+int16 XBeeCreatSourceRout(uint8 *mac_adr,uint16 net_adr,uint16 num,...);
 
 
 
