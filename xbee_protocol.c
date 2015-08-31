@@ -12,6 +12,10 @@
 #include <limits.h>
 #include "serial.h"
 #include "server_duty.h"
+#include "xbee_api.h"
+#include "xbee_atcmd.h"
+#include "xbee_bsp.h"
+#include "xbee_routine.h"
 
 /******************************************************
 **uart接收校验
@@ -144,6 +148,39 @@ void XBeeProcessSEN(uint8 *rbuf)
 	return;
 }
 /*************************************************
+**brief 记录route路径
+*************************************************/
+void XBeeProcessRoutRcord(uint8 *rbuf)
+{
+	uint16 target_adr=0;
+	uint8 i;
+	SourceRouterLinkType *p,*pS;
+	target_adr |= (uint16)*(rbuf+13);
+	target_adr |= (((uint16)*(rbuf+12)) << 8);
+	pS = CreatRouterLink(target_adr,(rbuf+16),*(rbuf+15));
+	p = FindData(pLinkHead,target_adr);
+	if(p == NULL)
+	{
+		printf("\033[33m增加节点\033[0m\n");
+		AddData(pLinkHead,pS);
+		return ;
+	}
+	i = compareNode(p,pS);
+	if(i == 0)
+	{
+		DeleteNode(pLinkHead,pS);
+		return;
+	}	
+	else if(i == 1)
+	{
+		printf("\033[33m删除节点\033[0m\n");
+		DeleteNode(pLinkHead,p);
+		printf("\033[33m增加节点\033[0m\n");
+		AddData(pLinkHead,pS);
+	}
+	return;
+}
+/*************************************************
 **向router发送限时加入网络命令
 *************************************************/
 int16 XBeeSendTimeout(uint8 time)
@@ -163,11 +200,20 @@ int16 XBeeSendTimeout(uint8 time)
 int16 XBeeJionEnable(uint8 *ieeeadr,uint8 *netadr)
 {
 	uint8 data[5];
+	uint16 target_adr;
+	SourceRouterLinkType *p;
+	
+	target_adr |= (uint16)*(netadr+1);
+	target_adr |= (((uint16)*(netadr+0)) << 8);
 	data[0]  =  'C';
 	data[1]  =  'F';
 	data[2]  =  'G';
 	data[3]  =  0x02;
 	data[4]  =  0x01;
+	p = FindData(pLinkHead,target_adr);
+	if(p == NULL)
+		return 0;
+	XBeeCreatSourceRout(ieeeadr,target_adr,p->num_mid_adr,p->mid_adr);
 	return XBeeTransReq(ieeeadr,netadr,Default,data,5,RES);
 }
 /**************************************************

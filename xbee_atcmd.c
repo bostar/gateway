@@ -105,20 +105,18 @@ int16 XBeeTransReq(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,u
 **param mac_adr 目标的物理地址
 		net_adr 目标网络地址 比如 0xEEFF 对应网络地址 0xEE 0xFF
 		num 目标与发送者间的节点数量
-		... 中间节点的网络地址  顺序从目标到发送者排列
+		mid_adr 指向中间节点网络地址的指针 
 			比如 从发送者A到目标E的节点顺序为 A B C D E
 			中间节点的网络地址	B	0xAABB
 							C	0xCCDD
 							D	0xEEFF
-			输入参数的排列顺序为	EEFF CCDD AABB  
+			输入参数的排列顺序为	EE FF CC DD AA BB  
 *********************************************************/
-int16 XBeeCreatSourceRout(uint8 *mac_adr,uint16 net_adr,uint16 num,...)
+int16 XBeeCreatSourceRout(uint8 *mac_adr,uint16 net_adr,uint16 num,uint8 *mid_adr)
 {
 	static uint8 wbuf_temp[128],wbuf_len=0,i=0;
 	uint16 lenth=0;
-	va_list arg_ptr; 
 	uint16 nArgValue = num;
-    uint8 nArgCout=0;   		//可变参数的数目
 	
 	wbuf_len = 18 + num*2;
 	lenth = wbuf_len - 4;
@@ -132,15 +130,9 @@ int16 XBeeCreatSourceRout(uint8 *mac_adr,uint16 net_adr,uint16 num,...)
 	*(wbuf_temp + 13) = (uint8)(net_adr >> 8);
 	*(wbuf_temp + 14) = (uint8)net_adr;
 	*(wbuf_temp + 15) = 0;
-	*(wbuf_temp + 16) = num;
-    va_start(arg_ptr,num);   	//以固定参数的地址为起点确定变参的内存起始地址。
-    do 
-	{
-		++nArgCout;
-        nArgValue = (uint16)va_arg(arg_ptr,int);   //得到下一个可变参数的值
-		*(wbuf_temp + 15 + nArgCout*2) = (uint8)(nArgValue >> 8);
-		*(wbuf_temp + 16 + nArgCout*2) = (uint8)nArgValue;		
-	} while(nArgCout < num);   
+	*(wbuf_temp + 16) = num;  	
+	for(i=0;i<num*2;i++)
+		 *(wbuf_temp + 17 + i) = *(mid_adr + i);
 	*(wbuf_temp + wbuf_len-1) = 0;
 	for(i=3;i<wbuf_len-1;i++)
 		*(wbuf_temp + wbuf_len-1) += *(wbuf_temp + i);

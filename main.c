@@ -11,11 +11,12 @@
 #include "zlg_protocol.h"
 #include "xbee_routine.h"
 #include <sys/timeb.h>
+#include "xbee_api.h"
 #define LEN	1000
 
 //#define __USE_ZM516X__
-//#define __USE_XBEE__
-#define __XBEE_TEST__
+#define __USE_XBEE__
+//#define __XBEE_TEST__
 
 #if !defined(__USE_ZM516X__) && !defined(__USE_XBEE__) && !defined(__XBEE_TEST__)
 #define __USE_ZM516X__
@@ -27,8 +28,7 @@ void test_cmd_thread(void)
 {
     int ret,ret2;
     pthread_t id,id2;
-	
-	
+
     ret=pthread_create(&id,NULL,(void *) menu_thread, NULL);
     if(ret!=0){
         printf ("Create menu_thread error!n");
@@ -64,6 +64,7 @@ int main(int argc, char *argv[])
 {
     int ret=0;
     pthread_t id;
+
     ret=pthread_create(&id,NULL,(void *) server_duty_thread,NULL);
     if(ret!=0){
         printf ("Create server_duty_thread error!n");

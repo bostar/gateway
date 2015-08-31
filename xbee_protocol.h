@@ -4,9 +4,8 @@
 #include "xbee_vari_type.h"
 #include <unistd.h>
 #include <stdio.h>
-#include "xbee_atcmd.h"
-#include "xbee_bsp.h"
-#include "xbee_routine.h"
+
+
 
 typedef enum
 {
@@ -45,6 +44,7 @@ int16 XBeeJionDisable(uint8 *ieeeadr,uint8 *netadr);
 void XBeeProcessCFG(uint8 *rbuf);
 void XBeeProcessCTL(uint8 *rbuf);
 void XBeeProcessSEN(uint8 *rbuf);
+void XBeeProcessRoutRcord(uint8 *rbuf);
 int16 XBeeSendSenserInit(uint8 *ieeeadr,uint8 *net_adr);
 int16 XBeeEndDeviceLock(uint8 *ieeeadr,uint8 *netadr);
 int16 XBeeEndDeviceUnlock(uint8 *ieeeadr,uint8 *netadr);

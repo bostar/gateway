@@ -1,7 +1,7 @@
 #ifndef __XBEE_ROUTINE_H__
 #define __XBEE_ROUTINE_H__
 #include "xbee_vari_type.h"
-
+#include "xbee_api.h"
 
 #define NO_NET        1
 #define IN_NET        2
@@ -14,8 +14,8 @@ typedef enum
 }CREprotocolType;
 
 
-
-
+extern SourceRouterLinkType *pLinkHead;
+extern uint8 *HeadMidAdr;
 
 
 extern uint8 rbuf[];
