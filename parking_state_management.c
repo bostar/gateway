@@ -307,7 +307,7 @@ void event_report(unsigned short netaddr,unsigned char event)
         else if(p->state == parking_state_booked_coming_unlock)
         {
             need_to_send_to_sever = 1;
-            p->state = parking_state_idle;
+            p->state = parking_state_prestop;
             p->time = time_in_second;
         }
         else
@@ -326,12 +326,20 @@ void event_report(unsigned short netaddr,unsigned char event)
             need_to_send_to_sever = 1;
             p->state = parking_state_idle;
         }
-        /*if(p->state == parking_state_have_paid)
+        if(p->state == parking_state_have_paid_relock)
         {
             need_to_send_to_sever = 1;
-            p->state = parking_state_prestop;
-            p->time = time_in_second; // second
-        }*/
+            p->state = parking_state_idle;
+            XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_unlock);
+            //p->time = time_in_second; // second
+        }
+        if(p->state == parking_state_have_paid_relock_failed)
+        {
+            need_to_send_to_sever = 1;
+            p->state = parking_state_idle;
+            XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_unlock);
+            //p->time = time_in_second; // second
+        }
         if(p->state == parking_state_have_paid)
         {
             need_to_send_to_sever = 1;
@@ -353,7 +361,12 @@ void event_report(unsigned short netaddr,unsigned char event)
             need_to_send_to_sever = 1;
             p->state = parking_state_stop_lock;
         }
-        if(p->state == parking_state_booking)
+        if(p->state == parking_state_stop_lock_failed)
+        {
+            need_to_send_to_sever = 1;
+            p->state = parking_state_stop_lock;
+        }
+        if(p->state == parking_state_booking || p->state == parking_state_booking_lock_failed)
         {
             need_to_send_to_sever = 1;
             p->state = parking_state_booking_lock;
@@ -379,36 +392,40 @@ void event_report(unsigned short netaddr,unsigned char event)
         {
             need_to_send_to_sever = 1;
             p->state = parking_state_stop_lock_failed;
+            p->time = time_in_second; // second
         }
         if(p->state == parking_state_booking)
         {
             need_to_send_to_sever = 1;
             p->state = parking_state_booking_lock_failed;
+            p->time = time_in_second; // second
         }
         if(p->state == parking_state_have_paid_relock)
         {
             need_to_send_to_sever = 1;
             p->state = parking_state_have_paid_relock_failed;
+            p->time = time_in_second; // second
         }
         if(p->state == parking_state_have_paid_relock_failed)
         {
-
+            p->time = time_in_second; // second
         }
         break;
         case en_unlock_success:
-        if(p->state == parking_state_booked_coming)
+        if(p->state == parking_state_booked_coming || p->state == parking_state_booked_coming_unlock_failed)
         {
             need_to_send_to_sever = 1;
             p->state = parking_state_booked_coming_unlock;
+            p->time = time_in_second; // second
         }
-        if(p->state == parking_state_have_paid)
+        if(p->state == parking_state_have_paid || p->state == parking_state_have_paid_unlock_failed)
         {
             need_to_send_to_sever = 1;
             p->state = parking_state_have_paid_unlock;
             p->time = time_in_second; // second
             
         }
-        if(p->state == parking_state_unbooking)
+        if(p->state == parking_state_unbooking || p->state == parking_state_unbooking_unlock_failed)
         {
             need_to_send_to_sever = 1;
             p->state = parking_state_idle;
@@ -419,16 +436,19 @@ void event_report(unsigned short netaddr,unsigned char event)
         if(p->state == parking_state_booked_coming)
         {
             need_to_send_to_sever = 1;
+            p->time = time_in_second; // second
             p->state = parking_state_booked_coming_unlock_failed;
         }
         if(p->state == parking_state_have_paid)
         {
             need_to_send_to_sever = 1;
+            p->time = time_in_second; // second
             p->state = parking_state_have_paid_unlock_failed;
         }
         if(p->state == parking_state_unbooking)
         {
             need_to_send_to_sever = 1;
+            p->time = time_in_second; // second
             p->state = parking_state_unbooking_unlock_failed;
         }
         break;
@@ -647,6 +667,13 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
     printf("==========0x%04x,state is 0x%02x\r\n",parking_id,state); 
     switch(state)
     {
+        case parking_state_idle:
+            if(p->state == parking_state_booking_lock_failed)
+            {
+                p->state = parking_state_idle;
+                XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_unlock);
+            }
+            break;
         case parking_state_booking:
             if(p->state == parking_state_idle)
             {
