@@ -18,6 +18,7 @@ typedef enum{
 
 int get_local_addr(unsigned char *local_addr,unsigned char* long_addr);
 void server_duty_thread(void);
+void set_online(unsigned short netaddr);
 void set_node_online(unsigned char *macaddr);
 int networking_over(void);
 void event_report(unsigned short netaddr,unsigned char event);

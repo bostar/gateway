@@ -143,6 +143,13 @@ void parking_state_check_routin(void)
         printf("%s; ",parking_online_string[pstParkingState[loop].online]);
         printf("%s",parking_state_string[pstParkingState[loop].state]);
         printf("\r\n");
+        if(pstParkingState[loop].online == 1)
+        {
+            if((time_in_second - pstParkingState[loop].offline_time_out) > 5)
+            {
+                pstParkingState[loop].online = 0;
+            }
+        }
         switch(pstParkingState[loop].state)
         {
             case parking_state_idle: // 空闲
@@ -480,6 +487,27 @@ int networking_over(void)
     }
     pthread_mutex_unlock(&parking_info_mutex);
     return 1;
+}
+void set_online(unsigned short netaddr)
+{
+    int loop = 0;
+    pthread_mutex_lock(&parking_info_mutex);
+    if(pstParkingState == NULL)
+    {
+        pthread_mutex_unlock(&parking_info_mutex);
+        return;
+    }
+
+    for(loop = 0;loop < depot_info.depot_size;loop ++)
+    {
+        if(pstParkingState[loop].parking_id == netaddr)
+        {
+            pstParkingState[loop].online = 1;
+            pstParkingState[loop].offline_time_out = time((time_t*)NULL);
+            break;
+        }
+    }
+    pthread_mutex_unlock(&parking_info_mutex);
 }
 
 void set_node_online(unsigned char *macaddr)

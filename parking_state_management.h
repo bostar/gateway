@@ -8,6 +8,7 @@ typedef struct {
     unsigned char state;
     unsigned char online;
     time_t time;
+    time_t offline_time_out;
 }st_parkingState,*pst_parkingState;
 pst_parkingState pstParkingState;
 extern unsigned short freetime;
