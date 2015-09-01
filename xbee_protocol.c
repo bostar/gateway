@@ -54,20 +54,22 @@ void XBeeProcessCFG(uint8 *rbuf)
 	switch(*(rbuf+18))
 	{
 		case net_request:
-			temp = get_local_addr(rbuf+12,rbuf+4); //调用API 查询是否属于网络
-			if(temp == 0)	//属于该网络,允许加入网络，并设定允许加入网络时间		
-			{
-				XBeeJionEnable((rbuf+4),(rbuf+12)); //
-				printf("\033[33m\033[1m已发送允许入网指令 \033[0m \n");	
-				set_node_online(rbuf+4);
-				printf("\033[33m\033[1m已将锁加入网络 \033[0m \n");	
-				//XBeeSendTimeout(0xc8); //限时加入网络2m
-				//XBeeSendSenserInit((rbuf+4),(rbuf+12)); 
-			}	
-			else if(temp == -1)
-			{
-				XBeeJionDisable((rbuf+19),(rbuf+27));
-				printf("\033[33m\033[1m已发送拒绝入网指令 \033[0m \n");	
+			if(FindMacAdr(pLinkHead,rbuf+4) != NULL)
+			{	printf("已经找到目标地址");
+				temp = get_local_addr(rbuf+12,rbuf+4); //调用API 查询是否属于网络
+				if(temp == 0)	//属于该网络,允许加入网络
+				{
+					XBeeJionEnable((rbuf+4),(rbuf+12)); //
+					printf("\033[33m\033[1m已发送允许入网指令 \033[0m \n");	
+					set_node_online(rbuf+4);
+					printf("\033[33m\033[1m已将锁加入网络 \033[0m \n");
+				}	
+				else if(temp == -1)
+				{
+					XBeeJionDisable((rbuf+4),(rbuf+12));
+					printf("\033[33m\033[1m已发送拒绝入网指令 \033[0m \n");
+					DeleteNode(pLinkHead,FindMacAdr(pLinkHead,rbuf+4));	//删除节点	
+				}
 			}
 			break;
 		default:
@@ -153,32 +155,67 @@ void XBeeProcessSEN(uint8 *rbuf)
 void XBeeProcessRoutRcord(uint8 *rbuf)
 {
 	uint16 target_adr=0;
-	uint8 i;
 	SourceRouterLinkType *p,*pS;
 	target_adr |= (uint16)*(rbuf+13);
 	target_adr |= (((uint16)*(rbuf+12)) << 8);
-	pS = CreatRouterLink(target_adr,(rbuf+16),*(rbuf+15));
-	p = FindData(pLinkHead,target_adr);
+	pS = CreatRouterLink(rbuf+4,target_adr,(rbuf+16),*(rbuf+15));
+	p = FindMacAdr(pLinkHead,rbuf+4);
 	if(p == NULL)
 	{
-		printf("\033[33m增加节点\033[0m\n");
 		AddData(pLinkHead,pS);
 		return ;
 	}
-	i = compareNode(p,pS);
-	if(i == 0)
+	switch(compareNode(p,pS))
 	{
-		DeleteNode(pLinkHead,pS);
-		return;
-	}	
-	else if(i == 1)
-	{
-		printf("\033[33m删除节点\033[0m\n");
-		DeleteNode(pLinkHead,p);
-		printf("\033[33m增加节点\033[0m\n");
-		AddData(pLinkHead,pS);
+		case 0:
+			free(pS);
+			break;
+		case 1:
+			DeleteNode(pLinkHead,p);
+			AddData(pLinkHead,pS);
+			break;
+		case 2:
+			AddData(pLinkHead,pS);
+			break;
+		default:
+			break;
 	}
 	return;
+}
+/*************************************************
+**brief 处理ND指令返回值
+*************************************************/
+void ProcessND(uint8 *rbuf)
+{
+	uint16 target_adr=0;
+	SourceRouterLinkType *p,*pS;
+	if(*(rbuf+20)==0 && *(rbuf+21)==0 && *(rbuf+22)==2)
+	{	
+		target_adr |= (uint16)*(rbuf+9);
+		target_adr |= (((uint16)*(rbuf+8)) << 8);
+		pS = CreatRouterLink(rbuf+10,target_adr,rbuf,0);
+		p = FindMacAdr(pLinkHead,rbuf+10);
+		if(p == NULL)
+		{
+			AddData(pLinkHead,pS);
+			return ;
+		}
+		switch(compareNode(p,pS))
+		{
+			case 0:
+				free(pS);
+				break;
+			case 1:
+				DeleteNode(pLinkHead,p);
+				AddData(pLinkHead,pS);
+				break;
+			case 2:
+				AddData(pLinkHead,pS);
+				break;
+			default:
+				break;
+		}
+	}
 }
 /*************************************************
 **向router发送限时加入网络命令
@@ -200,7 +237,7 @@ int16 XBeeSendTimeout(uint8 time)
 int16 XBeeJionEnable(uint8 *ieeeadr,uint8 *netadr)
 {
 	uint8 data[5];
-	uint16 target_adr;
+	uint16 target_adr=0;
 	SourceRouterLinkType *p;
 	
 	target_adr |= (uint16)*(netadr+1);
@@ -210,10 +247,14 @@ int16 XBeeJionEnable(uint8 *ieeeadr,uint8 *netadr)
 	data[2]  =  'G';
 	data[3]  =  0x02;
 	data[4]  =  0x01;
-	p = FindData(pLinkHead,target_adr);
+	p = FindMacAdr(pLinkHead,ieeeadr);
 	if(p == NULL)
+	{
+		printf("\033[33mERROR!!！节点不存在\033[0m\n");
 		return 0;
-	XBeeCreatSourceRout(ieeeadr,target_adr,p->num_mid_adr,p->mid_adr);
+	}
+	if(p->num_mid_adr != 0)
+		XBeeCreatSourceRout(p->mac_adr,p->target_adr,p->num_mid_adr,p->mid_adr);
 	return XBeeTransReq(ieeeadr,netadr,Default,data,5,RES);
 }
 /**************************************************
@@ -222,11 +263,19 @@ int16 XBeeJionEnable(uint8 *ieeeadr,uint8 *netadr)
 int16 XBeeJionDisable(uint8 *ieeeadr,uint8 *netadr)
 {
 	uint8 data[5];
+	SourceRouterLinkType *p;
 	data[0]  =  'C';
 	data[1]  =  'F';
 	data[2]  =  'G';
 	data[3]  =  0x02;
 	data[4]  =  0x00;
+	p = FindMacAdr(pLinkHead,ieeeadr);
+	if(p == NULL)
+	{	
+		printf("\033[33mERROR!!！节点不存在\033[0m\n");
+		return 0;
+	}
+	XBeeCreatSourceRout(p->mac_adr,p->target_adr,p->num_mid_adr,p->mid_adr);
 	return XBeeTransReq(ieeeadr,netadr,Default,data,5,RES);
 }
 /*******************************************************
@@ -235,10 +284,18 @@ int16 XBeeJionDisable(uint8 *ieeeadr,uint8 *netadr)
 int16 XBeeSendFactorySettingCmd(uint8 *ieeeadr,uint8 *netadr)
 {
 	uint8 data[4];
+	SourceRouterLinkType *p;
 	data[0]  =  'C';
 	data[1]  =  'F';
 	data[2]  =  'G';
 	data[3]  =  0x03;
+	p = FindMacAdr(pLinkHead,ieeeadr);
+	if(p == NULL)
+	{
+		printf("\033[33mERROR!!！节点不存在\033[0m\n");
+		return 0;
+	}
+	XBeeCreatSourceRout(p->mac_adr,p->target_adr,p->num_mid_adr,p->mid_adr);
 	return XBeeTransReq(ieeeadr,netadr,Default,data,4,RES);
 }
 /*******************************************************
@@ -251,6 +308,8 @@ int16 XBeeSendFactorySettingCmd(uint8 *ieeeadr,uint8 *netadr)
 int16 XBeePutCtlCmd(uint8 *ieeeadr,uint16 netadr,uint8 lockstate)
 {
 	uint8 data[5];
+	SourceRouterLinkType *p;
+
 	data[0]  =  'C';	
 	data[1]  =  'T';
 	data[2]  =  'L';
@@ -259,7 +318,14 @@ int16 XBeePutCtlCmd(uint8 *ieeeadr,uint16 netadr,uint8 lockstate)
 	uint8 netadr_s[2];
 	netadr_s[1] = (uint8)(netadr>>8);
 	netadr_s[0] = (uint8)netadr;
-	printf("\033[33m发送锁控制指令完成！\n");
+	p = FindMacAdr(pLinkHead,ieeeadr);
+	if(p == NULL)
+	{
+		printf("\033[33mERROR!!！节点不存在\033[0m\n");
+		return 0;
+	}
+	XBeeCreatSourceRout(p->mac_adr,p->target_adr,p->num_mid_adr,p->mid_adr);
+	printf("\033[33m发送锁控制指令完成！\033[0m\n");
 	return XBeeTransReq(ieeeadr,netadr_s,Default,data,5,RES);
 }
 /**************************************************************
@@ -268,11 +334,18 @@ int16 XBeePutCtlCmd(uint8 *ieeeadr,uint16 netadr,uint8 lockstate)
 int16 XBeeSendSenserInit(uint8 *ieeeadr,uint8 *net_adr)
 {
 	uint8 data[4];
-	
+	SourceRouterLinkType *p;
 	data[0]    =    'S';
 	data[1]    =    'E';
 	data[2]    =    'N';
 	data[3]    =      0;
+	p = FindMacAdr(pLinkHead,ieeeadr);
+	if(p == NULL)
+	{
+		printf("\033[33mERROR!!！节点不存在\033[0m\n");
+		return 0;
+	}
+	XBeeCreatSourceRout(p->mac_adr,p->target_adr,p->num_mid_adr,p->mid_adr);
 	return XBeeTransReq(ieeeadr,net_adr,Default,data,4,NO_RES);
 }
 

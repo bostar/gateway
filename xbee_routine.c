@@ -9,7 +9,6 @@
 
 uint8 rbuf[255];
 int16 len;
-static uint8 NetState=0;
 SourceRouterLinkType *pLinkHead=NULL;
 uint8 *HeadMidAdr=NULL;
 //uint8 XBeeCnt=0;
@@ -27,8 +26,10 @@ void xbee_routine_thread(void)
 {
     xbee_gpio_init();
     xbee_serial_port_init();	 
-
-	pLinkHead = CreatRouterLink(0,HeadMidAdr,0);
+	uint8 _i,_adr[8];
+	for(_i=0;_i<8;_i++)
+		_adr[_i] = 0;
+	pLinkHead = CreatRouterLink(_adr,0,HeadMidAdr,0);
 	XBeeCreateNet();
 	SendXBeeReadAIAgain : XBeeReadAI();  
 	usleep(1000000);
@@ -45,13 +46,13 @@ void xbee_routine_thread(void)
 	}
 	//设置睡眠参数
 	XBeeSetSP(100,NO_RES);
-	NetState = IN_NET;
 	printf("\n\033[33m组建网络完成！\033[0m\n");
 while(1)
 {
 	static uint16 IdleCnt=0;
 	IdleCnt++;
 	printf("\033[36m调用次数%d\033[0m\n",IdleCnt);
+	printf("\033[32m已存储节点数量%d\033[0m\n",LinkLenth(pLinkHead));
 	LinkPrintf(pLinkHead);
 	len = UartRevDataProcess(rbuf);  
 	if(len)
@@ -76,6 +77,8 @@ while(1)
 			case at_command_response:
 				if(rbuf[5]=='N' && rbuf[6]=='J')
        			{}
+				else if(rbuf[5]=='N' && rbuf[6]=='D')
+					ProcessND(rbuf);
 				break;
 			case transmit_status:
 				break;
@@ -91,9 +94,8 @@ while(1)
 	} 
 	if(IdleCnt%10 == 0 || IdleCnt == 1)
 	{
-		XBeeReadAT("ND");               
-		//XBeeReadAT("NC");
-		
+		XBeeReadAT("ND");    
+		XBeeReadAT("NC");  
 	}       
 	XBeeSetAR(10,NO_RES);
 } 	

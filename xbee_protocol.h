@@ -45,6 +45,7 @@ void XBeeProcessCFG(uint8 *rbuf);
 void XBeeProcessCTL(uint8 *rbuf);
 void XBeeProcessSEN(uint8 *rbuf);
 void XBeeProcessRoutRcord(uint8 *rbuf);
+void ProcessND(uint8 *rbuf);
 int16 XBeeSendSenserInit(uint8 *ieeeadr,uint8 *net_adr);
 int16 XBeeEndDeviceLock(uint8 *ieeeadr,uint8 *netadr);
 int16 XBeeEndDeviceUnlock(uint8 *ieeeadr,uint8 *netadr);

@@ -71,22 +71,8 @@ int16 XBeeTransReq(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,u
   	frame->frame_id        = IsRes;
   	for(cnt=0;cnt<8;cnt++)
     	frame->adr[cnt] = *(adr + cnt);
-#if defined USE_PRINTF
-	printf("api cmd is:");
-	for(cnt=0;cnt<20;cnt++)
-		printf("0x%02x ",*(wbuf+cnt));
-	printf("\r\n");
-#endif
-
   	frame->net_adr[0]      = *(net_adr);
   	frame->net_adr[1]      = *(net_adr+1);
-#if defined USE_PRINTF
-	printf("发送数据:\n");
-	for(cnt=0;cnt<20;cnt++)
-		printf("0x%02x ",*(wbuf+cnt));
-	printf("\r\n");
-#endif
-
   	frame->readius         = 0;
   	frame->options         = options;
   	for(cnt=0;cnt<len;cnt++)
@@ -116,7 +102,6 @@ int16 XBeeCreatSourceRout(uint8 *mac_adr,uint16 net_adr,uint16 num,uint8 *mid_ad
 {
 	static uint8 wbuf_temp[128],wbuf_len=0,i=0;
 	uint16 lenth=0;
-	uint16 nArgValue = num;
 	
 	wbuf_len = 18 + num*2;
 	lenth = wbuf_len - 4;
@@ -137,7 +122,7 @@ int16 XBeeCreatSourceRout(uint8 *mac_adr,uint16 net_adr,uint16 num,uint8 *mid_ad
 	for(i=3;i<wbuf_len-1;i++)
 		*(wbuf_temp + wbuf_len-1) += *(wbuf_temp + i);
 	*(wbuf_temp + wbuf_len-1) = 0xff - *(wbuf_temp + wbuf_len-1);
-#if 0
+#if 1
 	printf("\n"); 
 	for(i=0;i<wbuf_len;i++)
 		printf("\033[33m0x%02x \033[0m",*(wbuf_temp+i));
@@ -199,9 +184,9 @@ int16 XBeeSendMY(uint8 IsRes)
 *************************************************************/
 int16 XBeeSetChannel(uint8 IsRes)
 {
-  	uint8 paramer[8],i=1;
+  	uint8 paramer[2],i=1;
   	int8 *cmd = "SC";
-  	for(i=0;i<8;i++)
+  	for(i=0;i<2;i++)
     	*(paramer+i) = 0x0B;
   	return XBeeSendATCmd(cmd,paramer,2,IsRes);
 }
