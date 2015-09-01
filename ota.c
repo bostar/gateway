@@ -90,6 +90,10 @@ void ota_thread(void)
             }
             else
             {
+                if((loop >= 0x7E800 - 0x800) && (loop <= 0x7F7FF - 0x800))
+                {
+                    continue;
+                }
                 crcword = crc16(crcword,oat_data[loop]);
             }
         }
@@ -132,10 +136,10 @@ void ota_thread(void)
         wbuf[6] = (unsigned char)pkgnum; // pkgnum low byte
         wbuf[7] = (unsigned char)(pkgnum >> 8); // pkgnum high byte
         
-        for(loop = 0;loop < 40 + 10;loop ++)
+        for(loop = 0;loop < 400;loop ++)
         {
             WriteComPort(wbuf, 8);
-            usleep(50000);
+            usleep(10000);
         }
 #endif
         if((crcwordold != crcword) || (versionold != version))
@@ -165,6 +169,10 @@ void ota_thread(void)
         /* transfer ota datas ... */
         for(loop = 0;loop < pkgnum;loop ++)
         {
+            if((loop * 64 >= 0x7E800 - 0x800) && (loop * 64 < 0x7F800 - 0x800))
+            {
+                continue;
+            }
             wbuf[0] = 0xfe;
             wbuf[1] = 0x42;
             wbuf[2] = 0x4d;
