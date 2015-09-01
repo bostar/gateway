@@ -74,11 +74,11 @@ void communicate_thread(void)
                     printf("0x%s LinkTest ACK...\r\n",macstr);
                 break;
                 case cmdDataRequest:
-                    rlen = ReadComPort(rbuf+4,2);
+		    rlen = ReadComPort(rbuf+4,2);
                     if(rlen != 2)
                         break;
                     requestAddress = (unsigned short)rbuf[4] << 8 | rbuf[5];
-                    //                        printf("node 0x%04x is requesting data...\r\n",requestAddress);
+                    set_online(requestAddress);
                     if(!getCtlCmd(requestAddress,&ctl_cmd))
                         switchLockControl(requestAddress,ctl_cmd);
                     else
