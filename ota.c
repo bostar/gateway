@@ -63,7 +63,7 @@ void ota_thread(void)
         if(fd < 0)
         {
             printf("[OTA]:open file error!\r\n");
-            return;
+            continue;
         }
         len = read(fd,oat_data ,256 * 1024); 
         printf("[OTA]:first 16 byte is :\r\n");
@@ -132,10 +132,10 @@ void ota_thread(void)
         wbuf[6] = (unsigned char)pkgnum; // pkgnum low byte
         wbuf[7] = (unsigned char)(pkgnum >> 8); // pkgnum high byte
         
-        for(loop = 0;loop < 40 + 10;loop ++)
+        for(loop = 0;loop < 133;loop ++)
         {
             WriteComPort(wbuf, 8);
-            usleep(50000);
+            usleep(30000);
         }
 #endif
         if((crcwordold != crcword) || (versionold != version))
