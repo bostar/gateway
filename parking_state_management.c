@@ -679,6 +679,7 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
             {
                 p->state = parking_state_booking;
                 XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_lock);
+                p->time = time((time_t)NULL);
             }
             else
             {
