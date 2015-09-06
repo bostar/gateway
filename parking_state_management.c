@@ -684,6 +684,7 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
             {
                 p->state = parking_state_booking;
                 putCtlCmd(parking_id,en_order_lock);
+                p->time = time((time_t)NULL);
             }
             else
             {
