@@ -34,6 +34,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <time.h>
+
 
 struct sockaddr_in addr_server;
 #define SERVER_IP	"121.43.69.176"
@@ -73,6 +75,8 @@ void tcp_init(void)
 int tcp_listen(unsigned char *revbuf,int bufsize)
 {
     int num;
+    static time_t time_in_second = 0;
+    struct sockaddr_in remote_addr;    // Host address information
     bzero(revbuf,bufsize);
     num = recv(sockfd, revbuf, bufsize, MSG_DONTWAIT);
 
@@ -81,19 +85,46 @@ int tcp_listen(unsigned char *revbuf,int bufsize)
         case -1:
             //printf("ERROR: Receive string error!\n");
             //close(sockfd);
-            return (0);
+            //return (0);
 
         case  0:
             //close(sockfd);
-            return(0);
+            //return(0);
 
         default:
-            printf ("OK: Receviced numbytes = %d\n", num);
+            //printf ("OK: Receviced numbytes = %d\n", num);
             break;
     }
+    if(num > 0)
+    {
+        time_in_second = time((time_t *)NULL);
+    }
+    if(time((time_t *)NULL) - time_in_second > 1 * 60 * 60)
+    {
+        close(sockfd);
+        while((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+        {
+            printf("ERROR: Failed to obtain Socket Descriptor!\n");
+            usleep(1000000);
+        }
 
+        /* Fill the socket address struct */
+        remote_addr.sin_family = AF_INET;                   // Protocol Family
+        remote_addr.sin_port = htons(SERVER_PORT);                 // Port number
+        inet_pton(AF_INET, SERVER_IP, &remote_addr.sin_addr); // Net Address
+        bzero(&(remote_addr.sin_zero), 8);                  // Flush the rest of struct
+
+        /* Try to connect the remote */
+        while (connect(sockfd, (struct sockaddr *)&remote_addr,  sizeof(struct sockaddr)) == -1)
+        {
+            printf ("ERROR: Failed to connect to the host!\n");
+            usleep(1000000);
+        }
+        printf ("OK: Have connected to the server.\r\n");
+        time_in_second = time((time_t *)NULL);
+    }
     revbuf[num] = '\0';
-    printf ("OK: Receviced string is: %s\n", revbuf);
+    //printf ("OK: Receviced string is: %s\n", revbuf);
     return num;
 }
 
@@ -106,7 +137,7 @@ int tcp_send_to_server(int len,unsigned char *bytes)
         //close(sockfd);
         exit(1);
     }
-    printf("OK: Sent %d bytes sucessful\n", num);
+    //printf("OK: Sent %d bytes sucessful\n", num);
     return num;
 }
 
