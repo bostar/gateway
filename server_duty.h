@@ -17,8 +17,8 @@ typedef enum{
 }en_parking_order;
 
 typedef enum{
-    en_state_lock = 0x01,
-    en_state_unlock = 0x00
+    en_state_lock = 0x02,
+    en_state_unlock = 0x04
 }en_parking_state_report;
 
 int get_local_addr(unsigned char *local_addr,unsigned char* long_addr);
