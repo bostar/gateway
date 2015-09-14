@@ -16,7 +16,7 @@
 
 //#define __USE_ZM516X__
 #define __USE_XBEE__
-//#define __XBEE_TEST__
+#define __XBEE_TEST__
 
 #if !defined(__USE_ZM516X__) && !defined(__USE_XBEE__) && !defined(__XBEE_TEST__)
 #define __USE_ZM516X__

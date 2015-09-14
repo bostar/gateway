@@ -18,7 +18,7 @@
 #include "xbee_routine.h"
 
 /******************************************************
-**uart接收校验
+**uart receive and check
 ******************************************************/
 int16 UartRevDataProcess(uint8* UartRevBuf)
 {
@@ -46,29 +46,34 @@ int16 UartRevDataProcess(uint8* UartRevBuf)
 		return DataLen+4;
 }
 /*******************************************************
-**brief 处理接收到的CFG指令
+**brief process CFG API
 *******************************************************/
 void XBeeProcessCFG(uint8 *rbuf)
-{	
+{
 	int16 temp;
 	switch(*(rbuf+18))
 	{
 		case net_request:
 			if(FindMacAdr(pLinkHead,rbuf+4) != NULL)
-			{	printf("已经找到目标地址");
+			{
 				temp = get_local_addr(rbuf+12,rbuf+4); //调用API 查询是否属于网络
+				printf("\033[33m\033[1m正在查询节点...\033[0m \n");
 				if(temp == 0)	//属于该网络,允许加入网络
 				{
 					XBeeJionEnable((rbuf+4),(rbuf+12)); //
-					printf("\033[33m\033[1m已发送允许入网指令 \033[0m \n");	
+					printf("\033[33m\033[1m已发送允许入网指令 \033[0m \n");
 					set_node_online(rbuf+4);
 					printf("\033[33m\033[1m已将锁加入网络 \033[0m \n");
-				}	
+				}
 				else if(temp == -1)
 				{
 					XBeeJionDisable((rbuf+4),(rbuf+12));
 					printf("\033[33m\033[1m已发送拒绝入网指令 \033[0m \n");
-					DeleteNode(pLinkHead,FindMacAdr(pLinkHead,rbuf+4));	//删除节点	
+					DeleteNode(pLinkHead,FindMacAdr(pLinkHead,rbuf+4));//删除节点
+				}
+				else
+				{
+					printf("\033[33m\033[1m节点查询失败\033[0m \n");
 				}
 			}
 			break;
@@ -78,7 +83,7 @@ void XBeeProcessCFG(uint8 *rbuf)
 	return;
 }
 /*******************************************************
-**brief 处理接收到的CTL指令
+**brief  process CTL API
 *******************************************************/
 void XBeeProcessCTL(uint8 *rbuf)
 {
@@ -96,7 +101,7 @@ void XBeeProcessCTL(uint8 *rbuf)
 				
 				break;
 			case ParkLockFailed:
-
+				
 				break;
 			default:
 				break;
@@ -104,7 +109,7 @@ void XBeeProcessCTL(uint8 *rbuf)
 	}
 }
 /*******************************************************
-**brief 处理接收到的SEN指令
+**brief process SEN API
 *******************************************************/
 void XBeeProcessSEN(uint8 *rbuf)
 {
@@ -112,45 +117,45 @@ void XBeeProcessSEN(uint8 *rbuf)
 	{
 		case 1:
 			if(*(rbuf+19) == ParkingUsed)
-			{	
-				printf("\033[33m\033[1m有车辆进入停车位\033[0m \n");
+			{
+				printf("\033[33m\033[1m当前车位有车辆\033[0m \n");
 				event_report( char_to_int(rbuf+12),en_vehicle_comming);
 			}
 			else if(*(rbuf+19) == ParkingUnUsed)
-			{
-				printf("\033[33m\033[1m当前车位状态为空\033[0m \n");
-				event_report( char_to_int(rbuf+12),en_vehicle_leave);
-			}
+				{
+					printf("\033[33m\033[1m当前车位为空\033[0m \n");
+					event_report( char_to_int(rbuf+12),en_vehicle_leave);
+				}
 			else if(*(rbuf+19) == ParkLockSuccess)
-			{	
-				printf("\033[33m\033[1m车位锁定成功 \033[0m \n");
-				event_report( char_to_int(rbuf+12),en_lock_success);
-			}
+				{
+					printf("\033[33m\033[1m车位锁定成功 \033[0m \n");
+					event_report( char_to_int(rbuf+12),en_lock_success);
+				}
 			else if(*(rbuf+19) == ParkLockFailed)
-			{
-				printf("\033[33m\033[1m车位锁定失败 \033[0m \n");	
-				event_report( char_to_int(rbuf+12),en_lock_failed);
-			}			
+				{
+					printf("\033[33m\033[1m车位锁定失败 \033[0m \n");	
+					event_report( char_to_int(rbuf+12),en_lock_failed);
+				}
 			else if(*(rbuf+19) == ParkUnlockSuccess)
-			{
-				printf("\033[33m\033[1m车位解锁成功 \033[0m \n");
-				event_report( char_to_int(rbuf+12),en_unlock_success);
-			}			
+				{
+					printf("\033[33m\033[1m车位解锁成功 \033[0m \n");
+					event_report( char_to_int(rbuf+12),en_unlock_success);
+				}
 			else if(*(rbuf+19) == ParkUnlockFailed)
-			{
-				printf("\033[33m\033[1m车位解锁失败 \033[0m \n");
-				event_report( char_to_int(rbuf+12),en_unlock_failed);
-			}
+				{
+					printf("\033[33m\033[1m车位解锁失败 \033[0m \n");
+					event_report( char_to_int(rbuf+12),en_unlock_failed);
+				}
 			break;
 		case bat_event:
 			break;
 		default:
 			break;
-	}
 	return;
+	}
 }
 /*************************************************
-**brief 记录route路径
+**brief  record source route path
 *************************************************/
 void XBeeProcessRoutRcord(uint8 *rbuf)
 {
@@ -175,6 +180,7 @@ void XBeeProcessRoutRcord(uint8 *rbuf)
 			AddData(pLinkHead,pS);
 			break;
 		case 2:
+			DeleteNode(pLinkHead,p);
 			AddData(pLinkHead,pS);
 			break;
 		default:
@@ -183,42 +189,65 @@ void XBeeProcessRoutRcord(uint8 *rbuf)
 	return;
 }
 /*************************************************
-**brief 处理ND指令返回值
+**brief process mode_status
+*************************************************/
+void ProcessModState(uint8 *rbuf)
+{
+	if(*(rbuf+4) == 6)
+		printf("\032[33mCoordinator Started\033[0m\n");
+	else if(*(rbuf+4) == 0)
+		printf("\032[33mHardware reset\033[0m\n");
+	else if(*(rbuf+4) == 1)
+		printf("\032[33mWatchdog timer reset\033[0m\n");
+	else if(*(rbuf+4) == 2)
+		printf("\032[33mJoined network033[0m\n");
+	else if(*(rbuf+4) == 3)
+		printf("\032[33mDisassociated\033[0m\n");
+	else if(*(rbuf+4) == 7)
+		printf("\032[33mNetwork security key was updated\033[0m\n");
+	return;
+}
+/*************************************************
+**brief process ND AT command response
 *************************************************/
 void ProcessND(uint8 *rbuf)
 {
 	uint16 target_adr=0;
 	SourceRouterLinkType *p,*pS;
-	if(*(rbuf+20)==0 && *(rbuf+21)==0 && *(rbuf+22)==2)
-	{	
-		target_adr |= (uint16)*(rbuf+9);
+	if(get_local_addr(rbuf+8,rbuf+10) == 0 && *(rbuf+20)==0 && *(rbuf+21)==0 && *(rbuf+22)==2 )  
+	{
 		target_adr |= (((uint16)*(rbuf+8)) << 8);
 		pS = CreatRouterLink(rbuf+10,target_adr,rbuf,0);
 		p = FindMacAdr(pLinkHead,rbuf+10);
 		if(p == NULL)
 		{
 			AddData(pLinkHead,pS);
+			printf("\033[33m新的锁终端路径加入列表\033[0m\n");
 			return ;
 		}
 		switch(compareNode(p,pS))
-		{
+		{ 
 			case 0:
 				free(pS);
+				printf("\033[33m锁终端路径已存在\033[0m\n");
 				break;
 			case 1:
 				DeleteNode(pLinkHead,p);
 				AddData(pLinkHead,pS);
+				printf("\033[33m更新锁终端路径\033[0m\n");
 				break;
 			case 2:
 				AddData(pLinkHead,pS);
+				printf("\033[33m新的锁终端路径加入列表\033[0m\n");
 				break;
 			default:
 				break;
 		}
 	}
+	return;
 }
 /*************************************************
-**向router发送限时加入网络命令
+**brief 向router发送限时加入网络命令
 *************************************************/
 int16 XBeeSendTimeout(uint8 time)
 {
@@ -271,7 +300,7 @@ int16 XBeeJionDisable(uint8 *ieeeadr,uint8 *netadr)
 	data[4]  =  0x00;
 	p = FindMacAdr(pLinkHead,ieeeadr);
 	if(p == NULL)
-	{	
+	{
 		printf("\033[33mERROR!!！节点不存在\033[0m\n");
 		return 0;
 	}
@@ -348,7 +377,34 @@ int16 XBeeSendSenserInit(uint8 *ieeeadr,uint8 *net_adr)
 	XBeeCreatSourceRout(p->mac_adr,p->target_adr,p->num_mid_adr,p->mid_adr);
 	return XBeeTransReq(ieeeadr,net_adr,Default,data,4,NO_RES);
 }
+/**************************************************************
+**brief 配置组网
+**************************************************************/
+void CreateGatewayNet(void)
+{
+	uint8 _i,_adr[8];
+	uint8 len,rbuf[128];
 
+	for(_i=0;_i<8;_i++)
+		_adr[_i] = 0;
+	pLinkHead = CreatRouterLink(_adr,0,HeadMidAdr,0);
+	XBeeCreateNet();
+	SendXBeeReadAIAgain : XBeeReadAI();  
+	usleep(1000000);
+	len = UartRevDataProcess(rbuf);	
+	while(len != 10 || rbuf[3] != 0x88 || rbuf[5] != 'A' || rbuf[6] != 'I' || rbuf[7] != 0 )
+	{
+		usleep(1000000);
+		len = UartRevDataProcess(rbuf);
+	}
+	if(rbuf[8]!=0)
+	{
+		XBeeCreateNet();
+		goto SendXBeeReadAIAgain;
+	}
+	XBeeSetSP(100,NO_RES);	//设置睡眠参数
+	printf("\n\033[33m组建网络完成！\033[0m\n");
+}
 /***************************************************************
 **brief 两个字节合并一个unt16
 ***************************************************************/
@@ -359,8 +415,17 @@ uint16 char_to_int(uint8 *data)
 	reval |= ((uint16)*(data+1) << 8);
 	return reval;
 }
-
-
+/****************************************************************
+**brief 打印当前时间
+****************************************************************/
+void printf_local_time(void)
+{
+	time_t now;    //实例化time_t结构
+	struct tm  *timenow;    //实例化tm结构指针
+	
+	timenow = localtime(&now);//localtime函数把从time取得的时间now换算成你电脑中的时间(就是你设置的地区)
+	printf("Local time is %s\n",asctime(timenow));//asctime函数把时间转换成字符，通过printf()函数输出
+}
 
 
 

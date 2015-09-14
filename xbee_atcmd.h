@@ -122,7 +122,7 @@ int16 XBeeSetIO(XBeeIOParam ioparam,IOStatus state);	//配置IO口
 uint8 XBeeApiChecksum(uint8 *begin,uint16 length);  //求checksum
 int16 XBeeSendATCmd(int8* atcmd,uint8* pparam,uint8 len,uint8 IsRes);   //发送at指令
 int16 XBeeSetPanID(uint8 IsRes);   //设置ID的值
-int16 XBeeSetChannel(uint8 IsRes); //设置信道
+int16 XBeeSetChannel(uint16 channel,uint8 IsRes);
 int16 XbeeFR(uint8 IsRes);  //
 int16 XBeeSendWR(uint8 IsRes);
 int16 XBeeSendMY(uint8 IsRes);

@@ -139,7 +139,7 @@ int16 XBeeSetPanID(uint8 IsRes)
   	uint8 panID[8],i=0;
   	int8 *cmd = "ID";
   	for(i=0;i<8;i++)
-    	*(panID+i) = 00;
+    	*(panID+i) = 0;
   	return XBeeSendATCmd(cmd,panID,8,IsRes);
 }
 /*********************************************************
@@ -182,13 +182,13 @@ int16 XBeeSendMY(uint8 IsRes)
 /*************************************************************
 **brief 发送SC
 *************************************************************/
-int16 XBeeSetChannel(uint8 IsRes)
+int16 XBeeSetChannel(uint16 channel,uint8 IsRes)
 {
-  	uint8 paramer[2],i=1;
-  	int8 *cmd = "SC";
-  	for(i=0;i<2;i++)
-    	*(paramer+i) = 0x0B;
-  	return XBeeSendATCmd(cmd,paramer,2,IsRes);
+	uint8 paramer[2];
+	int8 *cmd = "SC";
+	*paramer     = (uint8)(channel >> 8);
+	*(paramer+1) = (uint8)(channel);
+	return XBeeSendATCmd(cmd,paramer,2,IsRes);
 }
 /*************************************************************
 **brief 连接/创建网络指示灯闪烁时间

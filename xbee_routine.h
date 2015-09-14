@@ -8,9 +8,9 @@
 
 typedef enum
 {
-	ReqJion   	 =	 0x01,
-	AllowJion	 =	 0x02,
-	ReFactory	 =	 0x03
+	ReqJion     	 =	 0x01,
+	AllowJion		 =	 0x02,
+	ReFactory		 =	 0x03
 }CREprotocolType;
 
 

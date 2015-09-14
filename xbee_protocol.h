@@ -4,7 +4,7 @@
 #include "xbee_vari_type.h"
 #include <unistd.h>
 #include <stdio.h>
-
+#include <time.h>
 
 
 typedef enum
@@ -46,6 +46,8 @@ void XBeeProcessCTL(uint8 *rbuf);
 void XBeeProcessSEN(uint8 *rbuf);
 void XBeeProcessRoutRcord(uint8 *rbuf);
 void ProcessND(uint8 *rbuf);
+void ProcessModState(uint8 *rbuf);
+int16 XBeeSendTimeout(uint8 time);
 int16 XBeeSendSenserInit(uint8 *ieeeadr,uint8 *net_adr);
 int16 XBeeEndDeviceLock(uint8 *ieeeadr,uint8 *netadr);
 int16 XBeeEndDeviceUnlock(uint8 *ieeeadr,uint8 *netadr);
@@ -53,7 +55,7 @@ int16 XBeePutCtlCmd(uint8 *ieeeadr,uint16 netadr,uint8 lockstate);
 int16 putCtlCmd(uint16 netadr,uint8 lockstate);
 int16 XBeeSendTimeout(uint8 time);
 uint16 char_to_int(uint8 *data);
-
-
+void printf_local_time(void);
+void CreateGatewayNet(void);
 
 #endif
