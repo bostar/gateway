@@ -74,13 +74,17 @@ void communicate_thread(void)
                     printf("0x%s LinkTest ACK...\r\n",macstr);
                 break;
                 case cmdDataRequest:
-		    rlen = ReadComPort(rbuf+4,2);
-                    if(rlen != 2)
+		    rlen = ReadComPort(rbuf+4,3);
+                    if(rlen != 3)
                         break;
                     requestAddress = (unsigned short)rbuf[4] << 8 | rbuf[5];
                     set_online(requestAddress);
+                    parking_state_report(requestAddress,rbuf[6]);
                     if(!getCtlCmd(requestAddress,&ctl_cmd))
+                    {  
                         switchLockControl(requestAddress,ctl_cmd);
+                        printf("Yeah!!!exist node 0x%04x ctl_cmd 0x%02x\r\n",requestAddress,ctl_cmd);
+                    }
                     else
                         printf("cache not exist node 0x%04x ctl_cmd\r\n",requestAddress);
                 break;
