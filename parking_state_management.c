@@ -230,6 +230,10 @@ void parking_state_check_routin(void)
                 }
                 break;
             case parking_state_unbooking_unlock: // 取消预定成功已解锁
+                if(time_in_second - pstParkingState[loop].time > 2) // secon    d
+                {
+                    pstParkingState[loop].state = parking_state_idle;
+                }
                 break;
             case parking_state_unbooking_unlock_failed: // 取消预定失败，硬件故障
                 if(time_in_second - pstParkingState[loop].time > 5) // second
@@ -466,7 +470,8 @@ void event_report(unsigned short netaddr,unsigned char event)
         if(p->state == parking_state_unbooking || p->state == parking_state_unbooking_unlock_failed)
         {
             need_to_send_to_sever = 1;
-            p->state = parking_state_idle;
+            p->state = parking_state_unbooking_unlock;
+            p->time = time_in_second; // second
         }
         break;
         case en_unlock_failed:
