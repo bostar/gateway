@@ -16,11 +16,17 @@ typedef enum{
     en_order_unlock = 0x00
 }en_parking_order;
 
+typedef enum{
+    en_state_lock = 0x01,
+    en_state_unlock = 0x00
+}en_parking_state_report;
+
 int get_local_addr(unsigned char *local_addr,unsigned char* long_addr);
 void server_duty_thread(void);
 void set_online(unsigned short netaddr);
 void set_node_online(unsigned char *macaddr);
 int networking_over(void);
+void parking_state_report(unsigned short netaddr, en_parking_state_report enParking_state);
 void event_report(unsigned short netaddr,unsigned char event);
 void get_channel_panid(unsigned char* channel,unsigned short*panid);
 #endif

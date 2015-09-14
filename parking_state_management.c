@@ -286,6 +286,39 @@ void parking_state_check_routin(void)
 
 char * const event_string[en_max_event] = {"en_vehicle_comming\r\n","en_vehicle_leave\r\n","en_lock_success\r\n","en_lock_failed\r\n","en_unlock_success\r\n","en_unlock_failed\r\n"};
 
+void parking_state_report(unsigned short netaddr, en_parking_state_report enParking_state)
+{
+    pthread_mutex_lock(&parking_info_mutex);
+    pst_parkingState p;
+    p = search_use_netaddr(netaddr);
+    if(p == NULL)
+    {
+        pthread_mutex_unlock(&parking_info_mutex);
+        return ;
+    }
+    else
+    {
+        switch(enParking_state)
+        {
+            case en_state_lock:
+                if((p->state == parking_state_idle) || (p->state == parking_state_prestop) || (p->state == parking_state_booked_coming_unlock) || (p->state == parking_state_have_paid_unlock))
+                {
+                    putCtlCmd(p->parking_id,en_order_unlock);
+                }
+                break;
+            case en_state_unlock:
+                if((p->state == parking_state_stop_lock) || (p->state == parking_state_booking_lock) || (p->state == parking_state_booked_coming_lock))
+                {
+                    putCtlCmd(p->parking_id,en_order_lock);
+                }
+                break;
+            default:
+                break;
+        }
+    }
+    pthread_mutex_unlock(&parking_info_mutex);    
+}
+
 void event_report(unsigned short netaddr,unsigned char event)
 {
     pst_parkingState p;
