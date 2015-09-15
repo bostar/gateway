@@ -22,16 +22,18 @@ typedef enum{
     parking_state_booked_coming = 0x82, // 被预定车位解锁，车主到达现场
     parking_state_booked_coming_unlock = 0x1c, // 被预定车位解锁成功
     parking_state_booked_coming_unlock_failed = 0x1d, // 被预定车位解锁失败
-    parking_state_booked_coming_lock = 0xf1, // 被预定车位，车到达，已上锁
-    parking_state_booked_coming_lock_failed = 0xf2, // 被预定车位，车到达，上锁失败
+    parking_state_booked_coming_unlock_goto_idle = 0x20,// 降锁，免费时间内车未到达（即将转为空闲）
+    parking_state_booked_coming_lock = 0x21, // 被预定车位，车到达，已上锁
+    parking_state_booked_coming_lock_failed = 0x22, // 被预定车位，车到达，上锁失败
     parking_state_unbooking = 0x83, // 取消预定
     parking_state_unbooking_unlock = 0x1e, // 取消预定成功已解锁
     parking_state_unbooking_unlock_failed = 0x1f, // 取消预定失败，硬件故障
     parking_state_have_paid = 0x84, // 已支付
     parking_state_have_paid_unlock = 0x05, // 支付后解锁成功
-    parking_state_have_paid_relock = 0xf3, // 支付解锁后车未离开重新加锁计费
+    parking_state_have_paid_unlock_vehicle_leave = 0x06, // 支付解锁成功N分钟内车离开
+    parking_state_have_paid_relock = 0x23, // 支付解锁后车未离开重新加锁计费
     parking_state_have_paid_unlock_failed = 0x08, // 支付后解锁硬件异常
-    parking_state_have_paid_relock_failed = 0xf4, // 支付解锁后车未离开重新加锁失败
+    parking_state_have_paid_relock_failed = 0x24, // 支付解锁后车未离开重新加锁失败
     en_parking_state_max = 0xff
 }en_parking_state;
 
@@ -106,6 +108,7 @@ char* const parking_state_string[en_parking_state_max] = {
     [parking_state_booked_coming] = "parking_state_booked_coming", // 被预定车位解锁，车主到达现场
     [parking_state_booked_coming_unlock] = "parking_state_booked_coming_unlock", // 被预定车位解锁成功
     [parking_state_booked_coming_unlock_failed] = "parking_state_booked_coming_unlock_failed", // 被预定车位解锁失败
+    [parking_state_booked_coming_unlock_goto_idle] = "parking_state_booked_coming_unlock_goto_idle", // 降锁，免费时间内车未到达（即将转为空闲）
     [parking_state_booked_coming_lock] = "parking_state_booked_coming_lock", // 被预定车位，车到达，已上锁
     [parking_state_booked_coming_lock_failed] = "parking_state_booked_coming_lock_failed", // 被预定车位，车到达，上锁>失败
     [parking_state_unbooking] = "parking_state_unbooking", // 取消预定
@@ -113,6 +116,7 @@ char* const parking_state_string[en_parking_state_max] = {
     [parking_state_unbooking_unlock_failed] = "parking_state_unbooking_unlock_failed", // 取消预定失败，硬件故障
     [parking_state_have_paid] = "parking_state_have_paid", // 已支付
     [parking_state_have_paid_unlock] = "parking_state_have_paid_unlock", // 支付后解锁成功
+    [parking_state_have_paid_unlock_vehicle_leave] = "parking_state_have_paid_unlock_vehicle_leave", // 支付解锁成功N分钟内车离开
     [parking_state_have_paid_unlock_failed] = "parking_state_have_paid_unlock_failed", // 支付后解锁硬件异常
     [parking_state_have_paid_relock] = "parking_state_have_paid_relock", // 支付解锁后车未离开重新加锁计费
     [parking_state_have_paid_relock_failed] = "parking_state_have_paid_relock_failed", // 支付解锁后车未离开重新加锁失败
@@ -202,11 +206,19 @@ void parking_state_check_routin(void)
                 if(time_in_second - pstParkingState[loop].time > 15) // second
                 {
                     need_to_send_to_sever = 1;
-                    pstParkingState[loop].state = parking_state_idle;
+                    pstParkingState[loop].state = parking_state_booked_coming_unlock_goto_idle;
                     pstParkingState[loop].time = time((time_t*)NULL);
                 }
+                break;
                 //pstParkingState[loop].time = time((time_t*)NULL);
                 //pstParkingState[loop].state = parking_state_prestop;
+
+            case parking_state_booked_coming_unlock_goto_idle:
+                if(time_in_second - pstParkingState[loop].time > 2) // second
+                {
+                    need_to_send_to_sever = 1;
+                    pstParkingState[loop].state = parking_state_idle;
+                }
                 break;
             case parking_state_booked_coming_unlock_failed: // 被预定车位解锁失败
                 if(time_in_second - pstParkingState[loop].time > 5) // second
@@ -260,6 +272,13 @@ void parking_state_check_routin(void)
                     putCtlCmd(pstParkingState[loop].parking_id,en_order_lock);
                     pstParkingState[loop].time = time((time_t*)NULL);
                     pstParkingState[loop].state = parking_state_have_paid_relock;
+                }
+                break;
+            case parking_state_have_paid_unlock_vehicle_leave:
+                if(time_in_second - pstParkingState[loop].time > 2) // second
+                {
+                    need_to_send_to_sever = 1;
+                    pstParkingState[loop].state = parking_state_idle;
                 }
                 break;
             case parking_state_have_paid_relock: // 支付解锁后车未离开重新加锁计费
@@ -372,7 +391,7 @@ void event_report(unsigned short netaddr,unsigned char event)
     switch(event)
     {
         case en_vehicle_comming:
-        if(p->state == parking_state_idle)
+        if((p->state == parking_state_idle) || (p->state == parking_state_booked_coming_unlock_goto_idle) || (p->state == parking_state_unbooking_unlock) || (p->state == parking_state_have_paid_unlock_vehicle_leave))
         {
             need_to_send_to_sever = 1;
             p->state = parking_state_prestop;
@@ -425,7 +444,8 @@ void event_report(unsigned short netaddr,unsigned char event)
         if(p->state == parking_state_have_paid_unlock)
         {
             need_to_send_to_sever = 1;
-            p->state = parking_state_idle;
+            p->state = parking_state_have_paid_unlock_vehicle_leave;
+            p->time = time_in_second; // second
         }
         
         break;
@@ -759,7 +779,7 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
             }
             break;
         case parking_state_booking:
-            if((p->state == parking_state_idle) || (p->state == parking_state_unbooking_unlock))
+            if((p->state == parking_state_idle) || (p->state == parking_state_unbooking_unlock) || (p->state == parking_state_booked_coming_unlock_goto_idle) || (p->state == parking_state_have_paid_unlock_vehicle_leave))
             {
                 p->state = parking_state_booking;
                 putCtlCmd(parking_id,en_order_lock);
