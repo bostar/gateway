@@ -344,6 +344,24 @@ void event_report(unsigned short netaddr,unsigned char event)
     }
     if(p->event == event)
     {
+        switch(event)
+        {
+            case en_lock_success:
+                if((p->state == parking_state_idle) || (p->state == parking_state_booked_coming_unlock) || (p->state == parking_state_have_paid_unlock))
+                {
+                    putCtlCmd(p->parking_id,en_order_unlock);
+                }
+                break;
+            case en_unlock_success:
+                if((p->state == parking_state_stop_lock) || (p->state == parking_state_booking_lock) || (p->state == parking_state_booked_coming_lock))
+                {
+                    putCtlCmd(p->parking_id,en_order_lock);
+                }
+                break;
+            default:
+                break;
+        }
+
         pthread_mutex_unlock(&parking_info_mutex);
         return ;
     }
@@ -412,10 +430,19 @@ void event_report(unsigned short netaddr,unsigned char event)
         
         break;
         case en_lock_success:
-        if(p->state == parking_state_prestop)
+        if((p->state == parking_state_idle) || (p->state == parking_state_booked_coming_unlock) || (p->state == parking_state_have_paid_unlock))
+        {
+            putCtlCmd(p->parking_id,en_order_unlock);
+        }
+
+        if((p->state == parking_state_prestop) && (time_in_second - p->time > 15))
         {
             need_to_send_to_sever = 1;
             p->state = parking_state_stop_lock;
+        }
+        else
+        {
+            putCtlCmd(p->parking_id,en_order_unlock);
         }
         if(p->state == parking_state_stop_lock_failed)
         {
@@ -426,11 +453,6 @@ void event_report(unsigned short netaddr,unsigned char event)
         {
             need_to_send_to_sever = 1;
             p->state = parking_state_booking_lock;
-        }
-        if(p->state == parking_state_booked_coming_unlock)
-        {
-            need_to_send_to_sever = 1;
-            p->state = parking_state_booked_coming_lock;
         }
         if(p->state == parking_state_have_paid_relock)
         {
@@ -469,6 +491,10 @@ void event_report(unsigned short netaddr,unsigned char event)
         }
         break;
         case en_unlock_success:
+        if((p->state == parking_state_stop_lock) || (p->state == parking_state_booking_lock) || (p->state == parking_state_booked_coming_lock))
+        {
+            putCtlCmd(p->parking_id,en_order_lock);
+        }
         if(p->state == parking_state_booked_coming || p->state == parking_state_booked_coming_unlock_failed)
         {
             need_to_send_to_sever = 1;
