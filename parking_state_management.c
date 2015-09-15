@@ -718,7 +718,7 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
             }
             break;
         case parking_state_booking:
-            if(p->state == parking_state_idle)
+            if((p->state == parking_state_idle) || (p->state == parking_state_unbooking_unlock))
             {
                 p->state = parking_state_booking;
                 putCtlCmd(parking_id,en_order_lock);
