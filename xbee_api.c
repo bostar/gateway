@@ -97,7 +97,7 @@ uint16 LinkLenth(const SourceRouterLinkType *pNode)
 *******************************************************************************************/
 uint8 DeleteNode(const SourceRouterLinkType *pNode,SourceRouterLinkType *deleteNode)
 {
-	SourceRouterLinkType *p,*pS;
+	SourceRouterLinkType *p=NULL,*pS=NULL;
 	p = (SourceRouterLinkType*)pNode;
 	while(p != NULL && p != deleteNode)
 	{	
@@ -108,7 +108,7 @@ uint8 DeleteNode(const SourceRouterLinkType *pNode,SourceRouterLinkType *deleteN
 		return 1;	//节点不存在
 	if(p == pNode)
 		return 2;	//表头禁止被删除
-	pS = p->next;
+	pS->next = p->next;
 	free(p);
 	//LinkPrintf(pLinkHead);
 	return 0;
@@ -132,8 +132,11 @@ uint8 compareNode(SourceRouterLinkType *pNode,SourceRouterLinkType *pNodeS)
 		return 1;		//路径发生变化，更新路径
 	if(p->num_mid_adr != pS->num_mid_adr)
 		return 1;		//路径发生变化，更新路径
-	if(arrncmp(p->mid_adr,pS->mid_adr,p->num_mid_adr*2) != 0)
-		return 1;		//路径发生变化，更新路径
+	if(p->num_mid_adr != 0)
+	{
+		if(arrncmp(p->mid_adr,pS->mid_adr,p->num_mid_adr*2) != 0)
+			return 1;		//路径发生变化，更新路径
+	}	
 	return 0;			
 }
 /********************************************************************************************
@@ -149,7 +152,11 @@ void NodePrintf(SourceRouterLinkType *pNode)
 	}
 	printf("  ");
 	printf("0x%04x	",pNode->target_adr);
-	printf("%d	",pNode->num_mid_adr);
+	if(pNode->dev_type == 2)
+		printf(" 终端  ");
+	else if(pNode->dev_type == 1)
+		printf(" 路由  ");
+	printf("  %d	",pNode->num_mid_adr);
 	for(i=0;i<pNode->num_mid_adr*2;i++)
 	{
 		if(i%2 == 0)
@@ -172,6 +179,7 @@ void LinkPrintf(SourceRouterLinkType *pNode)
 	printf("编号	");
 	printf("目标物理地址		");
 	printf("  目标网络地址 ");
+	printf("节点类型 ");
 	printf("数量");
 	printf(" 中间节点地址\n");
 	p = pNode;

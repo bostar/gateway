@@ -36,6 +36,18 @@ typedef enum     //SEN锁事件上报类型
     ParkLockingOrUnlocking  =   0x07
 } parkingEventType;
 
+typedef enum
+{
+    unlock          =   0,
+    lock            =   1,
+    lockTounlock    =   2,
+    unlockTolock    =   3,
+    over_lock       =   4,
+    over_unlock     =   5,
+    none            =0x88
+}LockStateType;
+
+
 
 
 int16 UartRevDataProcess(uint8* UartRevBuf);

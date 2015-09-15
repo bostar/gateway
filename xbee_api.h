@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "xbee_protocol.h"
 
 typedef struct _SourceRouterLinkType
 {
@@ -12,6 +13,8 @@ typedef struct _SourceRouterLinkType
 	uint8 mac_adr[8];
 	uint8 mid_adr[40];
 	uint8 num_mid_adr;
+	uint8 dev_type;
+	LockStateType lock_state;
 	struct _SourceRouterLinkType *next;
 }SourceRouterLinkType;
 

@@ -22,7 +22,7 @@ extern uint8 rbuf[];
 
 
 
-
+void TestPrintf(int8* sss,int16 lens,uint8 *buf);
 void xbee_routine_thread(void);
 void xbee_routine_thread_test(void);
 

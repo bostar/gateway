@@ -78,7 +78,7 @@ int16 XBeeTransReq(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,u
   	for(cnt=0;cnt<len;cnt++)
     	*((uint8*)frame + 17 + cnt) = *(rf_data + cnt);
   	*(((uint8*)frame)+17+len) = XBeeApiChecksum(((uint8*)frame)+3,14+len);
-#if 1
+#if defined USE_PRINTF
 	printf("\033[32m\033[1m发送数据: \033[0m \n");	
   	for(cnt=0;cnt<18+len;cnt++)
     	printf("0x%02x ",*(((uint8*)frame)+cnt));
@@ -122,7 +122,7 @@ int16 XBeeCreatSourceRout(uint8 *mac_adr,uint16 net_adr,uint16 num,uint8 *mid_ad
 	for(i=3;i<wbuf_len-1;i++)
 		*(wbuf_temp + wbuf_len-1) += *(wbuf_temp + i);
 	*(wbuf_temp + wbuf_len-1) = 0xff - *(wbuf_temp + wbuf_len-1);
-#if 1
+#if defined USE_PRINTF
 	printf("\n"); 
 	for(i=0;i<wbuf_len;i++)
 		printf("\033[33m0x%02x \033[0m",*(wbuf_temp+i));

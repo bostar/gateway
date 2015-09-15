@@ -51,10 +51,13 @@ int16 UartRevDataProcess(uint8* UartRevBuf)
 void XBeeProcessCFG(uint8 *rbuf)
 {
 	int16 temp;
+	SourceRouterLinkType *p=NULL;
 	switch(*(rbuf+18))
 	{
 		case net_request:
-			if(FindMacAdr(pLinkHead,rbuf+4) != NULL)
+			p = FindMacAdr(pLinkHead,rbuf+4);
+			TestPrintf("sss",8,rbuf+4);
+			if(p != NULL)
 			{
 				temp = get_local_addr(rbuf+12,rbuf+4); //调用API 查询是否属于网络
 				printf("\033[33m\033[1m正在查询节点...\033[0m \n");
@@ -64,6 +67,13 @@ void XBeeProcessCFG(uint8 *rbuf)
 					printf("\033[33m\033[1m已发送允许入网指令 \033[0m \n");
 					set_node_online(rbuf+4);
 					printf("\033[33m\033[1m已将锁加入网络 \033[0m \n");
+					temp = 0;
+					temp |= (p->target_adr >> 8);
+					temp |= (p->target_adr << 8);
+					if(p->lock_state == unlock)
+						XBeePutCtlCmd(rbuf+4,temp,0);
+					else if(p->lock_state == lock)
+						XBeePutCtlCmd(rbuf+4,temp,1);
 				}
 				else if(temp == -1)
 				{
@@ -71,11 +81,10 @@ void XBeeProcessCFG(uint8 *rbuf)
 					printf("\033[33m\033[1m已发送拒绝入网指令 \033[0m \n");
 					DeleteNode(pLinkHead,FindMacAdr(pLinkHead,rbuf+4));//删除节点
 				}
-				else
-				{
-					printf("\033[33m\033[1m节点查询失败\033[0m \n");
-				}
+				
 			}
+			else
+				printf("\033[33m\033[1m节点路径未建立\033[0m\n");
 			break;
 		default:
 			break;
@@ -113,6 +122,7 @@ void XBeeProcessCTL(uint8 *rbuf)
 *******************************************************/
 void XBeeProcessSEN(uint8 *rbuf)
 {
+	SourceRouterLinkType *p=NULL;
 	switch(*(rbuf+18))
 	{
 		case 1:
@@ -129,6 +139,9 @@ void XBeeProcessSEN(uint8 *rbuf)
 			else if(*(rbuf+19) == ParkLockSuccess)
 				{
 					printf("\033[33m\033[1m车位锁定成功 \033[0m \n");
+					p = FindMacAdr(pLinkHead,rbuf+4);
+					if(p != NULL)
+						p->lock_state = lock;
 					event_report( char_to_int(rbuf+12),en_lock_success);
 				}
 			else if(*(rbuf+19) == ParkLockFailed)
@@ -139,6 +152,9 @@ void XBeeProcessSEN(uint8 *rbuf)
 			else if(*(rbuf+19) == ParkUnlockSuccess)
 				{
 					printf("\033[33m\033[1m车位解锁成功 \033[0m \n");
+					p = FindMacAdr(pLinkHead,rbuf+4);
+					if(p != NULL)
+						p->lock_state = unlock;
 					event_report( char_to_int(rbuf+12),en_unlock_success);
 				}
 			else if(*(rbuf+19) == ParkUnlockFailed)
@@ -156,35 +172,43 @@ void XBeeProcessSEN(uint8 *rbuf)
 }
 /*************************************************
 **brief  record source route path
+**       保存经过路由的终端路径
 *************************************************/
 void XBeeProcessRoutRcord(uint8 *rbuf)
 {
 	uint16 target_adr=0;
 	SourceRouterLinkType *p,*pS;
-	target_adr |= (uint16)*(rbuf+13);
-	target_adr |= (((uint16)*(rbuf+12)) << 8);
-	pS = CreatRouterLink(rbuf+4,target_adr,(rbuf+16),*(rbuf+15));
-	p = FindMacAdr(pLinkHead,rbuf+4);
-	if(p == NULL)
+	if(get_local_addr(rbuf+12,rbuf+4) == 0)
 	{
-		AddData(pLinkHead,pS);
-		return ;
-	}
-	switch(compareNode(p,pS))
-	{
-		case 0:
-			free(pS);
-			break;
-		case 1:
-			DeleteNode(pLinkHead,p);
+		target_adr |= (uint16)*(rbuf+13);
+		target_adr |= (((uint16)*(rbuf+12)) << 8);
+		pS = CreatRouterLink(rbuf+4,target_adr,(rbuf+16),*(rbuf+15));
+		p = FindMacAdr(pLinkHead,rbuf+4);
+		if(p == NULL)
+		{
 			AddData(pLinkHead,pS);
-			break;
-		case 2:
-			DeleteNode(pLinkHead,p);
-			AddData(pLinkHead,pS);
-			break;
-		default:
-			break;
+			printf("\033[33m新的锁终端路径加入列表...路由节点\033[0m\n");
+			return ;
+		}
+		switch(compareNode(p,pS))
+		{
+			case 0:
+				free(pS);
+				printf("\033[33m锁终端路径已存在...路由节点\033[0m\n");
+				break;
+			case 1:
+				DeleteNode(pLinkHead,p);
+				AddData(pLinkHead,pS);
+				printf("\033[33m更新锁终端路径...路由节点\033[0m\n");
+				break;
+			case 2:
+				DeleteNode(pLinkHead,p);
+				AddData(pLinkHead,pS);
+				printf("\033[33m新的锁终端路径加入列表...路由节点\033[0m\n");
+				break;
+			default:
+				break;
+		}
 	}
 	return;
 }
@@ -209,41 +233,46 @@ void ProcessModState(uint8 *rbuf)
 }
 /*************************************************
 **brief process ND AT command response
+**      添加直接隶属协调器的终端到列表，添加列表中终端类型
 *************************************************/
 void ProcessND(uint8 *rbuf)
 {
 	uint16 target_adr=0;
 	SourceRouterLinkType *p,*pS;
-	if(get_local_addr(rbuf+8,rbuf+10) == 0 && *(rbuf+20)==0 && *(rbuf+21)==0 && *(rbuf+22)==2 )  
+	if(*(rbuf+20)==0 && *(rbuf+21)==0 )  
 	{
 		target_adr |= (((uint16)*(rbuf+8)) << 8);
+		target_adr |= (uint16)*(rbuf+9);
 		pS = CreatRouterLink(rbuf+10,target_adr,rbuf,0);
 		p = FindMacAdr(pLinkHead,rbuf+10);
 		if(p == NULL)
 		{
 			AddData(pLinkHead,pS);
-			printf("\033[33m新的锁终端路径加入列表\033[0m\n");
+			printf("\033[33m新的锁终端路径加入列表...直属节点\033[0m\n");
 			return ;
 		}
 		switch(compareNode(p,pS))
 		{ 
 			case 0:
 				free(pS);
-				printf("\033[33m锁终端路径已存在\033[0m\n");
+				printf("\033[33m锁终端路径已存在...直属节点\033[0m\n");
 				break;
 			case 1:
 				DeleteNode(pLinkHead,p);
 				AddData(pLinkHead,pS);
-				printf("\033[33m更新锁终端路径\033[0m\n");
+				printf("\033[33m更新锁终端路径...直属节点\033[0m\n");
 				break;
 			case 2:
 				AddData(pLinkHead,pS);
-				printf("\033[33m新的锁终端路径加入列表\033[0m\n");
+				printf("\033[33m新的锁终端路径加入列表...直属节点\033[0m\n");
 				break;
 			default:
 				break;
 		}
 	}
+	p = FindMacAdr(pLinkHead,rbuf+10);
+	if(p != NULL)
+		p->dev_type = *(rbuf+22);  //1 is router  2 is end device  save device type
 	return;
 }
 /*************************************************
@@ -328,6 +357,14 @@ int16 XBeeSendFactorySettingCmd(uint8 *ieeeadr,uint8 *netadr)
 	return XBeeTransReq(ieeeadr,netadr,Default,data,4,RES);
 }
 /*******************************************************
+**brief 发送设置router的NJ
+*******************************************************/
+int16 XBeeSendSetNJ(uint8 *mac_adr)
+{
+
+	return 0;
+}
+/*******************************************************
 **brief 终端控制请求   调用后台获得锁的地址
 **param	ieeeadr	目标的8字节地址
 		netadr	目标的网络地址
@@ -387,7 +424,7 @@ void CreateGatewayNet(void)
 
 	for(_i=0;_i<8;_i++)
 		_adr[_i] = 0;
-	pLinkHead = CreatRouterLink(_adr,0,HeadMidAdr,0);
+	pLinkHead = CreatRouterLink(_adr,0,HeadMidAdr,0);    //创建路由路径链表
 	XBeeCreateNet();
 	SendXBeeReadAIAgain : XBeeReadAI();  
 	usleep(1000000);

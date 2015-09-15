@@ -6,11 +6,13 @@
 #include "xbee_routine.h"
 #include <pthread.h>
 #include <string.h>
+#include "xbee_api.h"
 
 uint8 rbuf[255];
 int16 len;
 SourceRouterLinkType *pLinkHead=NULL;
 uint8 *HeadMidAdr=NULL;
+pthread_mutex_t xbee_mutex;
 //uint8 XBeeCnt=0;
 
 void TestPrintf(int8* sss,int16 lens,uint8 *buf)
@@ -43,14 +45,16 @@ void xbee_routine_thread(void)
 {
 	xbee_gpio_init();
 	xbee_serial_port_init(); 
+	pthread_mutex_init(&xbee_mutex,NULL);
 	CreateGatewayNet();
 while(1)
 {
+	pthread_mutex_lock(&xbee_mutex);
 	len = UartRevDataProcess(rbuf);
 	if(len)
 	{
-		printf("\033[34m收到数据: \033[0m");	
-		TestPrintf("1",len,rbuf);
+		//printf("\033[34m收到数据: \033[0m");	
+		//TestPrintf("1",len,rbuf);
 		switch(rbuf[3])
 		{
 			case receive_packet:
@@ -86,14 +90,14 @@ while(1)
 	if(IdleCnt%10 == 0 || IdleCnt == 1)
 	{
 		XBeeReadAT("ND");    
-		XBeeReadAT("NC");
+		//XBeeReadAT("NC");
 		XBeeReadAT("OP");
-		XBeeReadAT("NJ");
-		XBeeReadAT("SC");
+		XBeeSetAR(0,NO_RES);
+		//XBeeReadAT("NJ");
 	}        
-	XBeeSetAR(10,NO_RES);
-	printf("\033[32m已存储节点数量%d\033[0m\n",LinkLenth(pLinkHead)-1);
+	printf("\033[32m已存储节点数量%d\033[0m\n",LinkLenth(pLinkHead));
 	//LinkPrintf(pLinkHead);
+	pthread_mutex_unlock(&xbee_mutex);	
 }
 }
 
