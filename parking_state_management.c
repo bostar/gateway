@@ -227,6 +227,7 @@ void parking_state_check_routin(void)
             case parking_state_unbooking_unlock: // 取消预定成功已解锁
                 if(time_in_second - pstParkingState[loop].time > 2) // secon    d
                 {
+                    need_to_send_to_sever = 1;
                     pstParkingState[loop].state = parking_state_idle;
                 }
                 break;
@@ -248,6 +249,7 @@ void parking_state_check_routin(void)
             case parking_state_have_paid_unlock: // 支付后解锁成功
                 if(time_in_second - pstParkingState[loop].time > freetime) // secon    d               
                 {
+                    need_to_send_to_sever = 1;
                     XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_lock);
                     pstParkingState[loop].time = time((time_t*)NULL);
                     pstParkingState[loop].state = parking_state_have_paid_relock;
@@ -256,6 +258,7 @@ void parking_state_check_routin(void)
             case parking_state_have_paid_relock: // 支付解锁后车未离开重新加锁计费
                 if(time_in_second - pstParkingState[loop].time > 5) // secon    d               
                 {
+                    need_to_send_to_sever = 1;
                     XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_lock);
                     pstParkingState[loop].time = time((time_t*)NULL);
                     pstParkingState[loop].state = parking_state_have_paid_relock_failed;
@@ -387,6 +390,7 @@ void event_report(unsigned short netaddr,unsigned char event)
         }
         if(p->state == parking_state_have_paid_relock_failed)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_stop_lock;
         }
         break;
