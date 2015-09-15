@@ -8,6 +8,7 @@
 #include "ctl_cmd_cache.h"
 #include <sys/timeb.h>
 #include "listener.h"
+
 extern void swap(unsigned char len,unsigned char *array);
 typedef enum{
     parking_state_idle = 0x00, // 空闲
@@ -88,6 +89,7 @@ void parking_init(void)
         pstParkingState[loop].state = parking_state_idle;
         need_to_send_to_sever = 1;
         pstParkingState[loop].online = enOffline;
+        pstParkingState[loop].event = en_max_event;
     }
     pthread_mutex_unlock(&parking_info_mutex);
 }
@@ -339,6 +341,15 @@ void event_report(unsigned short netaddr,unsigned char event)
     {
         pthread_mutex_unlock(&parking_info_mutex);
         return ;
+    }
+    if(p->event == event)
+    {
+        pthread_mutex_unlock(&parking_info_mutex);
+        return ;
+    }
+    else
+    {
+        p->event = event;
     }
     switch(event)
     {

@@ -7,6 +7,7 @@ typedef struct {
     unsigned char parking_mac_addr[8];
     unsigned char state;
     unsigned char online;
+    en_parkingEvent event;
     time_t time;
     time_t offline_time_out;
 }st_parkingState,*pst_parkingState;
