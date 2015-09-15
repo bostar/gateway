@@ -74,12 +74,14 @@ void communicate_thread(void)
                     printf("0x%s LinkTest ACK...\r\n",macstr);
                 break;
                 case cmdDataRequest:
-		    rlen = ReadComPort(rbuf+4,3);
-                    if(rlen != 3)
+		    rlen = ReadComPort(rbuf+4,5);
+                    if(rlen != 5)
                         break;
                     requestAddress = (unsigned short)rbuf[4] << 8 | rbuf[5];
                     set_online(requestAddress);
-                    parking_state_report(requestAddress,rbuf[6]);
+                    event_report(requestAddress,rbuf[6]);
+                    event_report(requestAddress,rbuf[7]);
+                    //parking_state_report(requestAddress,rbuf[6]);
                     if(!getCtlCmd(requestAddress,&ctl_cmd))
                     {  
                         switchLockControl(requestAddress,ctl_cmd);
