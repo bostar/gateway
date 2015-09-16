@@ -225,6 +225,11 @@ void parking_state_check_routin(void)
                 }
                 break;
             case parking_state_unbooking_unlock: // 取消预定成功已解锁
+                if(time_in_second - pstParkingState[loop].time > 2) // secon    d
+                {
+                    need_to_send_to_sever = 1;
+                    pstParkingState[loop].state = parking_state_idle;
+                }
                 break;
             case parking_state_unbooking_unlock_failed: // 取消预定失败，硬件故障
                 if(time_in_second - pstParkingState[loop].time > 5) // second
@@ -244,6 +249,7 @@ void parking_state_check_routin(void)
             case parking_state_have_paid_unlock: // 支付后解锁成功
                 if(time_in_second - pstParkingState[loop].time > freetime * 60) // secon    d               
                 {
+                    need_to_send_to_sever = 1;
                     XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_lock);
                     pstParkingState[loop].time = time((time_t*)NULL);
                     pstParkingState[loop].state = parking_state_have_paid_relock;
@@ -252,6 +258,7 @@ void parking_state_check_routin(void)
             case parking_state_have_paid_relock: // 支付解锁后车未离开重新加锁计费
                 if(time_in_second - pstParkingState[loop].time > 5) // secon    d               
                 {
+                    need_to_send_to_sever = 1;
                     XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_lock);
                     pstParkingState[loop].time = time((time_t*)NULL);
                     pstParkingState[loop].state = parking_state_have_paid_relock_failed;
@@ -383,6 +390,7 @@ void event_report(unsigned short netaddr,unsigned char event)
         }
         if(p->state == parking_state_have_paid_relock_failed)
         {
+            need_to_send_to_sever = 1;
             p->state = parking_state_stop_lock;
         }
         break;
@@ -428,7 +436,8 @@ void event_report(unsigned short netaddr,unsigned char event)
         if(p->state == parking_state_unbooking || p->state == parking_state_unbooking_unlock_failed)
         {
             need_to_send_to_sever = 1;
-            p->state = parking_state_idle;
+            p->state = parking_state_unbooking_unlock;
+            p->time = time_in_second; // second
         }
         break;
         case en_unlock_failed:
@@ -675,7 +684,7 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
             }
             break;
         case parking_state_booking:
-            if(p->state == parking_state_idle)
+            if((p->state == parking_state_idle) || (p->state == parking_state_unbooking_unlock))
             {
                 p->state = parking_state_booking;
                 XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_lock);
