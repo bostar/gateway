@@ -8,7 +8,9 @@ typedef struct {
     unsigned short netaddr;
     unsigned char state;
     unsigned char online;
+    en_parkingEvent event;
     time_t time;
+    time_t offline_time_out;
 }st_parkingState,*pst_parkingState;
 pst_parkingState pstParkingState;
 extern unsigned short freetime;

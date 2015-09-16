@@ -53,8 +53,8 @@ while(1)
 	len = UartRevDataProcess(rbuf);
 	if(len)
 	{
-		//printf("\033[34m收到数据: \033[0m");	
-		//TestPrintf("1",len,rbuf);
+		printf("\033[34m收到数据: \033[0m");	
+		TestPrintf("1",len,rbuf);
 		switch(rbuf[3])
 		{
 			case receive_packet:
@@ -91,7 +91,7 @@ while(1)
 	{
 		XBeeReadAT("ND");    
 		//XBeeReadAT("NC");
-		XBeeReadAT("OP");
+		//XBeeReadAT("OP");
 		XBeeSetAR(0,NO_RES);
 		//XBeeReadAT("NJ");
 	}        

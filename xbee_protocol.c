@@ -67,14 +67,15 @@ void XBeeProcessCFG(uint8 *rbuf)
 					printf("\033[33m\033[1m已发送允许入网指令 \033[0m \n");
 					set_node_online(rbuf+4);
 					printf("\033[33m\033[1m已将锁加入网络 \033[0m \n");
-					temp = 0;
+					XBeeSendDevType((rbuf+4),(rbuf+12));
+			/*		temp = 0;
 					temp |= (p->target_adr >> 8);
 					temp |= (p->target_adr << 8);
 					if(p->lock_state == unlock)
 						XBeePutCtlCmd(rbuf+4,temp,0);
 					else if(p->lock_state == lock)
 						XBeePutCtlCmd(rbuf+4,temp,1);
-				}
+			*/	}
 				else if(temp == -1)
 				{
 					XBeeJionDisable((rbuf+4),(rbuf+12));
@@ -363,6 +364,36 @@ int16 XBeeSendSetNJ(uint8 *mac_adr)
 {
 
 	return 0;
+}
+/*******************************************************
+**brief 发送设备类型
+*******************************************************/
+int16 XBeeSendDevType(uint8 *mac_adr,uint8 *net_adr)
+{
+	uint8 data[5];
+	uint16 target_adr=0;
+	SourceRouterLinkType *p;
+	
+	p = FindMacAdr(pLinkHead,mac_adr);
+	if(p == NULL)
+	{
+		printf("\033[33mERROR!!！节点不存在\033[0m\n");
+		return 0;
+	}
+	target_adr |= (uint16)*(net_adr+1);
+	target_adr |= (((uint16)*(net_adr+0)) << 8);
+	data[0]  =  'C';
+	data[1]  =  'F';
+	data[2]  =  'G';
+	data[3]  =  0x04;
+	if(p->dev_type == 0x01)
+		data[4]  =  0x01;
+	else if(p->dev_type == 0x02)
+		data[4]	=	0x02;
+	
+	if(p->num_mid_adr != 0)
+		XBeeCreatSourceRout(p->mac_adr,p->target_adr,p->num_mid_adr,p->mid_adr);
+	return XBeeTransReq(mac_adr,net_adr,Default,data,5,RES);
 }
 /*******************************************************
 **brief 终端控制请求   调用后台获得锁的地址
