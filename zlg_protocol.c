@@ -74,14 +74,13 @@ void communicate_thread(void)
                     printf("0x%s LinkTest ACK...\r\n",macstr);
                 break;
                 case cmdDataRequest:
-		    rlen = ReadComPort(rbuf+4,5);
-                    if(rlen != 5)
+		    rlen = ReadComPort(rbuf+4,4);
+                    if(rlen != 4)
                         break;
                     requestAddress = (unsigned short)rbuf[4] << 8 | rbuf[5];
                     set_online(requestAddress);
                     event_report(requestAddress,rbuf[6]);
                     event_report(requestAddress,rbuf[7]);
-                    //parking_state_report(requestAddress,rbuf[6]);
                     if(!getCtlCmd(requestAddress,&ctl_cmd))
                     {  
                         switchLockControl(requestAddress,ctl_cmd);
@@ -102,12 +101,11 @@ void communicate_thread(void)
                 continue;
             switch(rbuf[3])
             {
-                case cmdEventReport:
+                case cmdEventReport://now this case is useless
                     rlen = ReadComPort(rbuf+4,3);
                     if(rlen != 3)
                         break;
                     requestAddress = (unsigned short)rbuf[5] << 8 | rbuf[6];
-                    ackEventReport(requestAddress);
                     printf("node 0x%04x is reporting event...\r\n",requestAddress);
                     event_report(requestAddress,rbuf[4]);
                 break;
@@ -284,25 +282,6 @@ void startSensorCalibration(void)
     WriteComPort(wbuf, 4);
     
     printf("taking sensor calibration...\r\n"); 
-}
-
-void ackEventReport(unsigned short DstAddr)
-{
-    unsigned char wbuf[7];
-    
-    wbuf[0] = 'S';
-    wbuf[1] = 'E';
-    wbuf[2] = 'N';
-    wbuf[3] = 0x04;//cmd
-    wbuf[4] = 0x00;//success 
-    wbuf[5] = DstAddr >> 8;
-    wbuf[6] = DstAddr;
-
-//    set_temporary_DestAddr(DstAddr);
-//    set_temporary_cast_mode(unicast);
-//    usleep(100000);
-    WriteComPort(wbuf, 7);
-    printf("have acked node 0x%04x event report_______\r\n",DstAddr);
 }
 
 void testBeep(unsigned short DstAddr,unsigned char cmd)
