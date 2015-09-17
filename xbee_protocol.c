@@ -66,6 +66,7 @@ void XBeeProcessCFG(uint8 *rbuf)
 					XBeeJionEnable((rbuf+4),(rbuf+12)); //
 					printf("\033[33m\033[1m已发送允许入网指令 \033[0m \n");
 					set_node_online(rbuf+4);
+					qwerty++;
 					printf("\033[33m\033[1m已将锁加入网络 \033[0m \n");
 					XBeeSendDevType((rbuf+4),(rbuf+12));
 			/*		temp = 0;
@@ -195,7 +196,7 @@ void XBeeProcessRoutRcord(uint8 *rbuf)
 		{
 			case 0:
 				free(pS);
-				printf("\033[33m锁终端路径已存在...路由节点\033[0m\n");
+				//printf("\033[33m锁终端路径已存在...路由节点\033[0m\n");
 				break;
 			case 1:
 				DeleteNode(pLinkHead,p);
@@ -256,7 +257,7 @@ void ProcessND(uint8 *rbuf)
 		{ 
 			case 0:
 				free(pS);
-				printf("\033[33m锁终端路径已存在...直属节点\033[0m\n");
+				//printf("\033[33m锁终端路径已存在...直属节点\033[0m\n");
 				break;
 			case 1:
 				DeleteNode(pLinkHead,p);
@@ -312,7 +313,7 @@ int16 XBeeJionEnable(uint8 *ieeeadr,uint8 *netadr)
 		printf("\033[33mERROR!!！节点不存在\033[0m\n");
 		return 0;
 	}
-	if(p->num_mid_adr != 0)
+	//if(p->num_mid_adr != 0)
 		XBeeCreatSourceRout(p->mac_adr,p->target_adr,p->num_mid_adr,p->mid_adr);
 	return XBeeTransReq(ieeeadr,netadr,Default,data,5,RES);
 }
@@ -391,7 +392,7 @@ int16 XBeeSendDevType(uint8 *mac_adr,uint8 *net_adr)
 	else if(p->dev_type == 0x02)
 		data[4]	=	0x02;
 	
-	if(p->num_mid_adr != 0)
+	//if(p->num_mid_adr != 0)
 		XBeeCreatSourceRout(p->mac_adr,p->target_adr,p->num_mid_adr,p->mid_adr);
 	return XBeeTransReq(mac_adr,net_adr,Default,data,5,RES);
 }

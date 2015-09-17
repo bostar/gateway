@@ -94,11 +94,11 @@ unsigned char xbee_gpio_get(int gpio)
 void XBeeCreateNet(void)
 {
 	XBeeSetPanID(NO_RES);   //设置ID的值
-	XBeeSetChannel(0x0014,NO_RES); //设置信道
+	XBeeSetChannel(SCAN_CHANNEL,NO_RES); //设置信道
 	XbeeSendAC(NO_RES);
 	XBeeSendWR(NO_RES);
 	XBeeSetZS(1,NO_RES);
-	XBeeSetNJ(0xff,NO_RES);
+	XBeeSetNJ(NJ_TIME,NO_RES);
 	XbeeSendAC(NO_RES);
 	XBeeSendWR(NO_RES);
 	//XBeeReadAI(RES);

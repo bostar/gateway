@@ -260,11 +260,8 @@ void parking_state_check_routin(void)
 
                 break;
             case parking_state_have_paid_unlock: // 支付后解锁成功
-<<<<<<< HEAD
                 if(time_in_second - pstParkingState[loop].time > freetime * 60) // secon    d               
-=======
                 if(time_in_second - pstParkingState[loop].time > 15)//freetime * 60) // secon    d               
->>>>>>> 07436599118464450745267a8a7cb005be193633
                 {
                     need_to_send_to_sever = 1;
                     XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_lock);

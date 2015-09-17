@@ -48,7 +48,7 @@ typedef enum
 }LockStateType;
 
 
-
+extern uint32 qwerty;
 
 int16 UartRevDataProcess(uint8* UartRevBuf);
 int16 XBeeJionEnable(uint8 *ieeeadr,uint8 *netadr);

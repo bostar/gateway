@@ -3,6 +3,10 @@
 #include "xbee_vari_type.h"
 #include "xbee_atcmd.h"
 
+
+#define SCAN_CHANNEL 0x4210
+#define NJ_TIME 0x10
+
 void xbee_gpio_init(void);
 void xbee_serial_port_init(void);
 int xbee_serial_port_read(unsigned char *buf);

@@ -13,7 +13,9 @@ int16 len;
 SourceRouterLinkType *pLinkHead=NULL;
 uint8 *HeadMidAdr=NULL;
 pthread_mutex_t xbee_mutex;
+pthread_mutex_t xbee_mutex_test;
 //uint8 XBeeCnt=0;
+uint32 qwerty;
 
 void TestPrintf(int8* sss,int16 lens,uint8 *buf)
 {
@@ -53,8 +55,8 @@ while(1)
 	len = UartRevDataProcess(rbuf);
 	if(len)
 	{
-		printf("\033[34m收到数据: \033[0m");	
-		TestPrintf("1",len,rbuf);
+		//printf("\033[34m收到数据: \033[0m");	
+		//TestPrintf("1",len,rbuf);
 		switch(rbuf[3])
 		{
 			case receive_packet:
@@ -93,7 +95,9 @@ while(1)
 		//XBeeReadAT("NC");
 		//XBeeReadAT("OP");
 		XBeeSetAR(0,NO_RES);
+		XBeeReadAT("OI");
 		//XBeeReadAT("NJ");
+		XBeeReadAT("MY"); 
 	}        
 	printf("\033[32m已存储节点数量%d\033[0m\n",LinkLenth(pLinkHead));
 	//LinkPrintf(pLinkHead);
@@ -108,13 +112,39 @@ void xbee_routine_thread_test(void)
 	
 	xbee_gpio_init();
 	xbee_serial_port_init();
+	pthread_mutex_init(&xbee_mutex_test,NULL);
 	while(1)
 	{
+		pthread_mutex_lock(&xbee_mutex_test);
 		reval = scanf("%s",in_cmd);
-		if(strncmp("asd",in_cmd,strlen("asd")) == 0)
-			printf("正确\n");
-		else 
-			printf("错误\n"); 
+		if(strncmp("linklist",in_cmd,strlen("linklist")) == 0)
+			LinkPrintf(pLinkHead);
+		else if(strncmp("nettimes",in_cmd,strlen("nettimes")) == 0)
+			printf("\033[31m 入网次数 0x%08x \033[0m\n",qwerty);
+		else if(strncmp("op",in_cmd,strlen("op")) == 0)
+		{			
+			XBeeReadAT("OP");
+			usleep(1000000);
+			printf("\033[34m收到数据: \033[0m");	
+			TestPrintf("1",len,rbuf);
+		}
+		else if(strncmp("sc",in_cmd,strlen("sc")) == 0)
+		{			
+			XBeeReadAT("SC");
+			usleep(1000000);
+			printf("\033[34m收到数据: \033[0m");	
+			TestPrintf("1",len,rbuf);
+		}
+		else if(strncmp("oi",in_cmd,strlen("oi")) == 0)
+		{			
+			XBeeReadAT("OI");
+			usleep(1000000);
+			printf("\033[34m收到数据: \033[0m");	
+			TestPrintf("1",len,rbuf);
+		}
+		else
+			printf("\033[31m无效的命令\033[0m\n");
+		pthread_mutex_unlock(&xbee_mutex_test);
 	} 
 }
 
