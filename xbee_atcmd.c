@@ -289,6 +289,18 @@ int16 XBeeSetNJ(uint8 time,uint8 IsRes)
   	return XBeeSendATCmd(cmd,paramer,1,IsRes);
 }
 /*********************************************************
+**biref 重启网络
+**param data 0 重启单个网络
+			 1 重启全部网络
+**********************************************************/
+int16 XBeeSetNR(uint8 data,IsResp IsRes)
+{
+	uint8 paramer[1];
+  	int8 *cmd = "NR";
+	paramer[0]=data;
+  	return XBeeSendATCmd(cmd,paramer,1,IsRes);
+}
+/*********************************************************
 **biref 发送SP命令 休眠时间
 **********************************************************/
 int16 XBeeSetSP(uint16 time,IsResp IsRes)
@@ -361,6 +373,17 @@ int16 XBeeReadAT(int8 *at_cmd)
 	cmd = at_cmd;
   	paramer[0]=0;
   	return XBeeSendATCmd(cmd,paramer,0,RES);	
+}
+/*********************************************************
+**biref 发送设置AT参数命令
+**********************************************************/
+int16 XBeeSendAT(int8 *at_cmd)
+{
+	uint8 paramer[1];
+  	int8 *cmd;
+	cmd = at_cmd;
+  	paramer[0]=0;
+  	return XBeeSendATCmd(cmd,paramer,0,NO_RES);	
 }
 /********************************************************
 **brief 发送广播

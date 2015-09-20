@@ -148,6 +148,7 @@ void parking_state_check_routin(void)
     {
         printf("[SERVER:]%04x ",pstParkingState[loop].parking_id);
         printf("%s; ",parking_online_string[pstParkingState[loop].online]);
+        printf("[SERVER:]%04x ",pstParkingState[loop].netaddr);
         printf("%s",parking_state_string[pstParkingState[loop].state]);
         printf("\r\n");
         switch(pstParkingState[loop].state)

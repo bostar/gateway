@@ -65,9 +65,10 @@ int16 XBeeEndDeviceLock(uint8 *ieeeadr,uint8 *netadr);
 int16 XBeeEndDeviceUnlock(uint8 *ieeeadr,uint8 *netadr);
 int16 XBeePutCtlCmd(uint8 *ieeeadr,uint16 netadr,uint8 lockstate);
 int16 putCtlCmd(uint16 netadr,uint8 lockstate);
-int16 XBeeSendTimeout(uint8 time);
+int16 XBeeSendNetOFF(uint8 time);
 int16 XBeeSendDevType(uint8 *mac_adr,uint8 *net_adr);
 uint16 char_to_int(uint8 *data);
+int16 XBeeSendSetNJ(uint8 *mac_adr,uint8 time);
 void printf_local_time(void);
 void CreateGatewayNet(void);
 

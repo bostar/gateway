@@ -136,6 +136,7 @@ int16 XBeeSetSP(uint16 num,IsResp IsRes);
 int16 XBeeSetSN(uint16 num,IsResp IsRes);
 int16 XBeeSetST(uint16 num,IsResp IsRes);
 int16 XBeeSetAR(uint8 data,IsResp IsRes);
+int16 XBeeSetNR(uint8 data,IsResp IsRes);
 
 int16 XBeeReadNJ(void);
 int16 XBeeReadSH(void);
@@ -143,6 +144,7 @@ int16 XBeeReadSL(void);
 int16 XBeeReadAI(void);
 int16 XBeeReadPanID(void);  //读取ID
 int16 XBeeReadAT(int8 *at_cmd);  //发送读取xbee参数指令
+int16 XBeeSendAT(int8 *at_cmd);  //发送设置xbee参数指令
 
 int16 XBeeTransReq(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,uint16 len,IsResp IsRes); //xbee发送数据请求
 int16 XBeeBoardcastTrans(uint8 *data,uint16 len,IsResp IsRes);  

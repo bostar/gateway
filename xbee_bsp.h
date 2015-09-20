@@ -5,7 +5,7 @@
 
 
 #define SCAN_CHANNEL 0x4210
-#define NJ_TIME 0x10
+#define NJ_TIME 0xff
 
 void xbee_gpio_init(void);
 void xbee_serial_port_init(void);

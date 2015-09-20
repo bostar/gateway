@@ -18,6 +18,7 @@ SourceRouterLinkType *CreatRouterLink(uint8 *mac_adr,uint16 target_adr,uint8 *mi
 	for(i=0;i<num*2;i++)
 		pRouterLink->mid_adr[i] = mid_adr[i];
 	pRouterLink->num_mid_adr = num;
+	pRouterLink->dev_type = 0;
 	pRouterLink->next = NULL;
 	return pRouterLink;
 }
@@ -58,16 +59,13 @@ SourceRouterLinkType *FindMacAdr(const SourceRouterLinkType *pNode,uint8 *mac_ad
 *******************************************************************************************/
 uint8 AddData(const SourceRouterLinkType *pNode,SourceRouterLinkType *pNodeS)
 {
-	SourceRouterLinkType *p,*pS=NULL;
-	uint8 i=0;
+	SourceRouterLinkType *p=NULL;
 	p = (SourceRouterLinkType*)pNode;
-	while(p != NULL)
+	while(p->next != NULL)
 	{
-		pS = p;
 		p = p->next;
-		i++;
 	}
-	pS->next = pNodeS;
+	p->next = pNodeS;
 	//LinkPrintf(pLinkHead);
 	return 0;
 }
@@ -110,6 +108,8 @@ uint8 DeleteNode(const SourceRouterLinkType *pNode,SourceRouterLinkType *deleteN
 		return 2;	//表头禁止被删除
 	pS->next = p->next;
 	free(p);
+	p = NULL;
+	deleteNode = NULL;
 	//LinkPrintf(pLinkHead);
 	return 0;
 }
@@ -152,10 +152,6 @@ void NodePrintf(SourceRouterLinkType *pNode)
 	}
 	printf("  ");
 	printf("0x%04x	",pNode->target_adr);
-	if(pNode->dev_type == 2)
-		printf(" 终端  ");
-	else if(pNode->dev_type == 1)
-		printf(" 路由  ");
 	printf("  %d	",pNode->num_mid_adr);
 	for(i=0;i<pNode->num_mid_adr*2;i++)
 	{
@@ -179,7 +175,6 @@ void LinkPrintf(SourceRouterLinkType *pNode)
 	printf("编号	");
 	printf("目标物理地址		");
 	printf("  目标网络地址 ");
-	printf("节点类型 ");
 	printf("数量");
 	printf(" 中间节点地址\n");
 	p = pNode;

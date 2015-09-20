@@ -97,14 +97,12 @@ void XBeeCreateNet(void)
 	XBeeSetChannel(SCAN_CHANNEL,NO_RES); //设置信道
 	XbeeSendAC(NO_RES);
 	XBeeSendWR(NO_RES);
-	XBeeSetZS(1,NO_RES);
+	//XBeeSetZS(1,NO_RES);
 	XBeeSetNJ(NJ_TIME,NO_RES);
 	XbeeSendAC(NO_RES);
 	XBeeSendWR(NO_RES);
 	//XBeeReadAI(RES);
 }
-
-
 
 
 

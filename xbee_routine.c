@@ -7,6 +7,8 @@
 #include <pthread.h>
 #include <string.h>
 #include "xbee_api.h"
+#include "server_duty.h"
+#include <time.h>
 
 uint8 rbuf[255];
 int16 len;
@@ -15,7 +17,9 @@ uint8 *HeadMidAdr=NULL;
 pthread_mutex_t xbee_mutex;
 pthread_mutex_t xbee_mutex_test;
 //uint8 XBeeCnt=0;
-uint32 qwerty;
+uint8 net_off=0;
+
+#define AR_PER 5
 
 void TestPrintf(int8* sss,int16 lens,uint8 *buf)
 {
@@ -45,9 +49,13 @@ void TestPrintf(int8* sss,int16 lens,uint8 *buf)
 
 void xbee_routine_thread(void)
 {
+	static time_t timep_s = 0;
+	time_t timep_c = 0;
+	
+	pthread_mutex_init(&xbee_mutex,NULL);
 	xbee_gpio_init();
 	xbee_serial_port_init(); 
-	pthread_mutex_init(&xbee_mutex,NULL);
+	XBeeSendAT("RE");
 	CreateGatewayNet();
 while(1)
 {
@@ -87,23 +95,27 @@ while(1)
 				break;
 		}
 	}
-	static uint16 IdleCnt = 0;
-	IdleCnt++; 
-	if(IdleCnt%10 == 0 || IdleCnt == 1)
+	time(&timep_c);
+	if((timep_c-timep_s)%AR_PER == 0)
 	{
-		XBeeReadAT("ND");    
-		//XBeeReadAT("NC");
-		//XBeeReadAT("OP");
+		//printf("\033[33m发送 AR \033[0m\n");
 		XBeeSetAR(0,NO_RES);
-		XBeeReadAT("OI");
-		//XBeeReadAT("NJ");
-		XBeeReadAT("MY"); 
-	}        
-	printf("\033[32m已存储节点数量%d\033[0m\n",LinkLenth(pLinkHead));
-	//LinkPrintf(pLinkHead);
+	}
+	if(net_off == 0)
+	{
+		if(networking_over() == 0)
+		{
+			net_off = 1;
+			//XBeeSendNetOFF(NET_OFF_TIME);
+			printf("\033[32m锁已经全部加入网络\033[0m\n");
+		}
+	}
+
 	pthread_mutex_unlock(&xbee_mutex);	
 }
 }
+
+#define VERSION "V1.0"
 
 void xbee_routine_thread_test(void)
 {
@@ -119,31 +131,52 @@ void xbee_routine_thread_test(void)
 		reval = scanf("%s",in_cmd);
 		if(strncmp("linklist",in_cmd,strlen("linklist")) == 0)
 			LinkPrintf(pLinkHead);
-		else if(strncmp("nettimes",in_cmd,strlen("nettimes")) == 0)
-			printf("\033[31m 入网次数 0x%08x \033[0m\n",qwerty);
 		else if(strncmp("op",in_cmd,strlen("op")) == 0)
-		{			
+		{
 			XBeeReadAT("OP");
-			usleep(1000000);
+			sleep(1);
 			printf("\033[34m收到数据: \033[0m");	
 			TestPrintf("1",len,rbuf);
 		}
 		else if(strncmp("sc",in_cmd,strlen("sc")) == 0)
-		{			
+		{
 			XBeeReadAT("SC");
-			usleep(1000000);
+			sleep(1);
+			printf("\033[34m收到数据: \033[0m");	
+			TestPrintf("1",len,rbuf);
+		}
+		else if(strncmp("sh",in_cmd,strlen("sh")) == 0)
+		{
+			XBeeReadAT("SH");
+			sleep(1);
+			printf("\033[34m收到数据: \033[0m");	
+			TestPrintf("1",len,rbuf);
+		}
+		else if(strncmp("sl",in_cmd,strlen("sl")) == 0)
+		{
+			XBeeReadAT("SL");
+			sleep(1);
 			printf("\033[34m收到数据: \033[0m");	
 			TestPrintf("1",len,rbuf);
 		}
 		else if(strncmp("oi",in_cmd,strlen("oi")) == 0)
-		{			
+		{
 			XBeeReadAT("OI");
-			usleep(1000000);
+			sleep(1);
 			printf("\033[34m收到数据: \033[0m");	
 			TestPrintf("1",len,rbuf);
 		}
+		else if(strncmp("locknum",in_cmd,strlen("locknum")) == 0)
+		{
+			if(networking_over() == 0)
+				printf("\033[35m锁已经全部加入网络\033[0m\n");
+			else
+				printf("\033[35m有锁未加入网络\033[0m\n");
+		}
+		else if(strncmp("version",in_cmd,strlen("version")) == 0)
+			printf("\033[35m软件版本 %s\033[0m\n",VERSION);
 		else
-			printf("\033[31m无效的命令\033[0m\n");
+			printf("\033[35m无效的命令\033[0m\n");
 		pthread_mutex_unlock(&xbee_mutex_test);
 	} 
 }

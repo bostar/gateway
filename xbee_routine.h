@@ -5,6 +5,8 @@
 
 #define NO_NET        1
 #define IN_NET        2
+#define NET_OFF_TIME  0xff
+ 
 
 typedef enum
 {
