@@ -619,6 +619,7 @@ void set_node_online(unsigned char *macaddr)
         {
             pstParkingState[loop].state = parking_state_idle;
             pstParkingState[loop].online = 1;
+            pstParkingState[loop].offline_time_out = time((time_t)NULL);
             need_to_send_to_sever = 1;
             break;
         }
