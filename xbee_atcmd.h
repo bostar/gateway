@@ -145,6 +145,7 @@ int16 XBeeReadAI(void);
 int16 XBeeReadPanID(void);  //读取ID
 int16 XBeeReadAT(int8 *at_cmd);  //发送读取xbee参数指令
 int16 XBeeSendAT(int8 *at_cmd);  //发送设置xbee参数指令
+uint16 XBeeSetAT(int8 *at_cmd, uint8 *param, uint8 len, IsResp IsRes);
 
 int16 XBeeTransReq(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,uint16 len,IsResp IsRes); //xbee发送数据请求
 int16 XBeeBoardcastTrans(uint8 *data,uint16 len,IsResp IsRes);  

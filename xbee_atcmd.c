@@ -385,6 +385,15 @@ int16 XBeeSendAT(int8 *at_cmd)
   	paramer[0]=0;
   	return XBeeSendATCmd(cmd,paramer,0,NO_RES);	
 }
+/*********************************************************
+**biref 设置AT参数命令
+**********************************************************/
+uint16 XBeeSetAT(int8 *at_cmd, uint8 *param, uint8 len, IsResp IsRes)
+{
+	int8 *cmd;
+	cmd = at_cmd;
+	return XBeeSendATCmd(cmd,param,len,IsRes);
+}
 /********************************************************
 **brief 发送广播
 ********************************************************/

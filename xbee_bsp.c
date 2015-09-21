@@ -9,7 +9,7 @@
 #include <errno.h>
 #include <limits.h>
 #include "serial.h"
-
+#include "xbee_routine.h"
 
 #define ttyO0  0
 #define ttyO1  1
@@ -93,15 +93,18 @@ unsigned char xbee_gpio_get(int gpio)
 *******************************************/
 void XBeeCreateNet(void)
 {
-	XBeeSetPanID(NO_RES);   //设置ID的值
-	XBeeSetChannel(SCAN_CHANNEL,NO_RES); //设置信道
-	XbeeSendAC(NO_RES);
-	XBeeSendWR(NO_RES);
-	//XBeeSetZS(1,NO_RES);
-	XBeeSetNJ(NJ_TIME,NO_RES);
-	XbeeSendAC(NO_RES);
-	XBeeSendWR(NO_RES);
-	//XBeeReadAI(RES);
+	uint8 nr_param;
+	nr_param = 0;
+	XBeeSendAT("RE");
+	usleep(1000);
+	XBeeSendAT("FR");
+	usleep(2500000);
+	XBeeSetAT("NR",&nr_param ,1, RES);
+	usleep(1000);
+	XBeeSetPanID(RES);   //设置ID的值
+	XBeeSetChannel(SCAN_CHANNEL,RES); //设置信道
+	XbeeSendAC(RES);
+	XBeeSendWR(RES);
 }
 
 

@@ -19,7 +19,6 @@ pthread_mutex_t xbee_mutex_test;
 //uint8 XBeeCnt=0;
 uint8 net_off=0;
 
-#define AR_PER 5
 
 void TestPrintf(int8* sss,int16 lens,uint8 *buf)
 {
@@ -55,10 +54,12 @@ void xbee_routine_thread(void)
 	pthread_mutex_init(&xbee_mutex,NULL);
 	xbee_gpio_init();
 	xbee_serial_port_init(); 
-	XBeeSendAT("RE");
+	pthread_mutex_lock(&xbee_mutex);
 	CreateGatewayNet();
+	pthread_mutex_unlock(&xbee_mutex);
+	XBeeSetAR(0x01,NO_RES);
 while(1)
-{
+{ 
 	pthread_mutex_lock(&xbee_mutex);
 	len = UartRevDataProcess(rbuf);
 	if(len)
@@ -99,11 +100,11 @@ while(1)
 	if((timep_c-timep_s)%AR_PER == 0)
 	{
 		//printf("\033[33m发送 AR \033[0m\n");
-		XBeeSetAR(0,NO_RES);
+		//XBeeSetAR(0,NO_RES);
 	}
 	if(net_off == 0)
 	{
-		if(networking_over() == 0)
+		if(networking_over() == 1)
 		{
 			net_off = 1;
 			//XBeeSendNetOFF(NET_OFF_TIME);
@@ -121,7 +122,6 @@ void xbee_routine_thread_test(void)
 {
 	int8 in_cmd[100];
 	int reval;
-	
 	xbee_gpio_init();
 	xbee_serial_port_init();
 	pthread_mutex_init(&xbee_mutex_test,NULL);
@@ -166,6 +166,14 @@ void xbee_routine_thread_test(void)
 			printf("\033[34m收到数据: \033[0m");	
 			TestPrintf("1",len,rbuf);
 		}
+		else if(strncmp("ch",in_cmd,strlen("ch")) == 0)
+		{
+			XBeeReadAT("CH");
+			sleep(1);
+			printf("\033[34m收到数据: \033[0m");	
+			TestPrintf("1",len,rbuf);
+		}
+
 		else if(strncmp("locknum",in_cmd,strlen("locknum")) == 0)
 		{
 			if(networking_over() == 0)

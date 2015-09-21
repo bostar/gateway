@@ -407,27 +407,35 @@ int16 XBeeSendSenserInit(uint8 *ieeeadr,uint8 *net_adr)
 **************************************************************/
 void CreateGatewayNet(void)
 {
-	uint8 _i,_adr[8];
+	uint8 _i,_adr[8],state=0;
 	uint8 len,rbuf[128];
-
+	static time_t timep_s = 0;
+	time_t timep_c;
 	for(_i=0;_i<8;_i++)
 		_adr[_i] = 0;
 	pLinkHead = CreatRouterLink(_adr,0,HeadMidAdr,0);    //创建路由路径链表
 	XBeeCreateNet();
-	SendXBeeReadAIAgain : XBeeReadAI();  
-	usleep(1000000);
-	len = UartRevDataProcess(rbuf);	
-	while(len != 10 || rbuf[3] != 0x88 || rbuf[5] != 'A' || rbuf[6] != 'I' || rbuf[7] != 0 )
+	state = 1;
+	time(&timep_s);
+	while(state != 0)
 	{
-		usleep(1000000);
+		time(&timep_c);
+		if((timep_c-timep_s)%60 == 0 && (timep_c-timep_s) != 0)
+		{
+			XBeeCreateNet();
+		}
+		XBeeReadAI();  
+		usleep(2000);
 		len = UartRevDataProcess(rbuf);
-	} 
-	if(rbuf[8]!=0)
-	{ 
-		XBeeCreateNet();
-		goto SendXBeeReadAIAgain;
+		if(len > 0 )
+		{
+			if(rbuf[3] == 0x88 || rbuf[5] == 'A' || rbuf[6] == 'I' || rbuf[7] == 0)
+			{
+				state = rbuf[8];
+			}
+		}
 	}
-	XBeeSetSP(100,NO_RES);	//设置睡眠参数
+	XBeeSetSP(200,NO_RES);	//设置睡眠参数
 	printf("\n\033[33m组建网络完成！\033[0m\n");
 }
 /***************************************************************

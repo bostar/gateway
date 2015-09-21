@@ -2,10 +2,10 @@
 #define __XBEE_ROUTINE_H__
 #include "xbee_vari_type.h"
 #include "xbee_api.h"
+#include "xbee_config.h"
 
 #define NO_NET        1
 #define IN_NET        2
-#define NET_OFF_TIME  0xff
  
 
 typedef enum
