@@ -562,10 +562,10 @@ int networking_over(void)
 void set_online(unsigned short netaddr)
 {
     int loop = 0;
-    pthread_mutex_lock(&parking_info_mutex);
+    //pthread_mutex_lock(&parking_info_mutex);
     if(pstParkingState == NULL)
     {
-        pthread_mutex_unlock(&parking_info_mutex);
+        //pthread_mutex_unlock(&parking_info_mutex);
         return;
     }
 
@@ -578,7 +578,7 @@ void set_online(unsigned short netaddr)
             break;
         }
     }
-    pthread_mutex_unlock(&parking_info_mutex);
+    //pthread_mutex_unlock(&parking_info_mutex);
 }
 
 void set_node_online(unsigned char *macaddr)
