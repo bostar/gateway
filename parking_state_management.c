@@ -571,7 +571,7 @@ void set_online(unsigned short netaddr)
 
     for(loop = 0;loop < depot_info.depot_size;loop ++)
     {
-        if(pstParkingState[loop].parking_id == netaddr)
+        if(pstParkingState[loop].netaddr == netaddr)
         {
             pstParkingState[loop].online = 1;
             pstParkingState[loop].offline_time_out = time((time_t*)NULL);
