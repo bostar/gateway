@@ -617,7 +617,7 @@ void set_node_online(unsigned char *macaddr)
     {
         if(memcmp(pstParkingState[loop].parking_mac_addr,macaddr,8) == 0)
         {
-            pstParkingState[loop].state = parking_state_idle;
+            //pstParkingState[loop].state = parking_state_idle;
             pstParkingState[loop].online = 1;
             pstParkingState[loop].offline_time_out = time((time_t)NULL);
             need_to_send_to_sever = 1;
