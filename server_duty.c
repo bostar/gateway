@@ -181,6 +181,10 @@ time:
             printf("[SERVER]free time is %d minute\r\n",freetime);
 
         }
+        else if(memcmp("HEAR",rbuf,4) == 0)
+        {
+            len = tcp_listen(&rbuf[4],8);
+        }
         else
         {
             printf("[SERVER]unknown cmd\r\n");
