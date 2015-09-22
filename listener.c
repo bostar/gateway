@@ -99,7 +99,7 @@ int tcp_listen(unsigned char *revbuf,int bufsize)
     {
         time_in_second = time((time_t *)NULL);
     }
-    if(time((time_t *)NULL) - time_in_second > 1 * 60 * 60)
+    if(time((time_t *)NULL) - time_in_second > 1 * 5)//60 * 60)
     {
         close(sockfd);
         while((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
