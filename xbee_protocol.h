@@ -59,6 +59,7 @@ void XBeeProcessSEN(uint8 *rbuf);
 void XBeeProcessRoutRcord(uint8 *rbuf);
 void ProcessND(uint8 *rbuf);
 void ProcessModState(uint8 *rbuf);
+void ProcessATRes(uint8 *rbuf);
 int16 XBeeSendTimeout(uint8 time);
 int16 XBeeSendSenserInit(uint8 *ieeeadr,uint8 *net_adr);
 int16 XBeeEndDeviceLock(uint8 *ieeeadr,uint8 *netadr);
@@ -69,6 +70,8 @@ int16 XBeeSendNetOFF(uint8 time);
 int16 XBeeSendDevType(uint8 *mac_adr,uint8 *net_adr);
 uint16 char_to_int(uint8 *data);
 int16 XBeeSendSetNJ(uint8 *mac_adr,uint8 time);
+void SendAR(uint8 perid);
+void CloseNet(uint8 time);
 void printf_local_time(void);
 void CreateGatewayNet(void);
 

@@ -15,6 +15,17 @@ typedef enum
 	ReFactory		 =	 0x03
 }CREprotocolType;
 
+typedef struct 
+{
+	uint8 NetState;
+	uint8 ARper;
+	uint8 CloseNet;
+	uint16 panID16;
+	uint8 panID64[8];
+	uint8 channel;
+}CoorInfoType;
+
+CoorInfoType CoorInfo;
 
 extern SourceRouterLinkType *pLinkHead;
 extern uint8 *HeadMidAdr;

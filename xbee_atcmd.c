@@ -122,7 +122,8 @@ int16 XBeeCreatSourceRout(uint8 *mac_adr,uint16 net_adr,uint16 num,uint8 *mid_ad
 	for(i=3;i<wbuf_len-1;i++)
 		*(wbuf_temp + wbuf_len-1) += *(wbuf_temp + i);
 	*(wbuf_temp + wbuf_len-1) = 0xff - *(wbuf_temp + wbuf_len-1);
-#if defined USE_PRINTF
+//#if defined USE_PRINTF
+#if 1
 	printf("\n"); 
 	for(i=0;i<wbuf_len;i++)
 		printf("\033[33m0x%02x \033[0m",*(wbuf_temp+i));
@@ -134,12 +135,9 @@ int16 XBeeCreatSourceRout(uint8 *mac_adr,uint16 net_adr,uint16 num,uint8 *mid_ad
 /*********************************************************
 **biref 设置ID的值
 **********************************************************/
-int16 XBeeSetPanID(uint8 IsRes)
+int16 XBeeSetPanID(uint8 *panID,uint8 IsRes)
 {
-  	uint8 panID[8],i=0;
   	int8 *cmd = "ID";
-  	for(i=0;i<8;i++)
-    	*(panID+i) = 0;
   	return XBeeSendATCmd(cmd,panID,8,IsRes);
 }
 /*********************************************************

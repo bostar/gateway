@@ -18,7 +18,7 @@ typedef enum
 
 typedef enum
 {
-  RES       =       0x52,
+  RES       =       0x01,
   NO_RES    =       0x00
 }IsResp;        //应答模式
 
@@ -121,7 +121,7 @@ typedef enum
 int16 XBeeSetIO(XBeeIOParam ioparam,IOStatus state);	//配置IO口
 uint8 XBeeApiChecksum(uint8 *begin,uint16 length);  //求checksum
 int16 XBeeSendATCmd(int8* atcmd,uint8* pparam,uint8 len,uint8 IsRes);   //发送at指令
-int16 XBeeSetPanID(uint8 IsRes);   //设置ID的值
+int16 XBeeSetPanID(uint8 *panID,uint8 IsRes);   //设置ID的值
 int16 XBeeSetChannel(uint16 channel,uint8 IsRes);
 int16 XbeeFR(uint8 IsRes);  //
 int16 XBeeSendWR(uint8 IsRes);

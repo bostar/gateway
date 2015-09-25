@@ -26,19 +26,19 @@ int16 UartRevDataProcess(uint8* UartRevBuf)
 	uint16 DataLen,i;
 	uint8 checksum,temp;
 
-	UartRevLen =	ReadComPort(UartRevBuf,1);
+	UartRevLen = ReadComPort(UartRevBuf,1);
 	if(UartRevLen == 0)
 		return 0;
 	if(UartRevBuf[0] != 0x7E)
 		return 0;
-	UartRevLen =	ReadComPort(UartRevBuf+1,2);
+	UartRevLen = ReadComPort(UartRevBuf+1,2);
 	if(UartRevLen < 2)
 		return 0;
 	temp = UartRevBuf[1];
 	i = (uint16)temp << 8;
 	temp = UartRevBuf[2];
 	DataLen = i + (uint16)UartRevBuf[2];
-	UartRevLen =	ReadComPort(UartRevBuf+3,DataLen+1);
+	UartRevLen = ReadComPort(UartRevBuf+3,DataLen+1);
 	checksum = XBeeApiChecksum(UartRevBuf+3,DataLen); //校验数据
 	if(checksum != UartRevBuf[DataLen+3])
 		return 0;
@@ -154,6 +154,7 @@ void XBeeProcessRoutRcord(uint8 *rbuf)
 {
 	uint16 target_adr=0;
 	SourceRouterLinkType *p,*pS;
+
 	if(get_local_addr(rbuf+12,rbuf+4) == 0)
 	{
 		target_adr |= (uint16)*(rbuf+13);
@@ -206,6 +207,29 @@ void ProcessModState(uint8 *rbuf)
 		printf("\032[33mDisassociated\033[0m\n");
 	else if(*(rbuf+4) == 7)
 		printf("\032[33mNetwork security key was updated\033[0m\n");
+	return;
+}
+/*************************************************
+**brief process AT command response
+*************************************************/
+void ProcessATRes(uint8 *rbuf)
+{
+	uint8 i;
+	if(*(rbuf+7) != 0)
+		return;
+	if(*(rbuf+5) == 'O' && *(rbuf+6) == 'I')
+	{	
+		CoorInfo.panID16 = 0;
+		CoorInfo.panID16 |= ((uint16)*(rbuf+8))<<8;
+		CoorInfo.panID16 |= (uint16)*(rbuf+9);
+	}
+	else if(*(rbuf+5) == 'O' && *(rbuf+6) == 'P')
+	{
+		for(i=0;i<8;i++)
+			CoorInfo.panID64[i] = *(rbuf+8+i);
+	}
+	else if(*(rbuf+5) == 'C' && *(rbuf+6) == 'H')
+		CoorInfo.channel = *(rbuf+8);
 	return;
 }
 /*************************************************
@@ -320,7 +344,7 @@ int16 XBeeSendFactorySettingCmd(uint8 *ieeeadr,uint8 *netadr)
 	p = FindMacAdr(pLinkHead,ieeeadr);
 	if(p != NULL)
 		XBeeCreatSourceRout(p->mac_adr,p->target_adr,p->num_mid_adr,p->mid_adr);
-	return XBeeTransReq(ieeeadr,netadr,Default,data,4,RES);
+	return XBeeTransReq(ieeeadr,netadr,Default,data,4,NO_RES);
 }
 /*******************************************************
 **brief 发送设置router的NJ
@@ -403,28 +427,50 @@ int16 XBeeSendSenserInit(uint8 *ieeeadr,uint8 *net_adr)
 	return XBeeTransReq(ieeeadr,net_adr,Default,data,4,NO_RES);
 }
 /**************************************************************
+**brief 周期发送AR
+**************************************************************/
+void SendAR(uint8 perid)
+{
+	static time_t timep_s = 0;
+	time_t timep_c = 0;
+	time(&timep_c);
+	if((timep_c-timep_s) >= perid || timep_s == 0)
+	{
+		//XBeeSetAR(0,NO_RES);
+		timep_s = timep_c;
+	}
+	return;
+}
+/**************************************************************
+**brief 发送关闭网络时间
+**************************************************************/
+void CloseNet(uint8 time)
+{
+	static uint8 net_off = 0;
+	if(net_off == 0 && networking_over() == 1)
+	{
+		net_off = 1;
+		//XBeeSendNetOFF(NET_OFF_TIME);
+		//XBeeSetAR(0,NO_RES);
+		printf("\033[32m锁已经全部加入网络\033[0m\n");
+		//CoorInfo.ARper = 0;
+	}
+}
+/**************************************************************
 **brief 配置组网
 **************************************************************/
 void CreateGatewayNet(void)
 {
 	uint8 _i,_adr[8],state=0;
 	uint8 len,rbuf[128];
-	static time_t timep_s = 0;
-	time_t timep_c;
 	for(_i=0;_i<8;_i++)
 		_adr[_i] = 0;
 	pLinkHead = CreatRouterLink(_adr,0,HeadMidAdr,0);    //创建路由路径链表
 	XBeeCreateNet();
 	state = 1;
-	time(&timep_s);
 	while(state != 0)
 	{
-		time(&timep_c);
-		if((timep_c-timep_s)%60 == 0 && (timep_c-timep_s) != 0)
-		{
-			XBeeCreateNet();
-		}
-		XBeeReadAI();  
+		XBeeReadAI();
 		usleep(2000);
 		len = UartRevDataProcess(rbuf);
 		if(len > 0 )
@@ -436,6 +482,7 @@ void CreateGatewayNet(void)
 		}
 	}
 	XBeeSetSP(200,NO_RES);	//设置睡眠参数
+	CoorInfo.NetState = 1;
 	printf("\n\033[33m组建网络完成！\033[0m\n");
 }
 /***************************************************************

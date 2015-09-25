@@ -93,21 +93,28 @@ unsigned char xbee_gpio_get(int gpio)
 *******************************************/
 void XBeeCreateNet(void)
 {
-	uint8 nr_param;
-	nr_param = 0;
+	uint8 panID[8],i;
 	XBeeSendAT("RE");
 	usleep(1000);
-	XBeeSendAT("FR");
-	usleep(2500000);
-	XBeeSetAT("NR",&nr_param ,1, RES);
-	usleep(1000);
-	XBeeSetPanID(RES);   //设置ID的值
-	XBeeSetChannel(SCAN_CHANNEL,RES); //设置信道
-	XbeeSendAC(RES);
-	XBeeSendWR(RES);
+	LeaveNetwork();	
+	usleep(100000);
+	for(i=0;i<8;i++)
+		panID[i] = 0x00;
+	XBeeSetPanID(panID,NO_RES);   //设置ID的值	
+	XBeeSetChannel(SCAN_CHANNEL,NO_RES); //设置信道
+	XbeeSendAC(NO_RES);
+	XBeeSendWR(NO_RES);
 }
-
-
+/*******************************************
+**brief 离开网络
+*******************************************/
+int16 LeaveNetwork(void)
+{
+	uint8 param=4;
+	int8 *cmd;
+	cmd = "CB";
+	return XBeeSetAT(cmd, &param, 1, NO_RES);
+}
 
 
 
