@@ -367,10 +367,10 @@ int16 XBeeReadNJ(void)
 int16 XBeeReadAT(int8 *at_cmd)
 {
 	uint8 paramer[1];
-  	int8 *cmd;
+	int8 *cmd;
 	cmd = at_cmd;
-  	paramer[0]=0;
-  	return XBeeSendATCmd(cmd,paramer,0,RES);	
+	paramer[0]=0;
+	return XBeeSendATCmd(cmd,paramer,0,RES);	
 }
 /*********************************************************
 **biref 发送设置AT参数命令

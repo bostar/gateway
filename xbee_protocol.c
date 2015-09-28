@@ -230,6 +230,10 @@ void ProcessATRes(uint8 *rbuf)
 	}
 	else if(*(rbuf+5) == 'C' && *(rbuf+6) == 'H')
 		CoorInfo.channel = *(rbuf+8);
+	else if(*(rbuf+5) == 'N' && *(rbuf+6) == 'J')
+	{
+		CoorInfo.nj = *(rbuf+8);
+	}
 	return;
 }
 /*************************************************
@@ -447,13 +451,18 @@ void SendAR(uint8 perid)
 void CloseNet(uint8 time)
 {
 	static uint8 net_off = 0;
+	if(networking_over() == 0)
+	{
+		net_off = 0;
+		XBeeSendNetOFF(0xff);
+		XBeeSetNJ(0xff,NO_RES);
+	}
 	if(net_off == 0 && networking_over() == 1)
 	{
 		net_off = 1;
-		//XBeeSendNetOFF(NET_OFF_TIME);
-		//XBeeSetAR(0,NO_RES);
+		XBeeSendNetOFF(time);
+		XBeeSetNJ(time,NO_RES);
 		printf("\033[32m锁已经全部加入网络\033[0m\n");
-		//CoorInfo.ARper = 0;
 	}
 }
 /**************************************************************

@@ -23,6 +23,7 @@ typedef struct
 	uint16 panID16;
 	uint8 panID64[8];
 	uint8 channel;
+	uint8 nj;
 }CoorInfoType;
 
 CoorInfoType CoorInfo;

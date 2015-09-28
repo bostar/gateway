@@ -62,15 +62,13 @@ void xbee_routine_thread(void)
 	xbee_serial_port_init(); 
 	pthread_mutex_lock(&xbee_mutex);
 	CreateGatewayNet();
-	CoorInfo.ARper = 10;
 	pthread_mutex_unlock(&xbee_mutex);
 	while(1)
-	{
+	{ 
 		pthread_mutex_lock(&xbee_mutex);
-		SendAR(CoorInfo.ARper);	//发送AR
 		len = UartRevDataProcess(rbuf);
 		if(len)
-		{
+	 	{
 			//TestPrintf("1",len,rbuf);
 			switch(rbuf[3])
 			{
@@ -91,9 +89,16 @@ void xbee_routine_thread(void)
 					break;
 			}
 		}
-		CloseNet(0xff);  //关闭网络
+		static time_t timep_s = 0;
+		time_t timep_c = 0;
+		time(&timep_c);
+		if((timep_c-timep_s) >= 60 )
+		{
+			CloseNet(0x01);  //关闭网络
+			timep_s = timep_c;
+		}
 		pthread_mutex_unlock(&xbee_mutex);
-	} 
+	 } 
 }
 
 #define VERSION "V1.0"
@@ -129,11 +134,24 @@ void xbee_routine_thread_test(void)
 			sleep(1);
 			printf("\033[35m16位panID: \033[0m0x%04x\n",CoorInfo.panID16);
 		}
+		else if(strncmp("nj",in_cmd,strlen("nj")) == 0)
+		{
+			XBeeReadAT("NJ");
+			sleep(1);
+			printf("\033[35m允许入网时间 \033[0m0x%02x\n",CoorInfo.nj);
+		}
 		else if(strncmp("ch",in_cmd,strlen("ch")) == 0)
 		{
 			XBeeReadAT("CH");
 			sleep(1);
 			printf("\033[35m网络信道: \033[0m0x%04x\n",CoorInfo.channel);
+		}
+		else if(strncmp("check",in_cmd,strlen("check")) == 0)
+		{
+			if(networking_over() == 1)
+				printf("\033[35m全部锁已入网\033[0m\n");
+			else if(networking_over() == 0)
+				printf("\033[35m有锁未入网\033[0m\n");
 		}
 		else if(strncmp("version",in_cmd,strlen("version")) == 0)
 			printf("\033[35m软件版本 %s\033[0m\n",VERSION);
