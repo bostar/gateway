@@ -105,6 +105,8 @@ void XBeeProcessCTL(uint8 *rbuf)
 *******************************************************/
 void XBeeProcessSEN(uint8 *rbuf)
 {
+	//if(get_local_addr(rbuf+12,rbuf+4) == 0)
+		//set_node_online(rbuf+4);
 	switch(*(rbuf+18))
 	{
 		case 1:
@@ -224,6 +226,11 @@ void ProcessATRes(uint8 *rbuf)
 		CoorInfo.panID16 |= (uint16)*(rbuf+9);
 	}
 	else if(*(rbuf+5) == 'O' && *(rbuf+6) == 'P')
+	{
+		for(i=0;i<8;i++)
+			CoorInfo.panID64[i] = *(rbuf+8+i);
+	}
+	else if(*(rbuf+5) == 'I' && *(rbuf+6) == 'D')
 	{
 		for(i=0;i<8;i++)
 			CoorInfo.panID64[i] = *(rbuf+8+i);
@@ -451,12 +458,13 @@ void SendAR(uint8 perid)
 void CloseNet(uint8 time)
 {
 	static uint8 net_off = 0;
-	if(networking_over() == 0)
+/*	if(networking_over() == 0 && net_off == 1)
 	{
 		net_off = 0;
 		XBeeSendNetOFF(0xff);
 		XBeeSetNJ(0xff,NO_RES);
-	}
+		printf("\033[32m网络允许锁重新入网\033[0m\n");
+	} */
 	if(net_off == 0 && networking_over() == 1)
 	{
 		net_off = 1;

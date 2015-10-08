@@ -92,7 +92,7 @@ void xbee_routine_thread(void)
 		static time_t timep_s = 0;
 		time_t timep_c = 0;
 		time(&timep_c);
-		if((timep_c-timep_s) >= 60 )
+		if((timep_c-timep_s) >= 10 )
 		{
 			CloseNet(0x01);  //关闭网络
 			timep_s = timep_c;
@@ -122,6 +122,15 @@ void xbee_routine_thread_test(void)
 		else if(strncmp("op",in_cmd,strlen("op")) == 0)
 		{
 			XBeeReadAT("OP");
+			sleep(1);
+			printf("\033[35m64位panID:\033[0m");
+			for(i=0;i<8;i++)
+				printf("0x%02x ",CoorInfo.panID64[i]);
+			printf("\n");
+		}
+		else if(strncmp("id",in_cmd,strlen("id")) == 0)
+		{
+			XBeeReadAT("ID");
 			sleep(1);
 			printf("\033[35m64位panID:\033[0m");
 			for(i=0;i<8;i++)

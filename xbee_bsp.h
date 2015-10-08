@@ -4,7 +4,7 @@
 #include "xbee_atcmd.h"
 
 
-#define SCAN_CHANNEL 0x4210
+#define SCAN_CHANNEL 0x4200
 #define NJ_TIME 0xff
 
 void xbee_gpio_init(void);
