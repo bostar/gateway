@@ -55,6 +55,7 @@ extern uint32 waite_send_head_num;
 void TestPrintf(int8* sss,int16 lens,uint8 *buf);
 void xbee_routine_thread(void);
 void xbee_routine_thread_send_data(void);
+void xbee_routine_thread_timer(void);
 void xbee_routine_thread_test(void);
 void xbee_routine_thread_test_lar_node(void);
 

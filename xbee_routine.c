@@ -16,10 +16,12 @@ int16 len;
 SourceRouterLinkType *pLinkHead=NULL;
 uint8 *HeadMidAdr=NULL;
 pthread_mutex_t xbee_mutex=PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t xbee_send_data_timer_mutex=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond_send_xbee=PTHREAD_COND_INITIALIZER;
 
 uint8 send_xbee_state=0;
 uint32 waite_send_head_num=0;
+uint32 send_data_timeout=0;
 
 void xbee_routine_thread(void)
 {
@@ -43,6 +45,11 @@ void xbee_routine_thread(void)
     if(ret!=0){
         printf ("Create xbee_routine_thread_send_data error!n");
     }
+	printf("\033[33mstart xbee_routine_thread_timer...\033[0m\r\n");
+    ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_timer,NULL);
+    if(ret!=0){
+        printf ("Create xbee_routine_thread_timer error!n");
+    }
 #if __XBEE_TEST__
 	printf("\033[33mstart xbee_routine_thread_test...\033[0m\r\n");
     ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_test,NULL);
@@ -61,7 +68,6 @@ void xbee_routine_thread(void)
 	{ 
 		pthread_mutex_lock(&xbee_mutex);
 		len = UartRevDataProcess(rbuf);
-		pthread_mutex_unlock(&xbee_mutex);
 		if(len)
 	 	{
 			//TestPrintf("1",len,rbuf);
@@ -84,7 +90,6 @@ void xbee_routine_thread(void)
 					//ProcessTranState();
 					send_xbee_state--;
 					pthread_cond_signal(&cond_send_xbee);
-					
 					break;
 				default:
 					break;
@@ -98,42 +103,43 @@ void xbee_routine_thread(void)
 void xbee_routine_thread_send_data(void)
 {
 	XBeeDataWaiteSendType *p;
-	static uint32 times=0;
-	//XBeeDataWaiteSendType *pcnt;
-	//uint32 cnt=0;
+	static uint32 timeout=0;
 	while(1)
 	{
 		pthread_mutex_lock(&xbee_mutex);
-		while(send_xbee_state > _SEND_DATA_MAX || times > 300000)
+		while(send_xbee_state > _SEND_DATA_MAX || send_data_timeout > _SEND_DATA_TIMEOUT)
 			pthread_cond_wait(&cond_send_xbee,&xbee_mutex);
-		if(times > 300000)
-			times = 0;
-		//pcnt = (XBeeDataWaiteSendType*)(&waite_send_head)->tqh_first;
-		//while(pcnt != (XBeeDataWaiteSendType*)(&waite_send_head)->tqh_last)
-		//{
-			//cnt++;
-			//pcnt = pcnt->tailq_entry.tqe_next;
-    	//}
-		//printf("cnt = %d\r\n",cnt);
-		while(waite_send_head_num > _QUEUE_BUF_MAX)
+		pthread_mutex_lock(&xbee_send_data_timer_mutex);
+		send_data_timeout = 0;
+		pthread_mutex_unlock(&xbee_send_data_timer_mutex);
+		while(waite_send_head_num > _QUEUE_BUF_MAX) //丢弃过量的数据包
 		{
 			p = TAILQ_FIRST(&waite_send_head);
 			TAILQ_REMOVE(&waite_send_head, p, tailq_entry);
 			free(p);
 			waite_send_head_num--;
 		}
-		if(waite_send_head_num > 0)
+		if(waite_send_head_num > 0) 
 		{
 			p = TAILQ_FIRST(&waite_send_head);
 			XBeeTransReq(p->mac_adr,p->net_adr,p->options,p->data,p->data_len,p->req);
 			TAILQ_REMOVE(&waite_send_head, p, tailq_entry);
 			free(p);
 			waite_send_head_num--;
-			send_xbee_state++;
-			
+			send_xbee_state++;	
 		}
 		pthread_mutex_unlock(&xbee_mutex);
-		times++;
+		usleep(1);
+	}
+}
+
+void xbee_routine_thread_timer(void)
+{
+	while(1)
+	{
+		pthread_mutex_lock(&xbee_send_data_timer_mutex);
+		send_data_timeout++;
+		pthread_mutex_unlock(&xbee_send_data_timer_mutex);
 		usleep(1);
 	}
 }
