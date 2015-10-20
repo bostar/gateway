@@ -8,6 +8,7 @@
 #include "xbee_protocol.h"
 #include <sys/timeb.h>
 #include "listener.h"
+#include "xbee_config.h"
 
 extern void swap(unsigned char len,unsigned char *array);
 void set_online(unsigned short netaddr);
@@ -144,14 +145,18 @@ void parking_state_check_routin(void)
         pthread_mutex_unlock(&parking_info_mutex);
         continue;
     }
+#if !defined __XBEE_TEST_LAR_NODE__
     printf("=========== parking state ==============\r\n");
+#endif
     for(loop = 0;loop < get_depot_size();loop ++)
     {
+#if !defined __XBEE_TEST_LAR_NODE__
         printf("[SERVER:]%04x ",pstParkingState[loop].parking_id);
         printf("%s; ",parking_online_string[pstParkingState[loop].online]);
         printf("[SERVER:]%04x ",pstParkingState[loop].netaddr);
         printf("%s",parking_state_string[pstParkingState[loop].state]);
         printf("\r\n");
+#endif
         if(pstParkingState[loop].online == 1)
         {
             if((time_in_second - pstParkingState[loop].offline_time_out) > 12)
@@ -322,8 +327,11 @@ void event_report(unsigned short netaddr,unsigned char event)
 {
     pst_parkingState p;
     time_t time_in_second = time((time_t *)NULL);
+#if __XBEE_TEST_LAR_NODE__
+#else
     printf("[SERVER:]%04x ",netaddr);
     printf("%s",event_string[event]);
+#endif
     pthread_mutex_lock(&parking_info_mutex);
 
     p = search_use_netaddr(netaddr);

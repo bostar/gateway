@@ -16,44 +16,38 @@
 #include "xbee_atcmd.h"
 #include "xbee_bsp.h"
 #include "xbee_routine.h"
+#include "pthread.h"
+#include "xbee_config.h"
 
-/******************************************************
-**uart receive and check
-******************************************************/
-int16 UartRevDataProcess(uint8* UartRevBuf)
-{
-	int16 UartRevLen;
-	uint16 DataLen,i;
-	uint8 checksum,temp;
-
-	UartRevLen = ReadComPort(UartRevBuf,1);
-	if(UartRevLen == 0)
-		return 0;
-	if(UartRevBuf[0] != 0x7E)
-		return 0;
-	UartRevLen = ReadComPort(UartRevBuf+1,2);
-	if(UartRevLen < 2)
-		return 0;
-	temp = UartRevBuf[1];
-	i = (uint16)temp << 8;
-	temp = UartRevBuf[2];
-	DataLen = i + (uint16)UartRevBuf[2];
-	UartRevLen = ReadComPort(UartRevBuf+3,DataLen+1);
-	checksum = XBeeApiChecksum(UartRevBuf+3,DataLen); //校验数据
-	if(checksum != UartRevBuf[DataLen+3])
-		return 0;
-	else
-		return DataLen+4;
-}
 /*******************************************************
 **brief process CFG API
 *******************************************************/
 void XBeeProcessCFG(uint8 *rbuf)
 {
 	int16 temp;
+	SourceRouterLinkType *p;
 	switch(*(rbuf+18))
 	{
 		case net_request:
+#if defined __XBEE_TEST_LAR_NODE__
+			temp = 0;
+			if(temp == 0)  //属于该网络,允许加入网络
+			{
+				for(temp=0;temp<8;temp++)
+					printf("%02x ",*(rbuf+4+temp));
+				printf("\n");
+				XBeeJionEnable((rbuf+4),(rbuf+12));
+				p = FindMacAdr(pLinkHead,rbuf+4); 
+				if(p == NULL)
+					AddData(pLinkHead,CreatNode(rbuf+4,rbuf+12));
+				else
+				{
+					p->target_adr = 0;                                                                                                                
+					p->target_adr |= (uint16)*(rbuf+13);
+					p->target_adr |= ((uint16)*(rbuf+12))<<8;
+				}
+			}
+#else
 			temp = get_local_addr(rbuf+12,rbuf+4);
 			if(temp == 0)	//属于该网络,允许加入网络
 			{
@@ -62,6 +56,7 @@ void XBeeProcessCFG(uint8 *rbuf)
 				set_node_online(rbuf+4);
 				//printf("\033[33m\033[1m已将锁加入网络 \033[0m \n");
 			}
+#endif
 			else if(temp == -1)
 			{
 				XBeeJionDisable((rbuf+4),(rbuf+12));
@@ -123,7 +118,14 @@ void XBeeProcessSEN(uint8 *rbuf)
 			else if(*(rbuf+19) == ParkLockSuccess)
 				{ 
 					//printf("\033[33m\033[1m车位锁定成功 \033[0m \n");
+#if __XBEE_TEST_LAR_NODE__
+					SourceRouterLinkType *p;                                                                                                          
+					p = FindMacAdr(pLinkHead,rbuf+4);
+					if(p != NULL)
+						p->rev_rep_times++;
+#else
 					event_report( char_to_int(rbuf+12),en_lock_success);
+#endif
 				}
 			else if(*(rbuf+19) == ParkLockFailed)
 				{
@@ -244,6 +246,16 @@ void ProcessATRes(uint8 *rbuf)
 	return;
 }
 /*************************************************
+**brief process teansmit state 
+*************************************************/
+void ProcessTranState(void)
+{
+	pthread_mutex_lock(&xbee_mutex);
+	send_xbee_state = 1;
+	pthread_cond_signal(&cond_send_xbee);
+	pthread_mutex_unlock(&xbee_mutex);	
+}
+/*************************************************
 **brief process ND AT command response
 **      添加直接隶属协调器的终端到列表，添加列表中终端类型
 *************************************************/
@@ -301,7 +313,8 @@ int16 XBeeSendNetOFF(uint8 time)
 	data[2]  =  'G';
 	data[3]  = 0X00;
 	data[4]  = time;
-	return XBeeBoardcastTrans(data,5,NO_RES);
+	XBeeBoardcastTrans(data,5,RES);
+	return 0;
 }
 /**************************************************
 **brief 允许入网
@@ -310,7 +323,6 @@ int16 XBeeJionEnable(uint8 *ieeeadr,uint8 *netadr)
 {
 	uint8 data[5];
 	uint16 target_adr=0;
-	SourceRouterLinkType *p=NULL;
 	
 	target_adr |= (uint16)*(netadr+1);
 	target_adr |= (((uint16)*(netadr+0)) << 8);
@@ -319,10 +331,8 @@ int16 XBeeJionEnable(uint8 *ieeeadr,uint8 *netadr)
 	data[2]  =  'G';
 	data[3]  =  0x02;
 	data[4]  =  0x01;
-	p = FindMacAdr(pLinkHead,ieeeadr);
-	if(p != NULL)
-		XBeeCreatSourceRout(p->mac_adr,p->target_adr,p->num_mid_adr,p->mid_adr);
-	return XBeeTransReq(ieeeadr,netadr,Default,data,5,NO_RES);
+	XBeeUnicastTrans(ieeeadr,netadr,Default,data,5,RES);
+	return 0;
 }
 /**************************************************
 **brief 禁止入网
@@ -330,16 +340,13 @@ int16 XBeeJionEnable(uint8 *ieeeadr,uint8 *netadr)
 int16 XBeeJionDisable(uint8 *ieeeadr,uint8 *netadr)
 {
 	uint8 data[5];
-	SourceRouterLinkType *p;
 	data[0]  =  'C';
 	data[1]  =  'F';
 	data[2]  =  'G';
 	data[3]  =  0x02;
 	data[4]  =  0x00;
-	p = FindMacAdr(pLinkHead,ieeeadr);
-	if( p != NULL)
-		XBeeCreatSourceRout(p->mac_adr,p->target_adr,p->num_mid_adr,p->mid_adr);
-	return XBeeTransReq(ieeeadr,netadr,Default,data,5,NO_RES);
+	XBeeUnicastTrans(ieeeadr,netadr,Default,data,5,RES);
+	return 0;
 }
 /*******************************************************
 **brief 发送恢复出厂设置指令
@@ -347,22 +354,19 @@ int16 XBeeJionDisable(uint8 *ieeeadr,uint8 *netadr)
 int16 XBeeSendFactorySettingCmd(uint8 *ieeeadr,uint8 *netadr)
 {
 	uint8 data[4];
-	SourceRouterLinkType *p;
+
 	data[0]  =  'C';
 	data[1]  =  'F';
 	data[2]  =  'G';
 	data[3]  =  0x03;
-	p = FindMacAdr(pLinkHead,ieeeadr);
-	if(p != NULL)
-		XBeeCreatSourceRout(p->mac_adr,p->target_adr,p->num_mid_adr,p->mid_adr);
-	return XBeeTransReq(ieeeadr,netadr,Default,data,4,NO_RES);
+	XBeeUnicastTrans(ieeeadr,netadr,Default,data,4,RES);
+	return 0;
 }
 /*******************************************************
 **brief 发送设置router的NJ
 *******************************************************/
 int16 XBeeSendSetNJ(uint8 *mac_adr,uint8 time)
 {
-	
 	return 0;
 }
 /*******************************************************
@@ -370,30 +374,7 @@ int16 XBeeSendSetNJ(uint8 *mac_adr,uint8 time)
 *******************************************************/
 int16 XBeeSendDevType(uint8 *mac_adr,uint8 *net_adr)
 {
-	uint8 data[5];
-	uint16 target_adr=0;
-	SourceRouterLinkType *p;
-	
-	p = FindMacAdr(pLinkHead,mac_adr);
-	if(p == NULL)
-	{
-		printf("\033[33mERROR!!！节点不存在\033[0m\n");
-		return 0;
-	}
-	target_adr |= (uint16)*(net_adr+1);
-	target_adr |= (((uint16)*(net_adr+0)) << 8);
-	data[0]  =  'C';
-	data[1]  =  'F';
-	data[2]  =  'G';
-	data[3]  =  0x04;
-	if(p->dev_type == 0x01)
-		data[4]  =  0x01;
-	else if(p->dev_type == 0x02)
-		data[4]	=	0x02;
-	
-	//if(p->num_mid_adr != 0)
-		XBeeCreatSourceRout(p->mac_adr,p->target_adr,p->num_mid_adr,p->mid_adr);
-	return XBeeTransReq(mac_adr,net_adr,Default,data,5,NO_RES);
+	return 0;
 }
 /*******************************************************
 **brief 终端控制命令
@@ -405,7 +386,6 @@ int16 XBeeSendDevType(uint8 *mac_adr,uint8 *net_adr)
 int16 XBeePutCtlCmd(uint8 *ieeeadr,uint16 netadr,uint8 lockstate)
 {
 	uint8 data[5];
-	SourceRouterLinkType *p;
 
 	data[0]  =  'C';	
 	data[1]  =  'T';
@@ -415,11 +395,8 @@ int16 XBeePutCtlCmd(uint8 *ieeeadr,uint16 netadr,uint8 lockstate)
 	uint8 netadr_s[2];
 	netadr_s[1] = (uint8)(netadr>>8);
 	netadr_s[0] = (uint8)netadr;
-	p = FindMacAdr(pLinkHead,ieeeadr);
-	if(p != NULL)
-		XBeeCreatSourceRout(p->mac_adr,p->target_adr,p->num_mid_adr,p->mid_adr);
-	//printf("\033[33m发送锁控制指令完成！\033[0m\n");
-	return XBeeTransReq(ieeeadr,netadr_s,Default,data,5,NO_RES);
+	XBeeUnicastTrans(ieeeadr,netadr_s,Default,data,5,RES);
+	return 0;
 }
 /**************************************************************
 **brief 标定senser初始值
@@ -427,15 +404,12 @@ int16 XBeePutCtlCmd(uint8 *ieeeadr,uint16 netadr,uint8 lockstate)
 int16 XBeeSendSenserInit(uint8 *ieeeadr,uint8 *net_adr)
 {
 	uint8 data[4];
-	SourceRouterLinkType *p;
 	data[0]		=	'S';
 	data[1]		=	'E';
 	data[2]		=	'N';
 	data[3]		=	0;
-	p = FindMacAdr(pLinkHead,ieeeadr);
-	if(p != NULL)
-		XBeeCreatSourceRout(p->mac_adr,p->target_adr,p->num_mid_adr,p->mid_adr);
-	return XBeeTransReq(ieeeadr,net_adr,Default,data,4,NO_RES);
+	XBeeUnicastTrans(ieeeadr,net_adr,Default,data,4,RES);
+	return 0;
 }
 /**************************************************************
 **brief 周期发送AR
@@ -474,15 +448,12 @@ void CloseNet(uint8 time)
 	}
 }
 /**************************************************************
-**brief 配置组网
+**brief xbee初始化
 **************************************************************/
-void CreateGatewayNet(void)
+void XBeeInit(void)
 {
-	uint8 _i,_adr[8],state=0;
+	uint8 state=0;
 	uint8 len,rbuf[128];
-	for(_i=0;_i<8;_i++)
-		_adr[_i] = 0;
-	pLinkHead = CreatRouterLink(_adr,0,HeadMidAdr,0);    //创建路由路径链表
 	XBeeCreateNet();
 	state = 1;
 	while(state != 0)
@@ -498,7 +469,8 @@ void CreateGatewayNet(void)
 			}
 		}
 	}
-	XBeeSetSP(200,NO_RES);	//设置睡眠参数
+	XBeeSetSP(0x0af0,NO_RES);
+	XBeeSetSN(10,NO_RES);
 	CoorInfo.NetState = 1;
 	printf("\n\033[33m组建网络完成！\033[0m\n");
 }
@@ -523,7 +495,66 @@ void printf_local_time(void)
 	timenow = localtime(&now);//localtime函数把从time取得的时间now换算成你电脑中的时间(就是你设置的地区)
 	printf("Local time is %s\n",asctime(timenow));//asctime函数把时间转换成字符，通过printf()函数输出
 }
+/******************************************************
+**uart receive and check
+******************************************************/
+static uint8 UartRevBuf[255];
+int16 UartRevDataProcess(uint8* buf)
+{
+	int16 UartRevLen;
+	uint16 DataLen=0,cnt=0;
+	uint8 checksum;
+	static uint16 r_len=0;
+	static uint8 uart_state=1;
 
+	if(uart_state == 1)
+	{
+		UartRevLen = ReadComPort(UartRevBuf,1);
+		if(UartRevLen == 0)
+			return 0;
+		if(UartRevBuf[0] != 0x7E)
+			return 0;
+		r_len = 1;
+		uart_state = 2;
+	}
+	if(uart_state == 2)
+	{
+		UartRevLen = ReadComPort(UartRevBuf+r_len,3-r_len);
+		if(UartRevLen < 3-r_len)
+		{
+			r_len += UartRevLen;
+			return 0;
+		}
+		DataLen = 0;
+		DataLen |= UartRevBuf[2];
+		DataLen |= (uint16)UartRevBuf[1]<<8;
+		uart_state = 3;
+		r_len += UartRevLen;
+	}
+	if(uart_state == 3)
+	{
+		UartRevLen = ReadComPort(UartRevBuf+r_len,DataLen+4-r_len);
+		if(UartRevLen < DataLen+4-r_len)
+		{
+			r_len += UartRevLen;
+			return 0;
+		}
+		checksum = XBeeApiChecksum(UartRevBuf+3,DataLen); //校验数据
+		if(checksum != UartRevBuf[DataLen+3])
+		{
+			uart_state = 1;
+			return 0;
+		}
+		else
+		{
+			for(cnt=0;cnt<DataLen+4;cnt++)
+				*(buf+cnt) = *(UartRevBuf+cnt);
+			uart_state = 1;
+			return DataLen+4;
+		}
+	}
+	return 0;
+}
 
 
 

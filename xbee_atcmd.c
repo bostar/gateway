@@ -16,6 +16,8 @@
 #include <errno.h>
 #include <limits.h>
 #include "serial.h"
+#include "pthread.h"
+#include "xbee_routine.h"
 
 //#define USE_PRINTF
 
@@ -63,7 +65,7 @@ int16 XBeeTransReq(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,u
 {
   	uint8 wbuf[256],cnt=0;
   	XBeeTransReqType *frame = (XBeeTransReqType*)wbuf;
-  
+
   	frame->start_delimiter = 0x7E;
 	frame->len_msb         = (uint8)((14+len)>>8);
   	frame->len_lsb         = (uint8)(14+len);
@@ -397,21 +399,48 @@ uint16 XBeeSetAT(int8 *at_cmd, uint8 *param, uint8 len, IsResp IsRes)
 ********************************************************/
 int16 XBeeBoardcastTrans(uint8 *data,uint16 len,IsResp IsRes)
 {
-	uint8 adr[8],net_adr[2],cnt;
-	for(cnt=0;cnt<8;cnt++)
-    	adr[cnt] = 0;
-	adr[6]     = 0xFF;
-	adr[7]     = 0xFF;
-	net_adr[0] = 0xff;
-	net_adr[1] = 0xfe;
-	return XBeeTransReq(adr,net_adr,ExtTimeout,data,len,IsRes);
+	XBeeDataWaiteSendType *p;
+	uint8 cnt;
+	
+	p = (XBeeDataWaiteSendType*)malloc(sizeof(XBeeDataWaiteSendType));
+	for(cnt=0;cnt<6;cnt++)
+    	p->mac_adr[cnt] = 0;
+	p->mac_adr[6] = 0xFF;
+	p->mac_adr[7] = 0xFF;
+	p->net_adr[0] = 0xff;
+	p->net_adr[1] = 0xfe;
+	for(cnt=0;cnt<len;cnt++)
+		p->data[cnt] = *(data+cnt);
+	p->data_len = len;
+	p->req = IsRes;
+	p->options = Default;
+	TAILQ_INSERT_TAIL(&waite_send_head, p, tailq_entry);
+	waite_send_head_num++;
+	return 0;
+	//return XBeeTransReq(adr,net_adr,ExtTimeout,data,len,IsRes);
 }
 /********************************************************
 **brief 单播发送
 ********************************************************/
 int16 XBeeUnicastTrans(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,uint16 len,IsResp IsRes)
 {
-	return XBeeTransReq(adr,net_adr,options,rf_data,len,IsRes); 
+	XBeeDataWaiteSendType *p;
+	uint8 cnt;
+	
+	p = (XBeeDataWaiteSendType*)malloc(sizeof(XBeeDataWaiteSendType));
+	for(cnt=0;cnt<8;cnt++)
+    	p->mac_adr[cnt] = *(adr+cnt);
+	p->net_adr[0] = *(net_adr);
+	p->net_adr[1] = *(net_adr+1);
+	for(cnt=0;cnt<len;cnt++)
+		p->data[cnt] = *(rf_data+cnt);
+	p->data_len = len;
+	p->req = IsRes;
+	p->options = options;
+	TAILQ_INSERT_TAIL(&waite_send_head, p, tailq_entry);
+	waite_send_head_num++;
+	return 0;
+	//return XBeeTransReq(adr,net_adr,options,rf_data,len,IsRes); 
 }
 
 uint8 XBeeApiChecksum(uint8 *begin,uint16 length)

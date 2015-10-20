@@ -15,7 +15,11 @@ typedef struct _SourceRouterLinkType
 	uint8 num_mid_adr;
 	uint8 dev_type;
 	LockStateType lock_state;
+	uint32 send_cmd_times;
+	uint32 rev_rep_times;
+	uint16 join_net_times;
 	struct _SourceRouterLinkType *next;
+
 }SourceRouterLinkType;
 
 
@@ -33,8 +37,8 @@ uint8 compareNode(SourceRouterLinkType *pNode,SourceRouterLinkType *pNodeS);
 void NodePrintf(SourceRouterLinkType *pNode);
 void LinkPrintf(SourceRouterLinkType *pNode);
 int8 arrncmp(uint8 *arr1,uint8 *arr2,uint8 n);
-
-
+SourceRouterLinkType *CreatNode(uint8 *mac_adr,uint8 *target_adr);
+SourceRouterLinkType *FindnNode(const SourceRouterLinkType *pNode,uint8 n);
 
 
 #endif

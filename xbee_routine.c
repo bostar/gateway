@@ -9,64 +9,59 @@
 #include "xbee_api.h"
 #include "server_duty.h"
 #include <time.h>
+#include "xbee_test.h"
 
 uint8 rbuf[255];
 int16 len;
 SourceRouterLinkType *pLinkHead=NULL;
 uint8 *HeadMidAdr=NULL;
-pthread_mutex_t xbee_mutex;
-pthread_mutex_t xbee_mutex_test;
-//uint8 XBeeCnt=0;
+pthread_mutex_t xbee_mutex=PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cond_send_xbee=PTHREAD_COND_INITIALIZER;
 
-
-void TestPrintf(int8* sss,int16 lens,uint8 *buf)
-{
-	int loop=0;
-	if((int8)*(buf+15) == 'S' && (int8)*(buf+16) == 'E' && (int8)*(buf+17) == 'N')
-		return;
-	printf("\033[34m数据序列--%s:数据长度--%d; 数据内容:\033[0m\n",sss,lens);
-	for( loop = 0;loop < lens;loop ++)
-	{
-		if(*(buf+3) == 0x88)
-		{
-			if(loop==5 || loop==6)
-				printf("\033[32m%c \033[0m",(int8)buf[loop]);
-			else
-				printf("0x%02x ",buf[loop]);
-		}
-		else if(*(buf+3) == 0x90)
-		{
-			if(loop==15 || loop==16 || loop==17)
-				printf("\033[32m%c \033[0m",(int8)buf[loop]);
-			else
-				printf("0x%02x ",buf[loop]);
-		}
-		else if(*(buf+3) == 0xa1 && loop == 3)
-		{
-			printf("\033[32m0x%02x \033[0m",buf[loop]);
-		}
-		else if(*(buf+3) == 0x8b && loop == 3)
-		{
-			printf("\033[35m0x%02x \033[0m",buf[loop]);
-		}
-		else
-			printf("0x%02x ",buf[loop]);
-	}
-	printf("\n");
-}
+uint8 send_xbee_state=0;
+uint32 waite_send_head_num=0;
 
 void xbee_routine_thread(void)
 {
-	pthread_mutex_init(&xbee_mutex,NULL);
+	int ret=0;
+    pthread_t id;
+
+	uint8 _i,_adr[8];
 	xbee_gpio_init();
-	xbee_serial_port_init(); 
+	xbee_serial_port_init();
+
 	pthread_mutex_lock(&xbee_mutex);
-	CreateGatewayNet();
+	XBeeInit();
+	for(_i=0;_i<8;_i++)
+		_adr[_i] = 0;
+	pLinkHead = CreatRouterLink(_adr,0,HeadMidAdr,0);    //创建路由路径链表
+	TAILQ_INIT(&waite_send_head);
 	pthread_mutex_unlock(&xbee_mutex);
+
+	printf("\033[33mstart xbee_routine_thread_send_data...\033[0m\r\n");
+    ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_send_data,NULL);
+    if(ret!=0){
+        printf ("Create xbee_routine_thread_send_data error!n");
+    }
+#if __XBEE_TEST__
+	printf("\033[33mstart xbee_routine_thread_test...\033[0m\r\n");
+    ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_test,NULL);
+    if(ret!=0){
+        printf ("Create xbee_routine_thread_test error!n");
+    }
+#endif
+#if __XBEE_TEST_LAR_NODE__
+	printf("\033[33mstart xbee_routine_thread_test_lar_node...\033[0m\r\n");
+    ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_test_lar_node,NULL);
+    if(ret!=0){
+        printf ("Create xbee_routine_thread_test_lar_node error!n");
+    }
+#endif
 	while(1)
 	{ 
 		pthread_mutex_lock(&xbee_mutex);
 		len = UartRevDataProcess(rbuf);
+		pthread_mutex_unlock(&xbee_mutex);
 		if(len)
 	 	{
 			//TestPrintf("1",len,rbuf);
@@ -85,37 +80,101 @@ void xbee_routine_thread(void)
 				case at_command_response:
 					ProcessATRes(rbuf);
 					break;
+				case transmit_status:
+					//ProcessTranState();
+					send_xbee_state--;
+					pthread_cond_signal(&cond_send_xbee);
+					
+					break;
 				default:
 					break;
 			}
 		}
-		static time_t timep_s = 0;
-		time_t timep_c = 0;
-		time(&timep_c);
-		if((timep_c-timep_s) >= 10 )
-		{
-			CloseNet(0x01);  //关闭网络
-			timep_s = timep_c;
-		}
 		pthread_mutex_unlock(&xbee_mutex);
-	 } 
+		usleep(1);
+	 }
 }
 
-#define VERSION "V1.0"
+void xbee_routine_thread_send_data(void)
+{
+	XBeeDataWaiteSendType *p;
+	static uint32 times=0;
+	//XBeeDataWaiteSendType *pcnt;
+	//uint32 cnt=0;
+	while(1)
+	{
+		pthread_mutex_lock(&xbee_mutex);
+		while(send_xbee_state > _SEND_DATA_MAX || times > 300000)
+			pthread_cond_wait(&cond_send_xbee,&xbee_mutex);
+		if(times > 300000)
+			times = 0;
+		//pcnt = (XBeeDataWaiteSendType*)(&waite_send_head)->tqh_first;
+		//while(pcnt != (XBeeDataWaiteSendType*)(&waite_send_head)->tqh_last)
+		//{
+			//cnt++;
+			//pcnt = pcnt->tailq_entry.tqe_next;
+    	//}
+		//printf("cnt = %d\r\n",cnt);
+		while(waite_send_head_num > _QUEUE_BUF_MAX)
+		{
+			p = TAILQ_FIRST(&waite_send_head);
+			TAILQ_REMOVE(&waite_send_head, p, tailq_entry);
+			free(p);
+			waite_send_head_num--;
+		}
+		if(waite_send_head_num > 0)
+		{
+			p = TAILQ_FIRST(&waite_send_head);
+			XBeeTransReq(p->mac_adr,p->net_adr,p->options,p->data,p->data_len,p->req);
+			TAILQ_REMOVE(&waite_send_head, p, tailq_entry);
+			free(p);
+			waite_send_head_num--;
+			send_xbee_state++;
+			
+		}
+		pthread_mutex_unlock(&xbee_mutex);
+		times++;
+		usleep(1);
+	}
+}
+
+void xbee_routine_thread_test_lar_node(void)
+{
+	uint8 i;
+	uint16 temp;
+	SourceRouterLinkType *p;
+	while(1)
+	{
+		pthread_mutex_lock(&xbee_mutex);
+		printf("the packages has not send = %d\r\n",waite_send_head_num);
+		for(i=2;i<=LinkLenth(pLinkHead);i++)
+		{
+			p = FindnNode(pLinkHead,i);
+			if(p != NULL)
+			{
+				temp = 0;
+				temp |= (p->target_adr >> 8);
+				temp |= (p->target_adr << 8);
+				p->send_cmd_times++;
+				XBeePutCtlCmd(p->mac_adr,temp,1);
+				//waite_send_head_num++;
+			}
+		}
+		printf("waite to be send data packages = %d\r\n",waite_send_head_num);
+		WrLogTxt();
+		pthread_mutex_unlock(&xbee_mutex);
+		usleep(10000000);
+	}
+}
 
 void xbee_routine_thread_test(void)
 {
 	int8 in_cmd[100];
 	int reval;
 	uint8 i;
-	
-	xbee_gpio_init();
-	xbee_serial_port_init();
-	pthread_mutex_init(&xbee_mutex_test,NULL);
+
 	while(1)
 	{
-		pthread_mutex_lock(&xbee_mutex_test);
-		
 		reval = scanf("%s",in_cmd);
 		if(strncmp("list",in_cmd,strlen("list")) == 0)
 			LinkPrintf(pLinkHead);
@@ -162,14 +221,46 @@ void xbee_routine_thread_test(void)
 			else if(networking_over() == 0)
 				printf("\033[35m有锁未入网\033[0m\n");
 		}
-		else if(strncmp("version",in_cmd,strlen("version")) == 0)
-			printf("\033[35m软件版本 %s\033[0m\n",VERSION);
 		else
 			printf("\033[35m无效的命令\033[0m\n");
-		pthread_mutex_unlock(&xbee_mutex_test);
-	} 
+		usleep(1000);
+	}
 }
-
+void TestPrintf(int8* sss,int16 lens,uint8 *buf)
+{
+	int loop=0;
+	if((int8)*(buf+15) == 'S' && (int8)*(buf+16) == 'E' && (int8)*(buf+17) == 'N')
+		return;
+	printf("\033[34m数据序列--%s:数据长度--%d; 数据内容:\033[0m\n",sss,lens);
+	for( loop = 0;loop < lens;loop ++)
+	{
+		if(*(buf+3) == 0x88)
+		{
+			if(loop==5 || loop==6)
+				printf("\033[32m%c \033[0m",(int8)buf[loop]);
+			else
+				printf("0x%02x ",buf[loop]);
+		}
+		else if(*(buf+3) == 0x90)
+		{
+			if(loop==15 || loop==16 || loop==17)
+				printf("\033[32m%c \033[0m",(int8)buf[loop]);
+			else
+				printf("0x%02x ",buf[loop]);
+		}
+		else if(*(buf+3) == 0xa1 && loop == 3)
+		{
+			printf("\033[32m0x%02x \033[0m",buf[loop]);
+		}
+		else if(*(buf+3) == 0x8b && loop == 3)
+		{
+			printf("\033[35m0x%02x \033[0m",buf[loop]);
+		}
+		else
+			printf("0x%02x ",buf[loop]);
+	}
+	printf("\n");
+}
 
 
 

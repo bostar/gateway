@@ -22,6 +22,49 @@ SourceRouterLinkType *CreatRouterLink(uint8 *mac_adr,uint16 target_adr,uint8 *mi
 	pRouterLink->next = NULL;
 	return pRouterLink;
 }
+/******************************************************************************************
+**broef 创建节点
+******************************************************************************************/
+SourceRouterLinkType *CreatNode(uint8 *mac_adr,uint8 *target_adr)
+{
+	SourceRouterLinkType* pRouterLink = NULL; 
+	uint8 i=0;
+ 	 
+	pRouterLink = (SourceRouterLinkType*)malloc(sizeof(SourceRouterLinkType));
+	for(i=0;i<8;i++)
+		pRouterLink->mac_adr[i] = mac_adr[i];
+	pRouterLink->target_adr = 0;
+	pRouterLink->target_adr |= target_adr[0]<<8;
+	pRouterLink->target_adr |= target_adr[1];
+	for(i=0;i<40;i++)
+		pRouterLink->mid_adr[i] = 0;
+	pRouterLink->num_mid_adr = 0;
+	pRouterLink->dev_type = 0;
+	pRouterLink->lock_state = 0;
+	pRouterLink->send_cmd_times = 0;
+	pRouterLink->rev_rep_times = 0;
+	pRouterLink->next = NULL;
+	return pRouterLink;
+}
+/*******************************************************************************************
+**brief 查找第n个节点
+**param
+**reval NULL 没有数据
+      P   数据地址
+*******************************************************************************************/
+SourceRouterLinkType *FindnNode(const SourceRouterLinkType *pNode,uint8 n)
+{
+	SourceRouterLinkType *p=NULL,*pS=NULL;
+	uint8 i=1;
+	p = (SourceRouterLinkType*)pNode;
+	while(p != NULL && i <= n)
+	{
+		pS = p;
+		p = p->next;
+		i++;
+	}
+	return pS;
+}
 /*******************************************************************************************
 **brief 查找数据,网络地址
 **param
@@ -200,11 +243,31 @@ int8 arrncmp(uint8 *arr1,uint8 *arr2,uint8 n)
 	return 0;
 }
 
-
-
-
-
-
+/****************************************************************
+**brief push data into a queue
+****************************************************************/
+void queue_push_in(uint8 *mac_adr,uint16 net_adr,uint8 *data ,uint16 len ,uint8 req)
+{
+	XBeeDataWaiteSendType *p;
+	uint16 i;
+	p = (XBeeDataWaiteSendType*)malloc(sizeof(XBeeDataWaiteSendType));
+	for(i=0;i<8;i++)
+		p->mac_adr[i] = *(mac_adr+i);
+	p->net_adr[0] = (uint8)net_adr;
+	p->net_adr[1] = (uint8)(net_adr>>8);
+	for(i=0;i<len;i++)
+		p->data[i] = *(data+i);
+	p->data_len = len;
+	p->req = req;
+	TAILQ_INSERT_TAIL(&waite_send_head, p, tailq_entry);
+}
+/****************************************************************
+**brief push data out of a queue
+****************************************************************/
+void queue_push_out(void)
+{
+	
+}
 
 
 
