@@ -126,7 +126,7 @@ void XBeeProcessSEN(uint8 *rbuf)
 				{ 
 					//printf("\033[33m\033[1m车位锁定成功 \033[0m \n");
 #if __XBEE_TEST_LAR_NODE__
-					SourceRouterLinkType *p;
+					SourceRouterLinkType *p=NULL;
 					pthread_mutex_lock(&mutex02_pLinkHead);
 					p = FindMacAdr(pLinkHead,rbuf+4);
 					if(p != NULL)
@@ -470,7 +470,7 @@ void XBeeNetInit(void)
 	{
 		XBeeReadAI();
 		usleep(200000);
-		len = read_one_package(rbuf);
+		len = read_one_package_f_xbee_rev_buf(rbuf);
 		if(len > 0 )
 		{
 			if(rbuf[3] == 0x88 || rbuf[5] == 'A' || rbuf[6] == 'I' || rbuf[7] == 0)
@@ -508,18 +508,18 @@ void printf_local_time(void)
 /******************************************************
 **uart receive and check
 ******************************************************/
-static uint8 UartRevBuf[255];
-int16 read_one_package(uint8* buf)
+uint16 read_one_package_f_xbee_rev_buf(uint8* buf)
 {
 	int16 UartRevLen;
-	uint16 DataLen=0,cnt=0;
+	static uint16 DataLen=0,cnt=0;
 	uint8 checksum;
 	static uint16 r_len=0;
 	static uint8 uart_state=1;
+	static uint8 UartRevBuf[255];
 
 	if(uart_state == 1)
 	{
-		UartRevLen = read_serial_rbuf(UartRevBuf , 1);
+		UartRevLen = read_xbee_rev_buf(UartRevBuf , 1);
 		if(UartRevLen == 0)
 			return 0;
 		if(UartRevBuf[0] != 0x7E)
@@ -529,7 +529,7 @@ int16 read_one_package(uint8* buf)
 	}
 	if(uart_state == 2)
 	{
-		UartRevLen = read_serial_rbuf(UartRevBuf+r_len , 3-r_len);
+		UartRevLen = read_xbee_rev_buf(UartRevBuf+r_len , 3-r_len);
 		if(UartRevLen < 3-r_len)
 		{
 			r_len += UartRevLen;
@@ -543,7 +543,7 @@ int16 read_one_package(uint8* buf)
 	}
 	if(uart_state == 3)
 	{
-		UartRevLen = read_serial_rbuf(UartRevBuf+r_len , DataLen+4-r_len);
+		UartRevLen = read_xbee_rev_buf(UartRevBuf+r_len , DataLen+4-r_len);
 		if(UartRevLen < DataLen+4-r_len)
 		{
 			r_len += UartRevLen;
@@ -553,31 +553,160 @@ int16 read_one_package(uint8* buf)
 		if(checksum != UartRevBuf[DataLen+3])
 		{
 			uart_state = 1;
-			printf("\033[31m false\033[0m");
+			printf("\033[31m 数据false\033[0m");
 			return 0;
 		}
 		else
 		{
 			for(cnt=0;cnt<DataLen+4;cnt++)
+			{
 				*(buf+cnt) = *(UartRevBuf+cnt);
+				//printf("%02x ",*(buf+cnt));
+			}			
 			uart_state = 1;
 			r_len = 0;
-			printf("\033[34m success\033[0m");
+			printf("\033[32m 数据success\033[0m");
 			return DataLen+4;
 		}
 	}
 	return 0;
 }
-uint8 read_serial_rbuf(uint8 *rbuf,uint8 n)
+uint16 read_one_package_f_trans_status_buf(uint8* buf)
+{
+	int16 UartRevLen;
+	static uint16 DataLen=0,cnt=0;
+	uint8 checksum;
+	static uint16 r_len=0;
+	static uint8 uart_state=1;
+	static uint8 UartRevBuf[255];
+
+	if(uart_state == 1)
+	{
+		UartRevLen = read_trans_status_buf(UartRevBuf , 1);
+		if(UartRevLen == 0)
+			return 0;
+		if(UartRevBuf[0] != 0x7E)
+			return 0;
+		r_len = 1;
+		uart_state = 2;
+	}
+	if(uart_state == 2)
+	{
+		UartRevLen = read_trans_status_buf(UartRevBuf+r_len , 3-r_len);
+		if(UartRevLen < 3-r_len)
+		{
+			r_len += UartRevLen;
+			return 0;
+		}
+		DataLen = 0;
+		DataLen |= UartRevBuf[2];
+		DataLen |= (uint16)UartRevBuf[1]<<8;
+		uart_state = 3;
+		r_len += UartRevLen;
+	}
+	if(uart_state == 3)
+	{
+		UartRevLen = read_trans_status_buf(UartRevBuf+r_len , DataLen+4-r_len);
+		if(UartRevLen < DataLen+4-r_len)
+		{
+			r_len += UartRevLen;
+			return 0;
+		}
+		checksum = XBeeApiChecksum(UartRevBuf+3,DataLen); //校验数据
+		if(checksum != UartRevBuf[DataLen+3])
+		{
+			uart_state = 1;
+			printf("\033[31m 应答false\033[0m");
+			return 0;
+		}
+		else
+		{
+			for(cnt=0;cnt<DataLen+4;cnt++)
+			{
+				*(buf+cnt) = *(UartRevBuf+cnt);
+				//printf("%02x ",*(buf+cnt));
+			}
+			uart_state = 1;
+			r_len = 0;
+			printf("\033[34m 应答success\033[0m");
+			return DataLen+4;
+		}
+	}
+	return 0;
+}
+uint16 read_one_package_f_xbee_send_buf(uint8* buf)
+{
+	int16 UartRevLen;
+	static uint16 DataLen=0,cnt=0;
+	uint8 checksum;
+	static uint16 r_len=0;
+	static uint8 uart_state=1;
+	static uint8 UartRevBuf[255];
+
+	if(uart_state == 1)
+	{
+		UartRevLen = read_xbee_send_buf(UartRevBuf , 1);
+		if(UartRevLen == 0)
+		{
+			return 0;
+		}
+		if(UartRevBuf[0] != 0x7E)
+			return 0;
+		r_len = 1;
+		uart_state = 2;
+	}
+	if(uart_state == 2)
+	{
+		UartRevLen = read_xbee_send_buf(UartRevBuf+r_len , 3-r_len);
+		if(UartRevLen < 3-r_len)
+		{
+			r_len += UartRevLen;
+			return 0;
+		}
+		DataLen = 0;
+		DataLen |= UartRevBuf[2];
+		DataLen |= ((uint16)UartRevBuf[1])<<8;
+		uart_state = 3;
+		r_len += UartRevLen;
+	}
+	if(uart_state == 3)
+	{
+		UartRevLen = read_xbee_send_buf(UartRevBuf+r_len , DataLen+4-r_len);
+		if(UartRevLen < DataLen+4-r_len)
+		{
+			r_len += UartRevLen;
+			return 0;
+		}
+		checksum = XBeeApiChecksum(UartRevBuf+3,DataLen); //校验数据
+		if(checksum != UartRevBuf[DataLen+3])
+		{
+			uart_state = 1;
+			printf("\033[31m 发送false\033[0m");
+			return 0;
+		}
+		else
+		{
+			for(cnt=0;cnt<DataLen+4;cnt++)
+			{
+				*(buf+cnt) = *(UartRevBuf+cnt);
+				printf("%02x ",*(buf+cnt));
+			}
+			printf("\033[37m 发送success\033[0m");
+			uart_state = 1;
+			r_len = 0;
+			return DataLen+4;
+		}
+	}
+	return 0;
+}
+uint16 read_serial_rbuf(uint8 *rbuf,uint16 n)
 {
 	uint8 i=0,reval=0;
 	bool state;
-
+	pthread_mutex_lock(&mutex01_serial_rbuf);
 	for(i=0;i<n;i++)
 	{
-		pthread_mutex_lock(&mutex01_serial_rbuf);
 		state = out_queue( &serial_rbuf , rbuf+i);
-		pthread_mutex_unlock(&mutex01_serial_rbuf);
 		if(state == false)
 		{
 			break;
@@ -585,15 +714,90 @@ uint8 read_serial_rbuf(uint8 *rbuf,uint8 n)
 		else
 		{
 			reval++;
+		}
+	}
+	pthread_mutex_unlock(&mutex01_serial_rbuf);
+	return reval;
+}
+uint16 read_trans_status_buf(uint8 *rbuf,uint16 n)
+{
+	uint8 i=0,reval=0;
+	bool state;
+
+	pthread_mutex_lock(&mutex08_trans_status_buf);
+	for(i=0;i<n;i++)
+	{
+		state = out_queue( &trans_status_buf , rbuf+i);
+		if(state == false)
+		{
+			return reval;
+		}
+		else
+		{
+			reval++;
+		}
+	}
+	pthread_mutex_unlock(&mutex08_trans_status_buf);
+	return reval;
+}
+uint16 read_xbee_rev_buf(uint8 *rbuf,uint16 n)
+{
+	uint8 i=0,reval=0;
+	bool state;
+
+	pthread_mutex_lock(&mutex09_xbee_rev_buf);
+	for(i=0;i<n;i++)
+	{
+		state = out_queue( &xbee_rev_buf , rbuf+i);
+		if(state == false)
+		{
+			return reval;
+		}
+		else
+		{
+			reval++;
+			//printf("%02x ",*(rbuf+i));
+		}
+	}
+	pthread_mutex_unlock(&mutex09_xbee_rev_buf);
+	return reval;
+}
+uint16 read_xbee_send_buf(uint8 *rbuf,uint16 n)
+{
+	uint8 i=0,reval=0;
+	bool state;
+
+	pthread_mutex_lock(&mutex10_xbee_send_buf);
+	for(i=0;i<n;i++)
+	{
+		state = out_queue( &xbee_send_buf , rbuf+i);
+		if(state == false)
+		{
+			return reval;
+		}
+		else
+		{
+			reval++;
 			printf("%02x ",*(rbuf+i));
 		}
 	}
+	pthread_mutex_unlock(&mutex10_xbee_send_buf);
 	return reval;
 }
+uint16 write_xbee_send_buf(uint8 *rbuf,uint16 n)
+{
+	uint16 i=0;
 
-
-
-
+	pthread_mutex_lock(&mutex10_xbee_send_buf);
+	for(i=0;i<n;i++)
+	{
+		in_queue( &xbee_send_buf, *(rbuf + i));
+		printf("%02x ",*(rbuf + i));
+	}
+	//print_queue(&xbee_send_buf);
+	pthread_mutex_unlock(&mutex10_xbee_send_buf);
+	return 0;
+}
 
 
 

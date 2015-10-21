@@ -321,8 +321,18 @@ bool out_queue(CircularQueueType *queue , uint8 *out_buf)
     }  
 }
 
+void print_queue(CircularQueueType *queue)
+{
+	uint32 cnt=0,i=0;
 
-
+	cnt = queue->count;
+	while(cnt)
+	{
+		printf("%02x ",queue -> elements[queue -> front + i]);
+		cnt--;
+		i++;
+	}
+}
 
 
 

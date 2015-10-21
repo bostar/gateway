@@ -59,7 +59,7 @@ bool is_empty( CircularQueueType *queue);
 bool is_full( CircularQueueType *queue );
 bool in_queue( CircularQueueType *queue, uint8 value);
 bool out_queue( CircularQueueType *queue , uint8 *out_buf);
-
+void print_queue(CircularQueueType *queue);
 
 
 #endif

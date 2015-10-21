@@ -5,12 +5,16 @@
 #include "serial.h"
 #include "sys/queue.h"
 #include <time.h>
+#include "serial.h"
 /**************************gloable variable************************/
 CircularQueueType serial_rbuf;
 SourceRouterLinkType *pLinkHead=NULL;
-uint8 send_xbee_state=0;
+uint32 send_xbee_state=0;
 uint32 waite_send_head_num=0;
 //uint32 send_data_timeout=0;
+CircularQueueType trans_status_buf;
+CircularQueueType xbee_rev_buf;
+CircularQueueType xbee_send_buf;
 
 /*************************** mutex ********************************/
 pthread_mutex_t mutex01_serial_rbuf = PTHREAD_MUTEX_INITIALIZER;
@@ -20,6 +24,10 @@ pthread_mutex_t mutex04_waite_send_head_num = PTHREAD_MUTEX_INITIALIZER;
 //pthread_mutex_t mutex05_send_data_timeout = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex06_waite_send_head = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex07_CoorInfo = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex08_trans_status_buf = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex09_xbee_rev_buf = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex10_xbee_send_buf = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex11_serial_port = PTHREAD_MUTEX_INITIALIZER;
 
 /*************************** cond *********************************/
 pthread_cond_t cond_send_xbee=PTHREAD_COND_INITIALIZER;
@@ -34,10 +42,6 @@ void xbee_routine_thread(void)
 	xbee_gpio_init();
 	xbee_serial_port_init();
 
-	pthread_mutex_lock(&mutex06_waite_send_head);
-	TAILQ_INIT(&waite_send_head);
-	pthread_mutex_unlock(&mutex06_waite_send_head);
-
 	for(_i=0;_i<8;_i++)
 		_adr[_i] = 0;
 	pthread_mutex_lock(&mutex02_pLinkHead);
@@ -48,20 +52,37 @@ void xbee_routine_thread(void)
 	creat_circular_queue( &serial_rbuf );
 	pthread_mutex_unlock(&mutex01_serial_rbuf);
 
+	pthread_mutex_lock(&mutex08_trans_status_buf);
+	creat_circular_queue( &trans_status_buf );
+	pthread_mutex_unlock(&mutex08_trans_status_buf);
+
+	pthread_mutex_lock(&mutex09_xbee_rev_buf);
+	creat_circular_queue( &xbee_rev_buf );
+	pthread_mutex_unlock(&mutex09_xbee_rev_buf);
+
+	pthread_mutex_lock(&mutex10_xbee_send_buf);
+	creat_circular_queue( &xbee_send_buf );
+	pthread_mutex_unlock(&mutex10_xbee_send_buf);
+
 	printf("\033[33mstart xbee_routine_thread_send_data...\033[0m\r\n");
     ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_send_data,NULL);
     if(ret!=0){
         printf ("Create xbee_routine_thread_send_data error!n");
     }
-	printf("\033[33mstart xbee_routine_thread_timer...\033[0m\r\n");
-    ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_timer,NULL);
-    if(ret!=0){
-        printf ("Create xbee_routine_thread_timer error!n");
-    }
 	printf("\033[33mstart xbee_routine_thread_read_serial...\033[0m\r\n");
     ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_read_serial,NULL);
     if(ret!=0){
         printf ("Create xbee_routine_thread_read_serial error!n");
+    }
+	printf("\033[33mstart xbee_routine_thread_serial_data_process...\033[0m\r\n");
+    ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_serial_data_process,NULL);
+    if(ret!=0){
+        printf ("Create xbee_routine_thread_serial_data_process error!n");
+    }
+	printf("\033[33mstart xbee_routine_thread_process_trans_status_buf...\033[0m\r\n");
+    ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_process_trans_status_buf,NULL);
+    if(ret!=0){
+        printf ("Create xbee_routine_thread_process_trans_status_buf error!n");
     }
 
 	XBeeNetInit();
@@ -71,6 +92,7 @@ void xbee_routine_thread(void)
     if(ret!=0){
         printf ("Create xbee_routine_thread_process_serial_buff error!n");
     }
+	
 #if __XBEE_TEST__
 	printf("\033[33mstart xbee_routine_thread_test...\033[0m\r\n");
     ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_test,NULL);
@@ -87,9 +109,13 @@ void xbee_routine_thread(void)
 #endif
 	while(1)
 	{
-		pthread_mutex_lock(&mutex04_waite_send_head_num);
-		printf("waite_send_head_num = %d\n",waite_send_head_num);
-		pthread_mutex_unlock(&mutex04_waite_send_head_num);
+		pthread_mutex_lock(&mutex10_xbee_send_buf);
+		print_queue(&xbee_send_buf);
+		pthread_mutex_unlock(&mutex10_xbee_send_buf);
+
+		pthread_mutex_lock(&mutex03_send_xbee_state);
+		printf("\033[36msend_xbee_state = %d \033[0m",send_xbee_state);
+		pthread_mutex_unlock(&mutex03_send_xbee_state);
 		usleep(1000000);
 	}
 }
@@ -100,7 +126,7 @@ void xbee_routine_thread_process_serial_buf(void)
 	static int16 len=0;
 	while(1)
 	{
-		len = read_one_package(rbuf);
+		len = read_one_package_f_xbee_rev_buf(rbuf);
 		if(len)
 	 	{
 			//TestPrintf("1",len,rbuf);
@@ -119,11 +145,30 @@ void xbee_routine_thread_process_serial_buf(void)
 				case at_command_response:
 					ProcessATRes(rbuf);
 					break;
+				default:
+					break;
+			}
+		}
+		usleep(10);
+	 }
+}
+
+void xbee_routine_thread_process_trans_status_buf(void)
+{
+	static uint8 rbuf[255]={0};
+	static int16 len=0;
+	while(1)
+	{
+		len = read_one_package_f_trans_status_buf(rbuf);
+		if(len)
+		{
+			switch(rbuf[3])
+			{
 				case transmit_status:
 					//ProcessTranState();
 					pthread_mutex_lock(&mutex03_send_xbee_state);
-					send_xbee_state--;
-					printf("\033[33msend_xbee_state = %d\033[0m",send_xbee_state);
+					if(send_xbee_state > 0)
+						send_xbee_state--;
 					pthread_cond_signal(&cond_send_xbee);
 					pthread_mutex_unlock(&mutex03_send_xbee_state);
 					break;
@@ -131,83 +176,62 @@ void xbee_routine_thread_process_serial_buf(void)
 					break;
 			}
 		}
-		usleep(1);
-	 }
+		usleep(10);
+	}
 }
 
 void xbee_routine_thread_send_data(void)
 {
-	XBeeDataWaiteSendType *p;
-	uint32 temp=0;
-	struct timespec time_cur;
+	static uint8 rbuf[255]={0};
+	static int16 len=0;
+	static uint8 i=0;
+	//struct timespec time_cur;
 	while(1)
 	{
 		pthread_mutex_lock(&mutex03_send_xbee_state);
-		clock_gettime(CLOCK_MONOTONIC,&time_cur);
-		time_cur.tv_nsec += 300000000;
-puts("\033[33m标记1\033[0m");
+		//clock_gettime(CLOCK_MONOTONIC,&time_cur);
+		//time_cur.tv_nsec += 300000000;
 		while(send_xbee_state > _SEND_DATA_MAX)
 		{
 			//pthread_cond_timedwait(&cond_send_xbee,&mutex03_send_xbee_state,&time_cur);
 			pthread_cond_wait(&cond_send_xbee,&mutex03_send_xbee_state);   //加timeout 用绝对时间
 		}
-		pthread_mutex_unlock(&mutex03_send_xbee_state);  
-puts("\033[33m标记2\033[0m");
-		pthread_mutex_lock(&mutex04_waite_send_head_num);
-		temp = waite_send_head_num;
-		pthread_mutex_unlock(&mutex04_waite_send_head_num);
-puts("\033[33m标记3\033[0m");
-		while(temp > _QUEUE_BUF_MAX) //丢弃过量的数据包
-		{
-			pthread_mutex_lock(&mutex06_waite_send_head);
-			p = TAILQ_FIRST(&waite_send_head);
-			TAILQ_REMOVE(&waite_send_head, p, tailq_entry);
-			pthread_mutex_unlock(&mutex06_waite_send_head);
-puts("\033[33m标记4\033[0m");
-			free(p);
+		pthread_mutex_unlock(&mutex03_send_xbee_state);
 
-			pthread_mutex_lock(&mutex04_waite_send_head_num);
-			waite_send_head_num--;
-			temp = waite_send_head_num;
-			pthread_mutex_unlock(&mutex04_waite_send_head_num);
-puts("\033[33m标记5\033[0m");
+		pthread_mutex_lock(&mutex10_xbee_send_buf);
+		len = 0;
+		if(xbee_send_buf.count)
+		{
+			len = read_one_package_f_xbee_send_buf(rbuf);
 		}
-		
-		pthread_mutex_lock(&mutex04_waite_send_head_num);
-		temp = waite_send_head_num;
-		pthread_mutex_unlock(&mutex04_waite_send_head_num); 
-puts("\033[33m标记6\033[0m");
-		if(temp > 0) 
-		{
-			pthread_mutex_lock(&mutex06_waite_send_head);
-			p = TAILQ_FIRST(&waite_send_head);
-			XBeeTransReq(p->mac_adr,p->net_adr,p->options,p->data,p->data_len,p->req);
-			TAILQ_REMOVE(&waite_send_head, p, tailq_entry);
-			pthread_mutex_unlock(&mutex06_waite_send_head);
-puts("\033[33m标记7\033[0m");
-			free(p);
+		pthread_mutex_unlock(&mutex10_xbee_send_buf);
 
-			pthread_mutex_lock(&mutex04_waite_send_head_num);
-			waite_send_head_num--;
-			pthread_mutex_unlock(&mutex04_waite_send_head_num);
-puts("\033[33m标记8\033[0m");
-			pthread_mutex_lock(&mutex03_send_xbee_state);
+		pthread_mutex_lock(&mutex11_serial_port);
+		i = 0;
+		if(len)
+		{
+			WriteComPort(rbuf, len);
+			i = 1;
+		}
+		pthread_mutex_unlock(&mutex11_serial_port);
+
+		pthread_mutex_lock(&mutex03_send_xbee_state);
+		if(i == 1)
 			send_xbee_state++;
-			pthread_mutex_unlock(&mutex03_send_xbee_state);
-puts("\033[33m标记9\033[0m");
-		}
-		
+		pthread_mutex_unlock(&mutex03_send_xbee_state);
 		usleep(10);
 	}
 }
 
-static uint8 serial_buf[255];
 void xbee_routine_thread_read_serial(void)
 {
 	uint32 len=0,i=0;
+	static uint8 serial_buf[255];
 	while(1)
 	{
+		pthread_mutex_lock(&mutex11_serial_port);
 		len = ReadComPort (serial_buf, 255);
+		pthread_mutex_unlock(&mutex11_serial_port);
 		if(len > 0)
 		{
 			pthread_mutex_lock(&mutex01_serial_rbuf);
@@ -222,11 +246,81 @@ void xbee_routine_thread_read_serial(void)
 	}
 }
 
-void xbee_routine_thread_timer(void)
+void xbee_routine_thread_serial_data_process(void)
 {
+	int16 UartRevLen;
+	static uint16 DataLen=0;
+	uint8 checksum;
+	uint16 i=0;
+	static uint16 r_len=0;
+	static uint8 uart_state=1;
+	static uint8 UartRevBuf[255];
 	while(1)
 	{
-		usleep(1000000);
+		if(uart_state == 1)
+		{
+			UartRevLen = read_serial_rbuf(UartRevBuf , 1);
+			if(UartRevLen == 0)
+				goto the_end;
+			if(UartRevBuf[0] != 0x7E)
+				goto the_end;
+			r_len = 1;
+			uart_state = 2;
+		}
+		if(uart_state == 2)
+		{
+			UartRevLen = read_serial_rbuf(UartRevBuf+r_len , 3-r_len);
+			if(UartRevLen < 3-r_len)
+			{
+				r_len += UartRevLen;
+				goto the_end;
+			}
+			DataLen = 0;
+			DataLen |= UartRevBuf[2];
+			DataLen |= (uint16)UartRevBuf[1]<<8;
+			uart_state = 3;
+			r_len += UartRevLen;
+		}
+		if(uart_state == 3)
+		{
+			UartRevLen = read_serial_rbuf(UartRevBuf+r_len , DataLen+4-r_len);
+			if(UartRevLen < DataLen+4-r_len)
+			{
+				r_len += UartRevLen;
+				goto the_end;
+			}
+			uart_state = 1;
+			r_len = 0;
+			checksum = XBeeApiChecksum(UartRevBuf+3,DataLen); //校验数据
+			if(checksum != UartRevBuf[DataLen+3])
+			{
+				printf("\031[34m 串口false \033[0m");
+				goto the_end;
+			}
+			else
+			{
+				//printf("\033[34m 串口success\033[0m");
+				if(*(UartRevBuf+3) == transmit_status)
+				{
+					pthread_mutex_lock(&mutex08_trans_status_buf);
+					for(i=0;i<DataLen+4;i++)
+					{
+						in_queue( &trans_status_buf, *(UartRevBuf + i));
+					}
+					pthread_mutex_unlock(&mutex08_trans_status_buf);
+				}
+				else
+				{
+					pthread_mutex_lock(&mutex09_xbee_rev_buf);
+					for(i=0;i<DataLen+4;i++)
+					{
+						in_queue( &xbee_rev_buf, *(UartRevBuf + i));
+					}
+					pthread_mutex_unlock(&mutex09_xbee_rev_buf);
+				}
+			}
+		}
+		the_end : usleep(10);
 	}
 }
 
@@ -237,10 +331,6 @@ void xbee_routine_thread_test_lar_node(void)
 	SourceRouterLinkType *p;
 	while(1)
 	{
-		pthread_mutex_lock(&mutex04_waite_send_head_num);
-		printf("the packages has not send = %d\r\n",waite_send_head_num);
-		pthread_mutex_unlock(&mutex04_waite_send_head_num);
-
 		pthread_mutex_lock(&mutex02_pLinkHead);
 		for(i=2;i<=LinkLenth(pLinkHead);i++)
 		{
@@ -255,10 +345,6 @@ void xbee_routine_thread_test_lar_node(void)
 			}
 		}
 		pthread_mutex_unlock(&mutex02_pLinkHead);
-
-		pthread_mutex_lock(&mutex04_waite_send_head_num);
-		printf("waite to be send data packages = %d\r\n",waite_send_head_num);
-		pthread_mutex_unlock(&mutex04_waite_send_head_num);
 
 		pthread_mutex_lock(&mutex02_pLinkHead);
 		WrLogTxt();

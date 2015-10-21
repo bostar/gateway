@@ -50,10 +50,20 @@ typedef enum
 
 extern uint32 qwerty;
 
-int16 read_one_package(uint8* buf);
-uint8 read_serial_rbuf(uint8 *rbuf,uint8 n);
+uint16 read_one_package_f_xbee_rev_buf(uint8* buf);
+uint16 read_one_package_f_trans_status_buf(uint8* buf);
+uint16 read_one_package_f_xbee_send_buf(uint8* buf);
+
+uint16 read_serial_rbuf(uint8 *rbuf,uint16 n);
+uint16 read_trans_status_buf(uint8 *rbuf,uint16 n);
+uint16 read_xbee_rev_buf(uint8 *rbuf,uint16 n);
+uint16 read_xbee_send_buf(uint8 *rbuf,uint16 n);
+
+uint16 write_xbee_send_buf(uint8 *rbuf,uint16 n);
+
 int16 XBeeJionEnable(uint8 *ieeeadr,uint8 *netadr);
 int16 XBeeJionDisable(uint8 *ieeeadr,uint8 *netadr);
+
 void XBeeProcessCFG(uint8 *rbuf);
 void XBeeProcessCTL(uint8 *rbuf);
 void XBeeProcessSEN(uint8 *rbuf);
@@ -62,6 +72,7 @@ void ProcessND(uint8 *rbuf);
 void ProcessModState(uint8 *rbuf);
 void ProcessATRes(uint8 *rbuf);
 void ProcessTranState(void);
+
 int16 XBeeSendTimeout(uint8 time);
 int16 XBeeSendSenserInit(uint8 *ieeeadr,uint8 *net_adr);
 int16 XBeeEndDeviceLock(uint8 *ieeeadr,uint8 *netadr);

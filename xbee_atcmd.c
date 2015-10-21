@@ -30,25 +30,27 @@
 **************************************************/
 int16 XBeeSendATCmd(int8* atcmd,uint8* pparam,uint8 len,uint8 IsRes)
 {
-  uint8 wbuf[256],i;
-  XBeeApiATCmdType *cmd = (XBeeApiATCmdType*)wbuf;
-  cmd->start_delimiter  = 0x7E;
-  cmd->len_msb          = (uint8)((4+len)>>8);
-  cmd->len_lsb          = (uint8)(4+len);
-  cmd->frame_type       = 0x08;
-  cmd->frame_id         = IsRes;
-  cmd->atCmd[0]         = *atcmd;
-  cmd->atCmd[1]         = *(atcmd+1);
-  for(i=0;i<len;i++)
-   *(((uint8*)cmd)+7+i) = *(pparam+i);
-  *(((uint8*)cmd)+7+len) = XBeeApiChecksum(((uint8*)cmd)+3,4+len); 
+	uint8 wbuf[256],i;
+	XBeeApiATCmdType *cmd = (XBeeApiATCmdType*)wbuf;
+	cmd->start_delimiter  = 0x7E;
+	cmd->len_msb          = (uint8)((4+len)>>8);
+	cmd->len_lsb          = (uint8)(4+len);
+	cmd->frame_type       = 0x08;
+	cmd->frame_id         = IsRes;
+	cmd->atCmd[0]         = *atcmd;
+	cmd->atCmd[1]         = *(atcmd+1);
+	for(i=0;i<len;i++)
+		*(((uint8*)cmd)+7+i) = *(pparam+i);
+	*(((uint8*)cmd)+7+len) = XBeeApiChecksum(((uint8*)cmd)+3,4+len); 
 #if defined USE_PRINTF
-  printf("api cmd is:");
-  for(i=0;i<8+len;i++)
+ 	printf("api cmd is:");
+  	for(i=0;i<8+len;i++)
      printf("0x%02x ",*(((uint8*)cmd)+i));
-  printf("\r\n");
+  	printf("\r\n");
 #endif
-  return WriteComPort((uint8*)cmd,8+len);
+	write_xbee_send_buf((uint8*)cmd,8+len);
+	return 0;
+  	//return WriteComPort((uint8*)cmd,8+len);
 }
 
 /************************************************************
@@ -86,7 +88,9 @@ int16 XBeeTransReq(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,u
     	printf("0x%02x ",*(((uint8*)frame)+cnt));
   	printf("\n");
 #endif
-  	return WriteComPort((uint8*)frame,18+len);
+	write_xbee_send_buf((uint8*)frame,18+len);
+	return 0;
+  	//return WriteComPort((uint8*)frame,18+len);
 }
 /*********************************************************
 **brief 发送源路由请求
@@ -131,7 +135,9 @@ int16 XBeeCreatSourceRout(uint8 *mac_adr,uint16 net_adr,uint16 num,uint8 *mid_ad
 		printf("\033[33m0x%02x \033[0m",*(wbuf_temp+i));
 	printf("\n"); 
 #endif
-	return WriteComPort(wbuf_temp,wbuf_len);
+	write_xbee_send_buf(wbuf_temp,wbuf_len);
+	return 0;
+	//return WriteComPort(wbuf_temp,wbuf_len);
 }
 
 /*********************************************************
@@ -399,52 +405,24 @@ uint16 XBeeSetAT(int8 *at_cmd, uint8 *param, uint8 len, IsResp IsRes)
 ********************************************************/
 int16 XBeeBoardcastTrans(uint8 *data,uint16 len,IsResp IsRes)
 {
-	XBeeDataWaiteSendType *p;
 	uint8 cnt;
-	
-	p = (XBeeDataWaiteSendType*)malloc(sizeof(XBeeDataWaiteSendType));
+	uint8 adr[8],net_adr[2];
+
 	for(cnt=0;cnt<6;cnt++)
-    	p->mac_adr[cnt] = 0;
-	p->mac_adr[6] = 0xFF;
-	p->mac_adr[7] = 0xFF;
-	p->net_adr[0] = 0xff;
-	p->net_adr[1] = 0xfe;
-	for(cnt=0;cnt<len;cnt++)
-		p->data[cnt] = *(data+cnt);
-	p->data_len = len;
-	p->req = IsRes;
-	p->options = Default;
-	TAILQ_INSERT_TAIL(&waite_send_head, p, tailq_entry);
-	pthread_mutex_lock(&mutex04_waite_send_head_num);
-	waite_send_head_num++;
-	pthread_mutex_unlock(&mutex04_waite_send_head_num);
-	return 0;
-	//return XBeeTransReq(adr,net_adr,ExtTimeout,data,len,IsRes);
+    	adr[cnt] = 0;
+	adr[6] = 0xFF;
+	adr[7] = 0xFF;
+	net_adr[0] = 0xff;
+	net_adr[1] = 0xfe;
+
+	return XBeeTransReq(adr,net_adr,Default,data,len,IsRes);
 }
 /********************************************************
 **brief 单播发送
 ********************************************************/
 int16 XBeeUnicastTrans(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,uint16 len,IsResp IsRes)
 {
-	XBeeDataWaiteSendType *p;
-	uint8 cnt;
-	
-	p = (XBeeDataWaiteSendType*)malloc(sizeof(XBeeDataWaiteSendType));
-	for(cnt=0;cnt<8;cnt++)
-    	p->mac_adr[cnt] = *(adr+cnt);
-	p->net_adr[0] = *(net_adr);
-	p->net_adr[1] = *(net_adr+1);
-	for(cnt=0;cnt<len;cnt++)
-		p->data[cnt] = *(rf_data+cnt);
-	p->data_len = len;
-	p->req = IsRes;
-	p->options = options;
-	TAILQ_INSERT_TAIL(&waite_send_head, p, tailq_entry);
-	pthread_mutex_lock(&mutex04_waite_send_head_num);
-	waite_send_head_num++;
-	pthread_mutex_unlock(&mutex04_waite_send_head_num);
-	return 0;
-	//return XBeeTransReq(adr,net_adr,options,rf_data,len,IsRes); 
+	return XBeeTransReq(adr,net_adr,options,rf_data,len,IsRes); 
 }
 
 uint8 XBeeApiChecksum(uint8 *begin,uint16 length)
