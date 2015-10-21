@@ -689,7 +689,7 @@ uint16 read_one_package_f_xbee_send_buf(uint8* buf)
 			for(cnt=0;cnt<DataLen+4;cnt++)
 			{
 				*(buf+cnt) = *(UartRevBuf+cnt);
-				printf("%02x ",*(buf+cnt));
+				//printf("%02x ",*(buf+cnt));
 			}
 			printf("\033[37m 发送success\033[0m");
 			uart_state = 1;
@@ -778,7 +778,7 @@ uint16 read_xbee_send_buf(uint8 *rbuf,uint16 n)
 		else
 		{
 			reval++;
-			printf("%02x ",*(rbuf+i));
+			//printf("%02x ",*(rbuf+i));
 		}
 	}
 	pthread_mutex_unlock(&mutex10_xbee_send_buf);
@@ -792,7 +792,7 @@ uint16 write_xbee_send_buf(uint8 *rbuf,uint16 n)
 	for(i=0;i<n;i++)
 	{
 		in_queue( &xbee_send_buf, *(rbuf + i));
-		printf("%02x ",*(rbuf + i));
+		//printf("%02x ",*(rbuf + i));
 	}
 	//print_queue(&xbee_send_buf);
 	pthread_mutex_unlock(&mutex10_xbee_send_buf);

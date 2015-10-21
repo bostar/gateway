@@ -41,7 +41,7 @@ int16 XBeeSendATCmd(int8* atcmd,uint8* pparam,uint8 len,uint8 IsRes)
 	cmd->atCmd[1]         = *(atcmd+1);
 	for(i=0;i<len;i++)
 		*(((uint8*)cmd)+7+i) = *(pparam+i);
-	*(((uint8*)cmd)+7+len) = XBeeApiChecksum(((uint8*)cmd)+3,4+len); 
+	*(((uint8*)cmd)+7+len) = XBeeApiChecksum(((uint8*)cmd)+3,4+len);
 #if defined USE_PRINTF
  	printf("api cmd is:");
   	for(i=0;i<8+len;i++)

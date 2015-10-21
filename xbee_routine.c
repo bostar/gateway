@@ -110,8 +110,12 @@ void xbee_routine_thread(void)
 	while(1)
 	{
 		pthread_mutex_lock(&mutex10_xbee_send_buf);
-		print_queue(&xbee_send_buf);
+		printf("\033[36mxbee_send_buf-> = %d \033[0m",xbee_send_buf.count);
 		pthread_mutex_unlock(&mutex10_xbee_send_buf);
+
+		pthread_mutex_lock(&mutex09_xbee_rev_buf);
+		printf("\033[36mxbee_rev_buf-> = %d \033[0m",xbee_rev_buf.count);
+		pthread_mutex_unlock(&mutex09_xbee_rev_buf);
 
 		pthread_mutex_lock(&mutex03_send_xbee_state);
 		printf("\033[36msend_xbee_state = %d \033[0m",send_xbee_state);
@@ -198,22 +202,13 @@ void xbee_routine_thread_send_data(void)
 		}
 		pthread_mutex_unlock(&mutex03_send_xbee_state);
 
-		pthread_mutex_lock(&mutex10_xbee_send_buf);
-		len = 0;
-		if(xbee_send_buf.count)
-		{
-			len = read_one_package_f_xbee_send_buf(rbuf);
-		}
-		pthread_mutex_unlock(&mutex10_xbee_send_buf);
-
-		pthread_mutex_lock(&mutex11_serial_port);
+		len = read_one_package_f_xbee_send_buf(rbuf);
 		i = 0;
 		if(len)
 		{
 			WriteComPort(rbuf, len);
 			i = 1;
 		}
-		pthread_mutex_unlock(&mutex11_serial_port);
 
 		pthread_mutex_lock(&mutex03_send_xbee_state);
 		if(i == 1)
@@ -229,9 +224,7 @@ void xbee_routine_thread_read_serial(void)
 	static uint8 serial_buf[255];
 	while(1)
 	{
-		pthread_mutex_lock(&mutex11_serial_port);
 		len = ReadComPort (serial_buf, 255);
-		pthread_mutex_unlock(&mutex11_serial_port);
 		if(len > 0)
 		{
 			pthread_mutex_lock(&mutex01_serial_rbuf);
