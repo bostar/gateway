@@ -8,10 +8,11 @@
 #include <pthread.h>
 #include "zlg_cmd.h"
 #include "menu.h"
+#include "serial.h"
 #include "zlg_protocol.h"
-#include "xbee_routine.h"
 #include <sys/timeb.h>
-#include "xbee_api.h"
+#include "xbee_routine.h"
+#include "xbee_protocol.h"
 #define LEN	1000
 
 //#define __USE_ZM516X__

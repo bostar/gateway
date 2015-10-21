@@ -415,7 +415,9 @@ int16 XBeeBoardcastTrans(uint8 *data,uint16 len,IsResp IsRes)
 	p->req = IsRes;
 	p->options = Default;
 	TAILQ_INSERT_TAIL(&waite_send_head, p, tailq_entry);
+	pthread_mutex_lock(&mutex04_waite_send_head_num);
 	waite_send_head_num++;
+	pthread_mutex_unlock(&mutex04_waite_send_head_num);
 	return 0;
 	//return XBeeTransReq(adr,net_adr,ExtTimeout,data,len,IsRes);
 }
@@ -438,7 +440,9 @@ int16 XBeeUnicastTrans(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_da
 	p->req = IsRes;
 	p->options = options;
 	TAILQ_INSERT_TAIL(&waite_send_head, p, tailq_entry);
+	pthread_mutex_lock(&mutex04_waite_send_head_num);
 	waite_send_head_num++;
+	pthread_mutex_unlock(&mutex04_waite_send_head_num);
 	return 0;
 	//return XBeeTransReq(adr,net_adr,options,rf_data,len,IsRes); 
 }

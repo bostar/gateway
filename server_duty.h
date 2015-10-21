@@ -1,5 +1,7 @@
 #ifndef __SERVER_DUTY_H__
-#define __SERVER_DUTY_H_
+#define __SERVER_DUTY_H__
+
+
 
 typedef enum{
     en_vehicle_comming,
@@ -22,4 +24,5 @@ void set_node_online(unsigned char *macaddr);
 int networking_over(void);
 void event_report(unsigned short netaddr,unsigned char event);
 void get_channel_panid(unsigned char* channel,unsigned short*panid);
+
 #endif

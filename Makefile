@@ -9,7 +9,7 @@ LDFLAGS +=
 all:$(EXEC)
 
 $(EXEC):$(OBJS)
-	$(CC) $(LDFLAGS) -o $@ $(OBJS) -lpthread
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) -lpthread -lrt
 
 %.o:%.c
 	$(CC) $(CFLAGS) -c $< -o $@

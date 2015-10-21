@@ -9,7 +9,6 @@
 #include <errno.h>
 #include <limits.h>
 #include "serial.h"
-#include "xbee_routine.h"
 
 #define ttyO0  0
 #define ttyO1  1
@@ -97,7 +96,7 @@ void XBeeCreateNet(void)
 	XBeeSendAT("RE");
 	usleep(1000);
 	LeaveNetwork();	
-	usleep(100000);
+	usleep(300000);
 	for(i=0;i<8;i++)
 		panID[i] = 0x00;
 	XBeeSetPanID(panID,NO_RES);   //设置ID的值	

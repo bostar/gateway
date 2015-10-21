@@ -18,6 +18,7 @@
 #include "xbee_routine.h"
 #include "pthread.h"
 #include "xbee_config.h"
+#include "stdbool.h"
 
 /*******************************************************
 **brief process CFG API
@@ -37,6 +38,7 @@ void XBeeProcessCFG(uint8 *rbuf)
 					printf("%02x ",*(rbuf+4+temp));
 				printf("\n");
 				XBeeJionEnable((rbuf+4),(rbuf+12));
+				pthread_mutex_lock(&mutex02_pLinkHead);
 				p = FindMacAdr(pLinkHead,rbuf+4); 
 				if(p == NULL)
 					AddData(pLinkHead,CreatNode(rbuf+4,rbuf+12));
@@ -46,6 +48,7 @@ void XBeeProcessCFG(uint8 *rbuf)
 					p->target_adr |= (uint16)*(rbuf+13);
 					p->target_adr |= ((uint16)*(rbuf+12))<<8;
 				}
+				pthread_mutex_unlock(&mutex02_pLinkHead);
 			}
 #else
 			temp = get_local_addr(rbuf+12,rbuf+4);
@@ -61,7 +64,11 @@ void XBeeProcessCFG(uint8 *rbuf)
 			{
 				XBeeJionDisable((rbuf+4),(rbuf+12));
 				printf("\033[33m\033[1m已发送拒绝入网指令 \033[0m \n");
-				DeleteNode(pLinkHead,FindMacAdr(pLinkHead,rbuf+4));//删除节点
+				pthread_mutex_lock(&mutex02_pLinkHead);
+				p = FindMacAdr(pLinkHead,rbuf+4); 
+				if(p != NULL)
+					DeleteNode(pLinkHead,FindMacAdr(pLinkHead,rbuf+4));//删除节点
+				pthread_mutex_unlock(&mutex02_pLinkHead);
 			}
 			break;
 		default:
@@ -119,10 +126,12 @@ void XBeeProcessSEN(uint8 *rbuf)
 				{ 
 					//printf("\033[33m\033[1m车位锁定成功 \033[0m \n");
 #if __XBEE_TEST_LAR_NODE__
-					SourceRouterLinkType *p;                                                                                                          
+					SourceRouterLinkType *p;
+					pthread_mutex_lock(&mutex02_pLinkHead);
 					p = FindMacAdr(pLinkHead,rbuf+4);
 					if(p != NULL)
 						p->rev_rep_times++;
+					pthread_mutex_unlock(&mutex02_pLinkHead);
 #else
 					event_report( char_to_int(rbuf+12),en_lock_success);
 #endif
@@ -158,7 +167,7 @@ void XBeeProcessRoutRcord(uint8 *rbuf)
 {
 	uint16 target_adr=0;
 	SourceRouterLinkType *p,*pS;
-
+	pthread_mutex_lock(&mutex02_pLinkHead);
 	if(get_local_addr(rbuf+12,rbuf+4) == 0)
 	{
 		target_adr |= (uint16)*(rbuf+13);
@@ -192,6 +201,7 @@ void XBeeProcessRoutRcord(uint8 *rbuf)
 				break;
 		} 
 	}
+	pthread_mutex_unlock(&mutex02_pLinkHead);
 	return;
 }
 /*************************************************
@@ -250,10 +260,7 @@ void ProcessATRes(uint8 *rbuf)
 *************************************************/
 void ProcessTranState(void)
 {
-	pthread_mutex_lock(&xbee_mutex);
-	send_xbee_state = 1;
-	pthread_cond_signal(&cond_send_xbee);
-	pthread_mutex_unlock(&xbee_mutex);	
+	
 }
 /*************************************************
 **brief process ND AT command response
@@ -263,6 +270,7 @@ void ProcessND(uint8 *rbuf)
 {
 	uint16 target_adr=0;
 	SourceRouterLinkType *p,*pS;
+	pthread_mutex_lock(&mutex02_pLinkHead);
 	if(*(rbuf+20)==0 && *(rbuf+21)==0 )  
 	{
 		target_adr |= (((uint16)*(rbuf+8)) << 8);
@@ -299,6 +307,7 @@ void ProcessND(uint8 *rbuf)
 	if(p != NULL)
 		p->dev_type = *(rbuf+22);  //1 is router  2 is end device  save device type
 		//XBeeSendDevType();
+	pthread_mutex_unlock(&mutex02_pLinkHead);
 	return;
 }
 /*************************************************
@@ -447,10 +456,11 @@ void CloseNet(uint8 time)
 		printf("\033[32m锁已经全部加入网络\033[0m\n");
 	}
 }
+
 /**************************************************************
-**brief xbee初始化
+**brief xbee组网
 **************************************************************/
-void XBeeInit(void)
+void XBeeNetInit(void)
 {
 	uint8 state=0;
 	uint8 len,rbuf[128];
@@ -459,8 +469,8 @@ void XBeeInit(void)
 	while(state != 0)
 	{
 		XBeeReadAI();
-		usleep(2000);
-		len = UartRevDataProcess(rbuf);
+		usleep(200000);
+		len = read_one_package(rbuf);
 		if(len > 0 )
 		{
 			if(rbuf[3] == 0x88 || rbuf[5] == 'A' || rbuf[6] == 'I' || rbuf[7] == 0)
@@ -499,7 +509,7 @@ void printf_local_time(void)
 **uart receive and check
 ******************************************************/
 static uint8 UartRevBuf[255];
-int16 UartRevDataProcess(uint8* buf)
+int16 read_one_package(uint8* buf)
 {
 	int16 UartRevLen;
 	uint16 DataLen=0,cnt=0;
@@ -509,7 +519,7 @@ int16 UartRevDataProcess(uint8* buf)
 
 	if(uart_state == 1)
 	{
-		UartRevLen = ReadComPort(UartRevBuf,1);
+		UartRevLen = read_serial_rbuf(UartRevBuf , 1);
 		if(UartRevLen == 0)
 			return 0;
 		if(UartRevBuf[0] != 0x7E)
@@ -519,7 +529,7 @@ int16 UartRevDataProcess(uint8* buf)
 	}
 	if(uart_state == 2)
 	{
-		UartRevLen = ReadComPort(UartRevBuf+r_len,3-r_len);
+		UartRevLen = read_serial_rbuf(UartRevBuf+r_len , 3-r_len);
 		if(UartRevLen < 3-r_len)
 		{
 			r_len += UartRevLen;
@@ -533,7 +543,7 @@ int16 UartRevDataProcess(uint8* buf)
 	}
 	if(uart_state == 3)
 	{
-		UartRevLen = ReadComPort(UartRevBuf+r_len,DataLen+4-r_len);
+		UartRevLen = read_serial_rbuf(UartRevBuf+r_len , DataLen+4-r_len);
 		if(UartRevLen < DataLen+4-r_len)
 		{
 			r_len += UartRevLen;
@@ -543,6 +553,7 @@ int16 UartRevDataProcess(uint8* buf)
 		if(checksum != UartRevBuf[DataLen+3])
 		{
 			uart_state = 1;
+			printf("\033[31m false\033[0m");
 			return 0;
 		}
 		else
@@ -550,12 +561,35 @@ int16 UartRevDataProcess(uint8* buf)
 			for(cnt=0;cnt<DataLen+4;cnt++)
 				*(buf+cnt) = *(UartRevBuf+cnt);
 			uart_state = 1;
+			r_len = 0;
+			printf("\033[34m success\033[0m");
 			return DataLen+4;
 		}
 	}
 	return 0;
 }
+uint8 read_serial_rbuf(uint8 *rbuf,uint8 n)
+{
+	uint8 i=0,reval=0;
+	bool state;
 
+	for(i=0;i<n;i++)
+	{
+		pthread_mutex_lock(&mutex01_serial_rbuf);
+		state = out_queue( &serial_rbuf , rbuf+i);
+		pthread_mutex_unlock(&mutex01_serial_rbuf);
+		if(state == false)
+		{
+			break;
+		}
+		else
+		{
+			reval++;
+			printf("%02x ",*(rbuf+i));
+		}
+	}
+	return reval;
+}
 
 
 

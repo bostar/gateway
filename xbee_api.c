@@ -1,8 +1,5 @@
 #include "xbee_api.h"
-#include "stdarg.h"
 #include "xbee_routine.h"
-#include <string.h>
-
 /******************************************************************************************
 **broef 创建链表
 ******************************************************************************************/
@@ -243,6 +240,7 @@ int8 arrncmp(uint8 *arr1,uint8 *arr2,uint8 n)
 	return 0;
 }
 
+//serial send data buffer define******************************************************************
 /****************************************************************
 **brief push data into a queue
 ****************************************************************/
@@ -268,6 +266,93 @@ void queue_push_out(void)
 {
 	
 }
+
+//serial receive data buffer define******************************************************************
+void creat_circular_queue( CircularQueueType *queue )  
+{  
+    queue -> front = 0;  
+    queue -> rear = 0;  
+    queue -> count = 0;  
+    queue -> maxsize = _REV_DATA_MAX - 1;  
+}
+bool is_empty( CircularQueueType *queue)    
+{
+    if(queue->count == 0)  
+        return true;  
+    else  
+        return false;  
+}  
+bool is_full( CircularQueueType *queue )  
+{  
+    if ( queue->count == _REV_DATA_MAX )
+        return true;  
+    else  
+        return false;  
+} 
+bool in_queue( CircularQueueType *queue, uint8 value)  
+{  
+    if ( queue -> count == _REV_DATA_MAX )
+    {  
+		queue -> elements[queue ->rear] = value;  
+		queue -> rear = (queue -> rear + 1) % _REV_DATA_MAX;
+		queue -> front = queue -> rear;
+		return false;
+    }  
+    else  
+    {  
+		queue -> elements[queue ->rear] = value;  
+		queue -> rear = (queue -> rear + 1) % _REV_DATA_MAX;       	
+       	queue -> count++;
+		return true;         
+	}	    
+}  
+bool out_queue(CircularQueueType *queue , uint8 *out_buf)  
+{
+    if ( queue -> count == 0 )
+    {  
+		return false;
+    }  
+    else  
+    {  
+		*out_buf = queue -> elements[queue -> front];
+        queue -> front = (queue -> front + 1) % _REV_DATA_MAX;  
+        queue -> count -= 1;
+        return true;  
+    }  
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

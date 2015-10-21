@@ -50,7 +50,8 @@ typedef enum
 
 extern uint32 qwerty;
 
-int16 UartRevDataProcess(uint8* buf);
+int16 read_one_package(uint8* buf);
+uint8 read_serial_rbuf(uint8 *rbuf,uint8 n);
 int16 XBeeJionEnable(uint8 *ieeeadr,uint8 *netadr);
 int16 XBeeJionDisable(uint8 *ieeeadr,uint8 *netadr);
 void XBeeProcessCFG(uint8 *rbuf);
@@ -74,8 +75,7 @@ int16 XBeeSendSetNJ(uint8 *mac_adr,uint8 time);
 void SendAR(uint8 perid);
 void CloseNet(uint8 time);
 void printf_local_time(void);
-void XBeeInit(void);
-
+void XBeeNetInit(void);
 
 
 #endif

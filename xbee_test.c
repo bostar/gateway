@@ -41,9 +41,10 @@ void SendCmd(void)
 	}
 }
 
-static char w_buf[256];
+
 int WrLogTxt(void)
 {
+	static char w_buf[256];
 	char title[] = "编号 长地址                  网络地址 发数据数 接收数   中间跳数 发送/接收差 入网次数 时间\n";
 	char filename[] = "test_Log.txt";
 	int fd=-1,res,cur;

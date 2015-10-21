@@ -6,6 +6,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "xbee_protocol.h"
+#include "xbee_config.h"
+#include "stdbool.h"
+//#include "xbee_routine.h"
+#include <sys/queue.h>
 
 typedef struct _SourceRouterLinkType
 {
@@ -21,6 +25,16 @@ typedef struct _SourceRouterLinkType
 	struct _SourceRouterLinkType *next;
 
 }SourceRouterLinkType;
+
+typedef struct
+{
+	uint32 front;
+	uint32 rear;
+	uint32 count;
+	uint32 maxsize;
+	uint8 elements[_REV_DATA_MAX];
+}CircularQueueType;
+
 
 
 
@@ -39,6 +53,13 @@ void LinkPrintf(SourceRouterLinkType *pNode);
 int8 arrncmp(uint8 *arr1,uint8 *arr2,uint8 n);
 SourceRouterLinkType *CreatNode(uint8 *mac_adr,uint8 *target_adr);
 SourceRouterLinkType *FindnNode(const SourceRouterLinkType *pNode,uint8 n);
+
+void creat_circular_queue( CircularQueueType *queue );
+bool is_empty( CircularQueueType *queue);
+bool is_full( CircularQueueType *queue );
+bool in_queue( CircularQueueType *queue, uint8 value);
+bool out_queue( CircularQueueType *queue , uint8 *out_buf);
+
 
 
 #endif

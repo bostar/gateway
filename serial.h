@@ -1,5 +1,5 @@
 #ifndef _SERIAL_H
-#define _SERIAL_H 1
+#define _SERIAL_H
 
 typedef int     INT32;
 typedef short   INT16;

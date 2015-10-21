@@ -9,7 +9,7 @@
 #define _SEND_DATA_MAX			5				//最大同时发送数据包数量
 #define _QUEUE_BUF_MAX			109926			//发送数据缓存队列最大长度
 #define _SEND_DATA_TIMEOUT		300000			//数据包应答最大等待时间（us）
-
+#define _REV_DATA_MAX           2097152			//最大缓存数据（字节）
 
 
 
