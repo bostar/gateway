@@ -317,7 +317,7 @@ bool out_queue(CircularQueueType *queue , uint8 *out_buf)
 		*out_buf = queue -> elements[queue -> front];
         queue -> front = (queue -> front + 1) % _REV_DATA_MAX;  
         queue -> count -= 1;
-        return true;  
+        return true;
     }  
 }
 

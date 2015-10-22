@@ -71,7 +71,7 @@ extern uint32 waite_send_head_num;
 extern CircularQueueType trans_status_buf;
 extern CircularQueueType xbee_rev_buf;
 extern CircularQueueType xbee_send_buf;
-
+extern CircularQueueType trans_req_buf;
 /**************************declarations of mutex************************/
 extern pthread_mutex_t mutex01_serial_rbuf;
 extern pthread_mutex_t mutex02_pLinkHead;
@@ -85,16 +85,16 @@ extern pthread_mutex_t mutex09_xbee_rev_buf;
 extern CircularQueueType xbee_send_buf;
 extern pthread_mutex_t mutex10_xbee_send_buf;
 extern pthread_mutex_t mutex11_serial_port;
-
+extern pthread_mutex_t mutex12_trans_req_buf;
 
 void TestPrintf(int8* sss,int16 lens,uint8 *buf);
 void xbee_routine_thread(void);
-void xbee_routine_thread_send_data(void);
+void xbee_routine_thread_write_serial(void);
 void xbee_routine_thread_read_serial(void);
 void xbee_routine_thread_process_serial_buf(void);
 void xbee_routine_thread_serial_data_process(void);
 void xbee_routine_thread_process_trans_status_buf(void);
-
+void xbee_routine_thread_read_trans_req_buf(void);
 
 void xbee_routine_thread_test(void);
 void xbee_routine_thread_test_lar_node(void);
