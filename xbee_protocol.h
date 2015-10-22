@@ -50,18 +50,19 @@ typedef enum
 
 extern uint32 qwerty;
 
-uint16 read_one_package_f_xbee_rev_buf(uint8* buf);
+uint16 read_one_package_f_xbee_other_api_buff(uint8* buf);
 uint16 read_one_package_f_trans_status_buf(uint8* buf);
 uint16 read_one_package_f_trans_req_buf(uint8* buf);
-uint16 read_one_package_f_xbee_send_buf(uint8* buf);
+uint16 read_one_package_f_serial_wbuf(uint8* buf);
 
 uint16 read_serial_rbuf(uint8 *rbuf,uint16 n);
 uint16 read_trans_status_buf(uint8 *rbuf,uint16 n);
 uint16 read_trans_req_buf(uint8 *rbuf,uint16 n);
-uint16 read_xbee_rev_buf(uint8 *rbuf,uint16 n);
-uint16 read_xbee_send_buf(uint8 *rbuf,uint16 n);
+uint16 read_xbee_other_api_buf(uint8 *rbuf,uint16 n);
+uint16 read_serial_wbuf(uint8 *rbuf,uint16 n);
 
-uint16 write_xbee_send_buf(uint8 *rbuf,uint16 n);
+uint16 write_serial_rbuf(uint8 *serial_rbuf,uint16 n);
+uint16 write_serial_wbuf(uint8 *rbuf,uint16 n);
 uint16 write_trans_req_buf(uint8 *rbuf,uint16 n);
 
 int16 XBeeJionEnable(uint8 *ieeeadr,uint8 *netadr);

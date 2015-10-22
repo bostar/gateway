@@ -69,8 +69,8 @@ extern pthread_cond_t cond_send_xbee;
 extern uint32 send_xbee_state;
 extern uint32 waite_send_head_num;
 extern CircularQueueType trans_status_buf;
-extern CircularQueueType xbee_rev_buf;
-extern CircularQueueType xbee_send_buf;
+extern CircularQueueType xbee_other_api_buf;
+extern CircularQueueType serial_wbuf;
 extern CircularQueueType trans_req_buf;
 /**************************declarations of mutex************************/
 extern pthread_mutex_t mutex01_serial_rbuf;
@@ -81,9 +81,8 @@ extern pthread_mutex_t mutex04_waite_send_head_num;
 extern pthread_mutex_t mutex06_waite_send_head;
 extern pthread_mutex_t mutex07_CoorInfo;
 extern pthread_mutex_t mutex08_trans_status_buf;
-extern pthread_mutex_t mutex09_xbee_rev_buf;
-extern CircularQueueType xbee_send_buf;
-extern pthread_mutex_t mutex10_xbee_send_buf;
+extern pthread_mutex_t mutex09_xbee_other_api_buf;
+extern pthread_mutex_t mutex10_serial_wbuf;
 extern pthread_mutex_t mutex11_serial_port;
 extern pthread_mutex_t mutex12_trans_req_buf;
 

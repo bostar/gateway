@@ -470,7 +470,7 @@ void XBeeNetInit(void)
 	{
 		XBeeReadAI();
 		usleep(200000);
-		len = read_one_package_f_xbee_rev_buf(rbuf);
+		len = read_one_package_f_xbee_other_api_buff(rbuf);
 		if(len > 0 )
 		{
 			if(rbuf[3] == 0x88 || rbuf[5] == 'A' || rbuf[6] == 'I' || rbuf[7] == 0)
@@ -508,7 +508,7 @@ void printf_local_time(void)
 /******************************************************
 **uart receive and check
 ******************************************************/
-uint16 read_one_package_f_xbee_rev_buf(uint8* buf)
+uint16 read_one_package_f_xbee_other_api_buff(uint8* buf)
 {
 	int16 UartRevLen;
 	static uint16 DataLen=0,cnt=0;
@@ -519,7 +519,7 @@ uint16 read_one_package_f_xbee_rev_buf(uint8* buf)
 
 	if(uart_state == 1)
 	{
-		UartRevLen = read_xbee_rev_buf(UartRevBuf , 1);
+		UartRevLen = read_xbee_other_api_buf(UartRevBuf , 1);
 		if(UartRevLen == 0)
 			return 0;
 		if(UartRevBuf[0] != 0x7E)
@@ -529,7 +529,7 @@ uint16 read_one_package_f_xbee_rev_buf(uint8* buf)
 	}
 	if(uart_state == 2)
 	{
-		UartRevLen = read_xbee_rev_buf(UartRevBuf+r_len , 3-r_len);
+		UartRevLen = read_xbee_other_api_buf(UartRevBuf+r_len , 3-r_len);
 		if(UartRevLen < 3-r_len)
 		{
 			r_len += UartRevLen;
@@ -543,7 +543,7 @@ uint16 read_one_package_f_xbee_rev_buf(uint8* buf)
 	}
 	if(uart_state == 3)
 	{
-		UartRevLen = read_xbee_rev_buf(UartRevBuf+r_len , DataLen+4-r_len);
+		UartRevLen = read_xbee_other_api_buf(UartRevBuf+r_len , DataLen+4-r_len);
 		if(UartRevLen < DataLen+4-r_len)
 		{
 			r_len += UartRevLen;
@@ -565,7 +565,7 @@ uint16 read_one_package_f_xbee_rev_buf(uint8* buf)
 			}			
 			uart_state = 1;
 			r_len = 0;
-			printf("\033[32m 数据success\033[0m");
+			//printf("\033[32m 数据success\033[0m");
 			return DataLen+4;
 		}
 	}
@@ -628,7 +628,7 @@ uint16 read_one_package_f_trans_status_buf(uint8* buf)
 			}
 			uart_state = 1;
 			r_len = 0;
-			printf("\033[34m 应答success\033[0m");
+			//printf("\033[34m 应答success\033[0m");
 			return DataLen+4;
 		}
 	}
@@ -697,7 +697,7 @@ uint16 read_one_package_f_trans_req_buf(uint8* buf)
 	}
 	return 0;
 }
-uint16 read_one_package_f_xbee_send_buf(uint8* buf)
+uint16 read_one_package_f_serial_wbuf(uint8* buf)
 {
 	int16 UartRevLen;
 	static uint16 DataLen=0,cnt=0;
@@ -708,7 +708,7 @@ uint16 read_one_package_f_xbee_send_buf(uint8* buf)
 
 	if(uart_state == 1)
 	{
-		UartRevLen = read_xbee_send_buf(UartRevBuf , 1);
+		UartRevLen = read_serial_wbuf(UartRevBuf , 1);
 		if(UartRevLen == 0)
 		{
 			return 0;
@@ -720,7 +720,7 @@ uint16 read_one_package_f_xbee_send_buf(uint8* buf)
 	}
 	if(uart_state == 2)
 	{
-		UartRevLen = read_xbee_send_buf(UartRevBuf+r_len , 3-r_len);
+		UartRevLen = read_serial_wbuf(UartRevBuf+r_len , 3-r_len);
 		if(UartRevLen < 3-r_len)
 		{
 			r_len += UartRevLen;
@@ -734,7 +734,7 @@ uint16 read_one_package_f_xbee_send_buf(uint8* buf)
 	}
 	if(uart_state == 3)
 	{
-		UartRevLen = read_xbee_send_buf(UartRevBuf+r_len , DataLen+4-r_len);
+		UartRevLen = read_serial_wbuf(UartRevBuf+r_len , DataLen+4-r_len);
 		if(UartRevLen < DataLen+4-r_len)
 		{
 			r_len += UartRevLen;
@@ -744,7 +744,7 @@ uint16 read_one_package_f_xbee_send_buf(uint8* buf)
 		if(checksum != UartRevBuf[DataLen+3])
 		{
 			uart_state = 1;
-			printf("\033[31m 发送false\033[0m");
+			//printf("\033[31m 发送false\033[0m");
 			return 0;
 		}
 		else
@@ -752,9 +752,9 @@ uint16 read_one_package_f_xbee_send_buf(uint8* buf)
 			for(cnt=0;cnt<DataLen+4;cnt++)
 			{
 				*(buf+cnt) = *(UartRevBuf+cnt);
-				printf("%02x ",*(buf+cnt));
+				//printf("%02x ",*(buf+cnt));
 			}
-			printf("\033[33m发送success\033[0m");
+			//printf("\033[33m发送success\033[0m");
 			uart_state = 1;
 			r_len = 0;
 			return DataLen+4;
@@ -816,55 +816,67 @@ uint16 read_trans_status_buf(uint8 *rbuf,uint16 n)
 	pthread_mutex_unlock(&mutex08_trans_status_buf);
 	return reval;
 }
-uint16 read_xbee_rev_buf(uint8 *rbuf,uint16 n)
+uint16 read_xbee_other_api_buf(uint8 *rbuf,uint16 n)
 {
 	uint8 i=0,reval=0;
 	bool state;
 
-	pthread_mutex_lock(&mutex09_xbee_rev_buf);
+	pthread_mutex_lock(&mutex09_xbee_other_api_buf);
 	for(i=0;i<n;i++)
 	{
-		state = out_queue( &xbee_rev_buf , rbuf+i);
+		state = out_queue( &xbee_other_api_buf , rbuf+i);
 		if(state == true)
 		{
 			reval++;
 			//printf("%02x ",*(rbuf+i));
 		}
 	}
-	pthread_mutex_unlock(&mutex09_xbee_rev_buf);
+	pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
 	return reval;
 }
-uint16 read_xbee_send_buf(uint8 *rbuf,uint16 n)
+uint16 read_serial_wbuf(uint8 *rbuf,uint16 n)
 {
 	uint8 i=0,reval=0;
 	bool state;
 
-	pthread_mutex_lock(&mutex10_xbee_send_buf);
+	pthread_mutex_lock(&mutex10_serial_wbuf);
 	for(i=0;i<n;i++)
 	{
-		state = out_queue( &xbee_send_buf , rbuf+i);
+		state = out_queue( &serial_wbuf , rbuf+i);
 		if(state == true)
 		{
 			reval++;
 			//printf("%02x ",*(rbuf+i));
 		}
 	}
-	pthread_mutex_unlock(&mutex10_xbee_send_buf);
+	pthread_mutex_unlock(&mutex10_serial_wbuf);
 	return reval;
 }
-uint16 write_xbee_send_buf(uint8 *rbuf,uint16 n)
+uint16 write_serial_rbuf(uint8 *serial_buf,uint16 n)
 {
 	uint16 i=0;
 
-	pthread_mutex_lock(&mutex10_xbee_send_buf);
+	pthread_mutex_lock(&mutex01_serial_rbuf);
 	for(i=0;i<n;i++)
 	{
-		in_queue( &xbee_send_buf, *(rbuf + i));
-		printf("%02x ",*(rbuf + i));
+		in_queue( &serial_rbuf, *(serial_buf + i));
 	}
-	printf("\033[32m写入待发送缓存 \033[0m");
-	//print_queue(&xbee_send_buf);
-	pthread_mutex_unlock(&mutex10_xbee_send_buf);
+	pthread_mutex_unlock(&mutex01_serial_rbuf);
+	return 0;
+}
+uint16 write_serial_wbuf(uint8 *rbuf,uint16 n)
+{
+	uint16 i=0;
+
+	pthread_mutex_lock(&mutex10_serial_wbuf);
+	for(i=0;i<n;i++)
+	{
+		in_queue( &serial_wbuf, *(rbuf + i));
+		//printf("%02x ",*(rbuf + i));
+	}
+	//printf("\033[32m写入待发送缓存 \033[0m");
+	//print_queue(&serial_wbuf);
+	pthread_mutex_unlock(&mutex10_serial_wbuf);
 	return 0;
 }
 uint16 write_trans_req_buf(uint8 *rbuf,uint16 n)
@@ -877,7 +889,7 @@ uint16 write_trans_req_buf(uint8 *rbuf,uint16 n)
 		in_queue( &trans_req_buf, *(rbuf + i));
 		printf("%02x ",*(rbuf + i));
 	}
-	//print_queue(&xbee_send_buf);
+	printf("写入req缓存区 ");
 	pthread_mutex_unlock(&mutex12_trans_req_buf);
 	return 0;
 }

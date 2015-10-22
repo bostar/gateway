@@ -48,7 +48,7 @@ int16 XBeeSendATCmd(int8* atcmd,uint8* pparam,uint8 len,uint8 IsRes)
      printf("0x%02x ",*(((uint8*)cmd)+i));
   	printf("\r\n");
 #endif
-	write_xbee_send_buf((uint8*)cmd,8+len);
+	write_serial_wbuf((uint8*)cmd,8+len);
 	return 0;
   	//return WriteComPort((uint8*)cmd,8+len);
 }
@@ -88,7 +88,8 @@ int16 XBeeTransReq(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,u
     	printf("0x%02x ",*(((uint8*)frame)+cnt));
   	printf("\n");
 #endif
-	write_xbee_send_buf((uint8*)frame,18+len);
+	write_trans_req_buf((uint8*)frame,18+len);
+	//write_serial_wbuf((uint8*)frame,18+len);
 	return 0;
   	//return WriteComPort((uint8*)frame,18+len);
 }
@@ -135,7 +136,7 @@ int16 XBeeCreatSourceRout(uint8 *mac_adr,uint16 net_adr,uint16 num,uint8 *mid_ad
 		printf("\033[33m0x%02x \033[0m",*(wbuf_temp+i));
 	printf("\n"); 
 #endif
-	write_xbee_send_buf(wbuf_temp,wbuf_len);
+	write_serial_wbuf(wbuf_temp,wbuf_len);
 	return 0;
 	//return WriteComPort(wbuf_temp,wbuf_len);
 }
