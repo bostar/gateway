@@ -36,7 +36,7 @@ void swap(unsigned char len,unsigned char *array)
 
 void server_duty_thread(void)
 {
-    static unsigned char wbuf[255],rbuf[255];
+    static unsigned char wbuf[255],rbuf[500 * 10];
     int len;
     int loop = 0;
     struct timeb tp;
