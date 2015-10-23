@@ -8,6 +8,7 @@ typedef struct {
     unsigned short netaddr;
     unsigned char state;
     unsigned char online;
+    unsigned char onlinecpy;
     en_parkingEvent event;
     time_t time;
     time_t offline_time_out;
