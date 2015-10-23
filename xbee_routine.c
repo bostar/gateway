@@ -42,7 +42,7 @@ void xbee_routine_thread(void)
 	uint8 *HeadMidAdr=NULL;
 
 	xbee_gpio_init();
-	xbee_serial_port_init();
+	//xbee_serial_port_init();
 
 	for(_i=0;_i<8;_i++)
 		_adr[_i] = 0;
@@ -98,6 +98,7 @@ void xbee_routine_thread(void)
 
 	XBeeNetInit();
 
+	void xbee_serial_port_init_115200(void);
 	printf("\033[33mstart xbee_routine_thread_process_serial_buf...\033[0m\r\n");
     ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_process_serial_buf,NULL);
     if(ret!=0){
@@ -127,7 +128,7 @@ void xbee_routine_thread(void)
 		pthread_mutex_lock(&mutex03_send_xbee_state);
 		printf("\033[36msend_xbee_state = %d \033[0m\n",send_xbee_state);
 		pthread_mutex_unlock(&mutex03_send_xbee_state);
-		usleep(1000000);
+		usleep(2000000);
 	}
 }
 

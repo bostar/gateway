@@ -139,6 +139,7 @@ int16 XBeeSetSN(uint16 num,IsResp IsRes);
 int16 XBeeSetST(uint16 num,IsResp IsRes);
 int16 XBeeSetAR(uint8 data,IsResp IsRes);
 int16 XBeeSetNR(uint8 data,IsResp IsRes);
+int16 XBeeSetBD(uint32 bd);
 
 int16 XBeeReadNJ(void);
 int16 XBeeReadSH(void);

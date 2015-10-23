@@ -328,7 +328,7 @@ void print_queue(CircularQueueType *queue)
 	cnt = queue->count;
 	while(cnt)
 	{
-		printf("%02x ",queue -> elements[queue -> front + i]);
+		printf("%02x ",queue -> elements[(queue -> front + i) % _REV_DATA_MAX]);
 		cnt--;
 		i++;
 	}

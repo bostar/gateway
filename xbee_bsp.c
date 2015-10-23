@@ -54,11 +54,11 @@ void xbee_gpio_init(void)
     ret = write(fd3, "1", 1); // WAKEUP
     ret = write(fd4, "1", 1); // RESET
 }
-void xbee_serial_port_init(void)
+void xbee_serial_port_init(uint32 bd)
 {
     int ret = -1;
 
-    ret = OpenComPort(n_com_port, 9600, 8, "1", 'N');
+    ret = OpenComPort(n_com_port, bd, 8, "1", 'N');
     if (ret < 0) {
         fprintf(stderr, "Error: Opening Com Port %d\n", n_com_port);
         return;
@@ -66,6 +66,7 @@ void xbee_serial_port_init(void)
         printf("Open Com Port %d Success, Now begin work\n", n_com_port);
     }
 }
+
 
 int xbee_serial_port_read(unsigned char *buf)
 {
@@ -93,6 +94,11 @@ unsigned char xbee_gpio_get(int gpio)
 void XBeeCreateNet(void)
 {
 	uint8 panID[8],i;
+	xbee_serial_port_init(115200);
+	XBeeSendAT("RE");
+	usleep(1000);
+	LeaveNetwork();	
+	xbee_serial_port_init(9600);
 	XBeeSendAT("RE");
 	usleep(1000);
 	LeaveNetwork();	

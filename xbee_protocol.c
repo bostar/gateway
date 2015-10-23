@@ -456,7 +456,6 @@ void CloseNet(uint8 time)
 		printf("\033[32m锁已经全部加入网络\033[0m\n");
 	}
 }
-
 /**************************************************************
 **brief xbee组网
 **************************************************************/
@@ -464,7 +463,23 @@ void XBeeNetInit(void)
 {
 	uint8 state=0;
 	uint8 len,rbuf[128];
-	XBeeCreateNet();
+	uint8 panID[8],i;
+	xbee_serial_port_init(115200);
+	XBeeSendAT("RE");
+	usleep(1000);
+	LeaveNetwork();
+	usleep(300000);
+	xbee_serial_port_init(9600);
+	XBeeSendAT("RE");
+	usleep(1000);
+	LeaveNetwork();	
+	usleep(300000);
+	for(i=0;i<8;i++)
+		panID[i] = 0x00;
+	XBeeSetPanID(panID,NO_RES);   //设置ID的值
+	XBeeSetChannel(SCAN_CHANNEL,NO_RES); //设置信道
+	//XBeeSetZS(1,NO_RES);
+	XbeeSendAC(NO_RES);
 	state = 1;
 	while(state != 0)
 	{
@@ -481,6 +496,11 @@ void XBeeNetInit(void)
 	}
 	XBeeSetSP(0x0af0,NO_RES);
 	XBeeSetSN(10,NO_RES);
+	XBeeSetBD(115200);
+	XbeeSendAC(NO_RES);
+	usleep(100000);
+	xbee_serial_port_init(115200);
+	XBeeSendWR(NO_RES);
 	CoorInfo.NetState = 1;
 	printf("\n\033[33m组建网络完成！\033[0m\n");
 }
@@ -860,7 +880,9 @@ uint16 write_serial_rbuf(uint8 *serial_buf,uint16 n)
 	for(i=0;i<n;i++)
 	{
 		in_queue( &serial_rbuf, *(serial_buf + i));
+		//printf("%02x ",*(serial_buf + i));
 	}
+	//puts("写入读缓存");
 	pthread_mutex_unlock(&mutex01_serial_rbuf);
 	return 0;
 }
@@ -874,7 +896,7 @@ uint16 write_serial_wbuf(uint8 *rbuf,uint16 n)
 		in_queue( &serial_wbuf, *(rbuf + i));
 		//printf("%02x ",*(rbuf + i));
 	}
-	//printf("\033[32m写入待发送缓存 \033[0m");
+	//printf("\033[32m写入发送缓存 \n\033[0m");
 	//print_queue(&serial_wbuf);
 	pthread_mutex_unlock(&mutex10_serial_wbuf);
 	return 0;
@@ -887,9 +909,9 @@ uint16 write_trans_req_buf(uint8 *rbuf,uint16 n)
 	for(i=0;i<n;i++)
 	{
 		in_queue( &trans_req_buf, *(rbuf + i));
-		printf("%02x ",*(rbuf + i));
+		//printf("%02x ",*(rbuf + i));
 	}
-	printf("写入req缓存区 ");
+	//printf("写入req缓存区 ");
 	pthread_mutex_unlock(&mutex12_trans_req_buf);
 	return 0;
 }

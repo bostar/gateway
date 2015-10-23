@@ -8,7 +8,7 @@
 #define NJ_TIME 0xff
 
 void xbee_gpio_init(void);
-void xbee_serial_port_init(void);
+void xbee_serial_port_init(uint32 bd);
 int xbee_serial_port_read(unsigned char *buf);
 int xbee_serial_port_write(unsigned char *buf,int len);
 void xbee_gpio_set(int gpio,unsigned char level);

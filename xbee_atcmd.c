@@ -371,6 +371,31 @@ int16 XBeeReadNJ(void)
   	return XBeeSendATCmd(cmd,paramer,0,RES);	
 }
 /*********************************************************
+**biref set baud rate 115200
+**********************************************************/
+int16 XBeeSetBD(uint32 bd)
+{
+	uint8 param[1];
+	int8 *cmd = "BD";
+	if(bd == 1200)
+		*param = 0;
+	else if(bd == 2400)
+		*param = 1;
+	else if(bd == 4800)
+		*param = 2;
+	else if(bd == 9600)
+		*param = 3;
+	else if(bd == 19200)
+		*param = 4;
+	else if(bd == 38400)
+		*param = 5;
+	else if(bd == 57600)
+		*param = 6;
+	else if(bd == 115200)
+		*param = 7;
+	return XBeeSendATCmd(cmd,param,1,RES);
+}
+/*********************************************************
 **biref 发送读取AT参数命令
 **********************************************************/
 int16 XBeeReadAT(int8 *at_cmd)
