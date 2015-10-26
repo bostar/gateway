@@ -36,6 +36,7 @@ typedef enum{
     parking_state_have_paid_relock = 0x23, // 支付解锁后车未离开重新加锁计费
     parking_state_have_paid_unlock_failed = 0x08, // 支付后解锁硬件异常
     parking_state_have_paid_relock_failed = 0x24, // 支付解锁后车未离开重新加锁失败
+    parking_state_offline = 0x25, // offline can not be booking
     en_parking_state_max = 0xff
 }en_parking_state;
 
@@ -91,7 +92,8 @@ void parking_init(void)
         pstParkingState[loop].parking_id = loop + 1;
         memset(pstParkingState[loop].parking_mac_addr,0,8);
         pstParkingState[loop].netaddr = 0;
-        pstParkingState[loop].state = parking_state_idle;
+        pstParkingState[loop].state = parking_state_offline;
+        pstParkingState[loop].onlinecpy = 0;
         need_to_send_to_sever = 1;
         pstParkingState[loop].online = enOffline;
         pstParkingState[loop].event = en_max_event;
@@ -123,6 +125,7 @@ char* const parking_state_string[en_parking_state_max] = {
     [parking_state_have_paid_unlock_failed] = "parking_state_have_paid_unlock_failed", // 支付后解锁硬件异常
     [parking_state_have_paid_relock] = "parking_state_have_paid_relock", // 支付解锁后车未离开重新加锁计费
     [parking_state_have_paid_relock_failed] = "parking_state_have_paid_relock_failed", // 支付解锁后车未离开重新加锁失败
+    [parking_state_offline] = "need repair", // report, need repair
 };
 
 char* const parking_online_string[2] = {
@@ -161,7 +164,10 @@ void parking_state_check_routin(void)
         {
             if((time_in_second - pstParkingState[loop].offline_time_out) > 12)
             {
+                pstParkingState[loop].onlinecpy = 0;
                 pstParkingState[loop].online = 0;
+                pstParkingState[loop].state = parking_state_offline;
+                need_to_send_to_sever = 1;
             }
         }
         switch(pstParkingState[loop].state)
@@ -169,7 +175,7 @@ void parking_state_check_routin(void)
             case parking_state_idle: // 空闲
                 break;
             case parking_state_prestop: // 车来
-                if(time_in_second - pstParkingState[loop].time > 15)//freetime * 60) // second
+                if(time_in_second - pstParkingState[loop].time > freetime)//freetime * 60) // second
                 {
                     XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_lock);
                     pstParkingState[loop].time = time((time_t*)NULL);
@@ -211,7 +217,7 @@ void parking_state_check_routin(void)
                 }
                 break;
             case parking_state_booked_coming_unlock: // 被预定车位解锁成功
-                if(time_in_second - pstParkingState[loop].time > 15) // second
+                if(time_in_second - pstParkingState[loop].time > freetime) // second
                 {
                     need_to_send_to_sever = 1;
                     pstParkingState[loop].state = parking_state_booked_coming_unlock_goto_idle;
@@ -274,8 +280,8 @@ void parking_state_check_routin(void)
 
                 break;
             case parking_state_have_paid_unlock: // 支付后解锁成功
-                if(time_in_second - pstParkingState[loop].time > freetime * 60) // secon    d               
-                if(time_in_second - pstParkingState[loop].time > 15)//freetime * 60) // secon    d               
+                if(time_in_second - pstParkingState[loop].time > freetime) // secon    d               
+                //if(time_in_second - pstParkingState[loop].time > 15)//freetime * 60) // secon    d               
                 {
                     need_to_send_to_sever = 1;
                     XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_lock);
@@ -317,6 +323,7 @@ void parking_state_check_routin(void)
                 break;
         }
     }
+    printf("========================================\r\n");
     pthread_mutex_unlock(&parking_info_mutex);
     }
 }
@@ -581,8 +588,14 @@ void set_online(unsigned short netaddr)
     {
         if(pstParkingState[loop].netaddr == netaddr)
         {
+            if(pstParkingState[loop].onlinecpy == 0)
+            {
+                pstParkingState[loop].state =  parking_state_idle;
+                pstParkingState[loop].onlinecpy = 1;
+            }
             pstParkingState[loop].online = 1;
             pstParkingState[loop].offline_time_out = time((time_t*)NULL);
+            need_to_send_to_sever = 1;
             break;
         }
     }
@@ -625,7 +638,8 @@ void set_node_online(unsigned char *macaddr)
     {
         if(memcmp(pstParkingState[loop].parking_mac_addr,macaddr,8) == 0)
         {
-            //pstParkingState[loop].state = parking_state_idle;
+            pstParkingState[loop].onlinecpy = 1;
+            pstParkingState[loop].state = parking_state_idle;
             pstParkingState[loop].online = 1;
             pstParkingState[loop].offline_time_out = time((time_t)NULL);
             need_to_send_to_sever = 1;
