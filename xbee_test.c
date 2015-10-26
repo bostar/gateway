@@ -45,7 +45,7 @@ void SendCmd(void)
 int WrLogTxt(void)
 {
 	static char w_buf[256];
-	char title[] = "编号 长地址                  网络地址 发数据数 接收数   中间跳数 发送/接收差 通信成功率 入网次数 时间\n";
+	char title[] = "编号 长地址                  网络地址 发数据数 接收数   发送/接收差 通信成功率 \n";
 	char filename[] = "test_Log.txt";
 	int fd=-1,res,cur;
 	char i,j;
@@ -85,12 +85,13 @@ int WrLogTxt(void)
 		sprintf(w_buf,"%08d ",p->rev_rep_times);
 		res = write(fd,w_buf,9);
 
-		sprintf(w_buf,"   %02d   ",p->num_mid_adr);
-		res = write(fd,w_buf,8);
-		if(p->send_cmd_times >= p->rev_rep_times)
+		//sprintf(w_buf,"   %02d   ",p->num_mid_adr);
+		//res = write(fd,w_buf,8);
+
+		//if(p->send_cmd_times >= p->rev_rep_times)
 			sprintf(w_buf," %08d    ",p->send_cmd_times - p->rev_rep_times);
-		else
-			sprintf(w_buf," %08d    ",0);
+		//else
+			//sprintf(w_buf," %08d    ",0);
 		res = write(fd,w_buf,13);
 		
 		if(p->send_cmd_times > p->rev_rep_times)
@@ -99,13 +100,13 @@ int WrLogTxt(void)
 			sprintf(w_buf," %.2f%%    ",(float)100);
 		res = write(fd,w_buf,11);
 		
-		sprintf(w_buf," %04d    ",p->join_net_times);
-		res = write(fd,w_buf,9);
+		//sprintf(w_buf," %04d    ",p->join_net_times);
+		//res = write(fd,w_buf,9);
 
-		time_t now;    //实例化time_t结构
-		struct tm  *timenow;    //实例化tm结构指针
-		timenow = localtime(&now);
-		res = write(fd,asctime(timenow),24);
+		//time_t now;    //实例化time_t结构
+		//struct tm  *timenow;    //实例化tm结构指针
+		//timenow = localtime(&now);
+		//res = write(fd,asctime(timenow),24);
 		res = write(fd,"\n",1);
 		//cur = lseek(fd,-1,SEEK_CUR);
 	}

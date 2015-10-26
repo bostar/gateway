@@ -60,6 +60,24 @@ bool is_full( CircularQueueType *queue );
 bool in_queue( CircularQueueType *queue, uint8 value);
 bool out_queue( CircularQueueType *queue , uint8 *out_buf);
 void print_queue(CircularQueueType *queue);
+uint16 read_cqueue(CircularQueueType* p_cqueue , uint8* buf , uint16 n);
+uint16 write_cqueue(CircularQueueType* p_cqueue , uint8* buf , uint16 n);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #endif

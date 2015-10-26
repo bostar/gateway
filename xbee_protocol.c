@@ -782,6 +782,71 @@ uint16 read_one_package_f_serial_wbuf(uint8* buf)
 	}
 	return 0;
 }
+uint16 read_one_package_f_serial_rbuf(uint8* buf)
+{
+	int16 UartRevLen;
+	static uint16 DataLen=0;
+	uint8 checksum;
+	uint16 i=0;
+	static uint16 r_len=0;
+	static uint8 uart_state=1;
+	static uint8 UartRevBuf[255];
+	if(uart_state == 1)
+	{
+		UartRevLen = read_serial_rbuf(UartRevBuf , 1);
+		if(UartRevLen == 0)
+			return 0;
+		if(UartRevBuf[0] != 0x7E)
+			return 0;
+		r_len = 1;
+		uart_state = 2;
+	}
+	if(uart_state == 2)
+	{
+		UartRevLen = read_serial_rbuf(UartRevBuf+r_len , 3-r_len);
+		if(UartRevLen < 3-r_len)
+		{
+			r_len += UartRevLen;
+			return 0;
+		}
+		DataLen = 0;
+		DataLen |= UartRevBuf[2];
+		DataLen |= (uint16)UartRevBuf[1]<<8;
+		uart_state = 3;
+		r_len += UartRevLen;
+	}
+	if(uart_state == 3)
+	{
+		UartRevLen = read_serial_rbuf(UartRevBuf+r_len , DataLen+4-r_len);
+		if(UartRevLen < DataLen+4-r_len)
+		{
+			r_len += UartRevLen;
+			return 0;
+		}
+		uart_state = 1;
+		r_len = 0;
+		checksum = XBeeApiChecksum(UartRevBuf+3,DataLen); //校验数据
+		if(checksum != UartRevBuf[DataLen+3])
+		{
+			printf("\031[34m 串口false \033[0m");
+			return 0;
+		}
+		else
+		{
+			for(i=0;i<DataLen+4;i++)
+			{
+				*(buf+i) = *(UartRevBuf+i);
+				//printf("%02x ",*(buf+cnt));
+			}
+			//printf("\033[33m发送success\033[0m");
+			uart_state = 1;
+			r_len = 0;
+			return DataLen+4;
+		}
+	}
+	return 0;
+}
+
 uint16 read_serial_rbuf(uint8 *rbuf,uint16 n)
 {
 	uint8 i=0,reval=0;
@@ -872,6 +937,25 @@ uint16 read_serial_wbuf(uint8 *rbuf,uint16 n)
 	pthread_mutex_unlock(&mutex10_serial_wbuf);
 	return reval;
 }
+uint16 read_route_record_buf(uint8 *buf,uint16 n)
+{
+	uint8 i=0,reval=0;
+	bool state;
+
+	pthread_mutex_lock(&mutex11_route_record_buf);
+	for(i=0;i<n;i++)
+	{
+		state = out_queue( &route_record_buf , buf+i);
+		if(state == true)
+		{
+			reval++;
+			//printf("%02x ",*(rbuf+i));
+		}
+	}
+	pthread_mutex_unlock(&mutex11_route_record_buf);
+	return reval;
+}
+/************************write circular queue*******************************************/
 uint16 write_serial_rbuf(uint8 *serial_buf,uint16 n)
 {
 	uint16 i=0;
@@ -915,6 +999,57 @@ uint16 write_trans_req_buf(uint8 *rbuf,uint16 n)
 	pthread_mutex_unlock(&mutex12_trans_req_buf);
 	return 0;
 }
+uint16 write_trans_status_buf(uint8 *buf,uint16 n)
+{
+	uint16 i=0;
+
+	pthread_mutex_lock(&mutex08_trans_status_buf);
+	for(i=0;i<n;i++)
+	{
+		in_queue( &trans_status_buf, *(buf + i));
+	}
+	pthread_mutex_unlock(&mutex08_trans_status_buf);
+	return 0;
+}
+uint16 write_xbee_other_api_buf(uint8 *buf,uint16 n)
+{
+	uint16 i=0;
+
+	pthread_mutex_lock(&mutex09_xbee_other_api_buf);
+	for(i=0;i<n;i++)
+	{
+		in_queue( &xbee_other_api_buf, *(buf + i));
+	}
+	pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
+	return 0;
+}
+uint16 write_route_record_buf(uint8 *buf,uint16 n)
+{
+	uint16 i=0;
+
+	pthread_mutex_lock(&mutex11_route_record_buf);
+	for(i=0;i<n;i++)
+	{
+		in_queue( &route_record_buf, *(buf + i));
+	}
+	pthread_mutex_unlock(&mutex11_route_record_buf);
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

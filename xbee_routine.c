@@ -16,6 +16,7 @@ CircularQueueType trans_status_buf;		//xbee transmit request API buffer
 CircularQueueType xbee_other_api_buf;			//
 CircularQueueType serial_wbuf;			//the serial write buffer
 CircularQueueType trans_req_buf;		//xbee transmit status API buffer
+CircularQueueType route_record_buf;		//
 
 /*************************** mutex ********************************/
 pthread_mutex_t mutex01_serial_rbuf = PTHREAD_MUTEX_INITIALIZER;
@@ -28,7 +29,7 @@ pthread_mutex_t mutex07_CoorInfo = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex08_trans_status_buf = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex09_xbee_other_api_buf = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex10_serial_wbuf = PTHREAD_MUTEX_INITIALIZER;
-
+pthread_mutex_t mutex11_route_record_buf = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex12_trans_req_buf = PTHREAD_MUTEX_INITIALIZER;
 
 /*************************** cond *********************************/
@@ -70,6 +71,10 @@ void xbee_routine_thread(void)
 	creat_circular_queue( &trans_req_buf );
 	pthread_mutex_unlock(&mutex12_trans_req_buf);
 
+	pthread_mutex_lock(&mutex11_route_record_buf);
+	creat_circular_queue( &route_record_buf );
+	pthread_mutex_unlock(&mutex11_route_record_buf);
+
 	printf("\033[33mstart xbee_routine_thread_write_serial...\033[0m\r\n");
     ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_write_serial,NULL);
     if(ret!=0){
@@ -80,29 +85,36 @@ void xbee_routine_thread(void)
     if(ret!=0){
         printf ("Create xbee_routine_thread_read_serial error!n");
     }
-	printf("\033[33mstart xbee_routine_thread_serial_data_process...\033[0m\r\n");
-    ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_serial_data_process,NULL);
+	printf("\033[33mstart xbee_routine_thread_process_serial_rbuf...\033[0m\r\n");
+    ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_process_serial_rbuf,NULL);
     if(ret!=0){
-        printf ("Create xbee_routine_thread_serial_data_process error!n");
+        printf ("Create xbee_routine_thread_process_serial_rbuf error!n");
     }
-	printf("\033[33mstart xbee_routine_thread_process_trans_status_buf...\033[0m\r\n");
+
+	XBeeNetInit();	//
+
+		printf("\033[33mstart xbee_routine_thread_process_trans_status_buf...\033[0m\r\n");
     ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_process_trans_status_buf,NULL);
     if(ret!=0){
         printf ("Create xbee_routine_thread_process_trans_status_buf error!n");
     }
-	printf("\033[33mstart xbee_routine_thread_read_trans_req_buf...\033[0m\r\n");
-    ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_read_trans_req_buf,NULL);
+
+	printf("\033[33mstart xbee_routine_thread_process_trans_req_buf...\033[0m\r\n");
+    ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_process_trans_req_buf,NULL);
     if(ret!=0){
-        printf ("Create xbee_routine_thread_read_trans_req_buf error!n");
+        printf ("Create xbee_routine_thread_process_trans_req_buf error!n");
     }
 
-	XBeeNetInit();
-
-	void xbee_serial_port_init_115200(void);
-	printf("\033[33mstart xbee_routine_thread_process_serial_buf...\033[0m\r\n");
-    ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_process_serial_buf,NULL);
+	printf("\033[33mstart xbee_routine_thread_process_route_record_buf...\033[0m\r\n");
+    ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_process_route_record_buf,NULL);
     if(ret!=0){
-        printf ("Create xbee_routine_thread_process_serial_buff error!n");
+        printf ("Create xbee_routine_thread_process_route_record_buf error!n");
+    }
+
+	printf("\033[33mstart xbee_routine_thread_process_other_api_buf...\033[0m\r\n");
+    ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_process_other_api_buf,NULL);
+    if(ret!=0){
+        printf ("Create xbee_routine_thread_process_other_api_buf error!n");
     }
 	
 #if __XBEE_TEST__
@@ -132,7 +144,7 @@ void xbee_routine_thread(void)
 	}
 }
 
-void xbee_routine_thread_process_serial_buf(void)
+void xbee_routine_thread_process_other_api_buf(void)
 {
 	static uint8 rbuf[255]={0};
 	static int16 len=0;
@@ -169,6 +181,7 @@ void xbee_routine_thread_process_trans_status_buf(void)
 {
 	static uint8 rbuf[255]={0};
 	static int16 len=0;
+	uint8 i=0;
 	while(1)
 	{
 		len = read_one_package_f_trans_status_buf(rbuf);
@@ -178,6 +191,12 @@ void xbee_routine_thread_process_trans_status_buf(void)
 			{
 				case transmit_status:
 					//ProcessTranState();
+					if(*(rbuf+8) != 0 )
+					{
+						for(i=0;i<11;i++)
+							printf("%02x ",*(rbuf+i));
+						puts(" ");
+					}					
 					pthread_mutex_lock(&mutex03_send_xbee_state);
 					if(send_xbee_state > 0)
 						send_xbee_state--;
@@ -222,7 +241,7 @@ void xbee_routine_thread_read_serial(void)
 	}
 }
 
-void xbee_routine_thread_read_trans_req_buf(void)
+void xbee_routine_thread_process_trans_req_buf(void)
 {
 	uint32 len=0;
 	static uint8 rbuf[255];
@@ -251,83 +270,33 @@ void xbee_routine_thread_read_trans_req_buf(void)
 	}
 }
 
-void xbee_routine_thread_serial_data_process(void)
+void xbee_routine_thread_process_route_record_buf(void)
 {
-	int16 UartRevLen;
-	static uint16 DataLen=0;
-	uint8 checksum;
-	uint16 i=0;
-	static uint16 r_len=0;
-	static uint8 uart_state=1;
-	static uint8 UartRevBuf[255];
 	while(1)
 	{
-		if(uart_state == 1)
-		{
-			UartRevLen = read_serial_rbuf(UartRevBuf , 1);
-			if(UartRevLen == 0)
-				goto the_end;
-			if(UartRevBuf[0] != 0x7E)
-				goto the_end;
-			r_len = 1;
-			uart_state = 2;
-		}
-		if(uart_state == 2)
-		{
-			UartRevLen = read_serial_rbuf(UartRevBuf+r_len , 3-r_len);
-			if(UartRevLen < 3-r_len)
-			{
-				r_len += UartRevLen;
-				goto the_end;
-			}
-			DataLen = 0;
-			DataLen |= UartRevBuf[2];
-			DataLen |= (uint16)UartRevBuf[1]<<8;
-			uart_state = 3;
-			r_len += UartRevLen;
-		}
-		if(uart_state == 3)
-		{
-			UartRevLen = read_serial_rbuf(UartRevBuf+r_len , DataLen+4-r_len);
-			if(UartRevLen < DataLen+4-r_len)
-			{
-				r_len += UartRevLen;
-				goto the_end;
-			}
-			uart_state = 1;
-			r_len = 0;
-			checksum = XBeeApiChecksum(UartRevBuf+3,DataLen); //校验数据
-			if(checksum != UartRevBuf[DataLen+3])
-			{
-				printf("\031[34m 串口false \033[0m");
-				goto the_end;
-			}
-			else
-			{
-				//printf("\033[34m 串口success\033[0m");
-				if(*(UartRevBuf+3) == transmit_status)
-				{
-					pthread_mutex_lock(&mutex08_trans_status_buf);
-					for(i=0;i<DataLen+4;i++)
-					{
-						in_queue( &trans_status_buf, *(UartRevBuf + i));
-					}
-					pthread_mutex_unlock(&mutex08_trans_status_buf);
-				}
-				else
-				{
-					pthread_mutex_lock(&mutex09_xbee_other_api_buf);
-					for(i=0;i<DataLen+4;i++)
-					{
-						in_queue( &xbee_other_api_buf, *(UartRevBuf + i));
-					}
-					pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
-				}
-			}
-		}
-		the_end : usleep(10);
+		
 	}
 }
+
+void xbee_routine_thread_process_serial_rbuf(void)
+{
+	uint16 len=0;
+	uint8 buf[255];
+
+	len = read_one_package_f_serial_rbuf(buf);
+	if(len > 0)
+	{
+		if(*(buf+3) == transmit_status)
+		{
+			write_trans_status_buf(buf,len);
+		}
+		else
+		{
+			write_xbee_other_api_buf(buf,len);
+		}
+	}
+	usleep(10);
+}	
 
 void xbee_routine_thread_test_lar_node(void)
 {

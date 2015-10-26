@@ -320,6 +320,50 @@ bool out_queue(CircularQueueType *queue , uint8 *out_buf)
         return true;
     }  
 }
+/**********************************************************************
+**brief	write n byte into queue 
+**param	p_cqueue	pointer of the circular queue
+		buf			the write data buffer
+		n			the number of byte to be writen
+**reval	the number of byte writen into queue
+**********************************************************************/
+uint16 write_cqueue(CircularQueueType* p_cqueue , uint8* buf , uint16 n)
+{
+	uint16 i=0,reval=0;
+	bool state;
+
+	for(i=0;i<n;i++)
+	{
+		state = in_queue( p_cqueue, *(buf + i));
+		reval++;
+	}
+	return reval;
+}
+/**********************************************************************
+**brief	read n byte from queue 
+**param	p_cqueue	pointer of the circular queue
+		buf			the read data buffer
+		n			the number of byte to be read
+**reval	the number of byte read from queue
+**********************************************************************/
+uint16 read_cqueue(CircularQueueType* p_cqueue , uint8* buf , uint16 n)
+{
+	uint8 i=0,reval=0;
+	bool state;
+
+	for(i=0;i<n;i++)
+	{
+		state = out_queue( p_cqueue , buf+i);
+		if(state == true)
+		{
+			reval++;
+			//printf("%02x ",*(rbuf+i));
+		}
+		else
+			break;
+	}
+	return reval;
+}
 
 void print_queue(CircularQueueType *queue)
 {
