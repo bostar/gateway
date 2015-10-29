@@ -61,21 +61,27 @@ struct XBeeDataWaiteSend
 /**************************declarations gloable variable************************/
 CoorInfoType CoorInfo;
 TAILQ_HEAD(,XBeeDataWaiteSend) waite_send_head;
+#if __XBEE_TEST_LAR_NODE__
 extern SourceRouterLinkType *pLinkHead;
+extern CircularQueueType ts_buf;
+#endif
 extern CircularQueueType serial_rbuf;
 extern uint8 *HeadMidAdr;
 extern pthread_mutex_t xbee_mutex;
 extern pthread_cond_t cond_send_xbee;
-extern uint32 send_xbee_state;
+extern int32 send_xbee_state;
 extern uint32 waite_send_head_num;
 extern CircularQueueType trans_status_buf;
 extern CircularQueueType xbee_other_api_buf;
 extern CircularQueueType serial_wbuf;
 extern CircularQueueType trans_req_buf;
 extern CircularQueueType route_record_buf;
+extern SourceRouterLinkType *pSourcePathList;
 /**************************declarations of mutex************************/
 extern pthread_mutex_t mutex01_serial_rbuf;
+#if __XBEE_TEST_LAR_NODE__
 extern pthread_mutex_t mutex02_pLinkHead;
+#endif
 extern pthread_mutex_t mutex03_send_xbee_state;
 extern pthread_mutex_t mutex04_waite_send_head_num;
 //extern pthread_mutex_t mutex05_send_data_timeout;
@@ -86,6 +92,7 @@ extern pthread_mutex_t mutex09_xbee_other_api_buf;
 extern pthread_mutex_t mutex10_serial_wbuf;
 extern pthread_mutex_t mutex11_route_record_buf;
 extern pthread_mutex_t mutex12_trans_req_buf;
+extern pthread_mutex_t mutex13_pSourcePathList;
 
 void xbee_routine_thread(void);
 void xbee_routine_thread_write_serial(void);
@@ -98,8 +105,9 @@ void xbee_routine_thread_process_route_record_buf(void);
 
 
 void xbee_routine_thread_test(void);
+#if __XBEE_TEST_LAR_NODE__
 void xbee_routine_thread_test_lar_node(void);
-
+#endif
 void TestPrintf(int8* sss,int16 lens,uint8 *buf);
 
 

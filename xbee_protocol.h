@@ -5,7 +5,8 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <time.h>
-
+#include "xbee_api.h"
+#include "stdbool.h"
 
 typedef enum
 {
@@ -47,28 +48,9 @@ typedef enum
     none            =0x88
 }LockStateType;
 
+uint16 read_one_package_f_queue( CircularQueueType* p_cqueue , uint8* buf );
 
-extern uint32 qwerty;
-
-uint16 read_one_package_f_xbee_other_api_buff(uint8* buf);
-uint16 read_one_package_f_trans_status_buf(uint8* buf);
-uint16 read_one_package_f_trans_req_buf(uint8* buf);
-uint16 read_one_package_f_serial_wbuf(uint8* buf);
 uint16 read_one_package_f_serial_rbuf(uint8* buf);
-
-uint16 read_serial_rbuf(uint8 *rbuf,uint16 n);
-uint16 read_trans_status_buf(uint8 *rbuf,uint16 n);
-uint16 read_trans_req_buf(uint8 *rbuf,uint16 n);
-uint16 read_xbee_other_api_buf(uint8 *rbuf,uint16 n);
-uint16 read_serial_wbuf(uint8 *rbuf,uint16 n);
-uint16 read_route_record_buf(uint8 *buf,uint16 n);
-
-uint16 write_serial_rbuf(uint8 *serial_rbuf,uint16 n);
-uint16 write_trans_status_buf(uint8 *buf,uint16 n);
-uint16 write_serial_wbuf(uint8 *rbuf,uint16 n);
-uint16 write_xbee_other_api_buf(uint8 *buf,uint16 n);
-uint16 write_trans_req_buf(uint8 *rbuf,uint16 n);
-uint16 write_route_record_buf(uint8 *buf,uint16 n);
 
 int16 XBeeJionEnable(uint8 *ieeeadr,uint8 *netadr);
 int16 XBeeJionDisable(uint8 *ieeeadr,uint8 *netadr);
@@ -76,7 +58,7 @@ int16 XBeeJionDisable(uint8 *ieeeadr,uint8 *netadr);
 void XBeeProcessCFG(uint8 *rbuf);
 void XBeeProcessCTL(uint8 *rbuf);
 void XBeeProcessSEN(uint8 *rbuf);
-void XBeeProcessRoutRcord(uint8 *rbuf);
+void XBeeProcessRoutRcord(SourceRouterLinkType *p_head , uint8 *rbuf);
 void ProcessND(uint8 *rbuf);
 void ProcessModState(uint8 *rbuf);
 void ProcessATRes(uint8 *rbuf);

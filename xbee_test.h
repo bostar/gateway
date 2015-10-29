@@ -3,9 +3,12 @@
 
 
 
+
+
+
 void SendCmd(void);
 int WrLogTxt(void);
-
+int ts_log(void);
 
 
 

@@ -8,8 +8,10 @@
 #include "serial.h"
 /**************************gloable variable************************/
 CircularQueueType serial_rbuf;			//the serial read buffer
+#if __XBEE_TEST_LAR_NODE__
 SourceRouterLinkType *pLinkHead=NULL;
-uint32 send_xbee_state=0;
+#endif
+int32 send_xbee_state=0;
 uint32 waite_send_head_num=0;
 //uint32 send_data_timeout=0;
 CircularQueueType trans_status_buf;		//xbee transmit request API buffer
@@ -17,10 +19,15 @@ CircularQueueType xbee_other_api_buf;			//
 CircularQueueType serial_wbuf;			//the serial write buffer
 CircularQueueType trans_req_buf;		//xbee transmit status API buffer
 CircularQueueType route_record_buf;		//
-
+SourceRouterLinkType *pSourcePathList=NULL;
+#if __XBEE_TEST_LAR_NODE__
+CircularQueueType ts_buf;
+#endif
 /*************************** mutex ********************************/
 pthread_mutex_t mutex01_serial_rbuf = PTHREAD_MUTEX_INITIALIZER;
+#if __XBEE_TEST_LAR_NODE__
 pthread_mutex_t mutex02_pLinkHead = PTHREAD_MUTEX_INITIALIZER;
+#endif
 pthread_mutex_t mutex03_send_xbee_state = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex04_waite_send_head_num = PTHREAD_MUTEX_INITIALIZER;
 //pthread_mutex_t mutex05_send_data_timeout = PTHREAD_MUTEX_INITIALIZER;
@@ -31,7 +38,10 @@ pthread_mutex_t mutex09_xbee_other_api_buf = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex10_serial_wbuf = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex11_route_record_buf = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex12_trans_req_buf = PTHREAD_MUTEX_INITIALIZER;
-
+pthread_mutex_t mutex13_pSourcePathList = PTHREAD_MUTEX_INITIALIZER;
+#if __XBEE_TEST_LAR_NODE__
+pthread_mutex_t mutex14_ts_buf = PTHREAD_MUTEX_INITIALIZER;
+#endif
 /*************************** cond *********************************/
 pthread_cond_t cond_send_xbee=PTHREAD_COND_INITIALIZER;
 
@@ -47,9 +57,18 @@ void xbee_routine_thread(void)
 
 	for(_i=0;_i<8;_i++)
 		_adr[_i] = 0;
+#if __XBEE_TEST_LAR_NODE__
 	pthread_mutex_lock(&mutex02_pLinkHead);
-	pLinkHead = CreatRouterLink(_adr,0,HeadMidAdr,0); //创建路由路径链表
+	pLinkHead = CreatRouterLink(_adr,0,HeadMidAdr,0); //test list
 	pthread_mutex_unlock(&mutex02_pLinkHead);
+
+	pthread_mutex_lock(&mutex14_ts_buf);
+	creat_circular_queue( &ts_buf );
+	pthread_mutex_unlock(&mutex14_ts_buf);
+#endif
+	pthread_mutex_lock(&mutex13_pSourcePathList);
+	pSourcePathList = CreatRouterLink(_adr,0,HeadMidAdr,0);
+	pthread_mutex_unlock(&mutex13_pSourcePathList);
 
 	pthread_mutex_lock(&mutex01_serial_rbuf);
 	creat_circular_queue( &serial_rbuf );
@@ -131,6 +150,8 @@ void xbee_routine_thread(void)
         printf ("Create xbee_routine_thread_test_lar_node error!n");
     }
 #endif
+	//SendAR(5);
+	//XBeeSetAR(2,NO_RES);
 	while(1)
 	{
 		pthread_mutex_lock(&mutex12_trans_req_buf);
@@ -140,6 +161,15 @@ void xbee_routine_thread(void)
 		pthread_mutex_lock(&mutex03_send_xbee_state);
 		printf("\033[36msend_xbee_state = %d \033[0m\n",send_xbee_state);
 		pthread_mutex_unlock(&mutex03_send_xbee_state);
+#if __XBEE_TEST_LAR_NODE__
+		//pthread_mutex_lock(&mutex14_ts_buf);
+		//ts_log();
+		//pthread_mutex_unlock(&mutex14_ts_buf);
+
+		pthread_mutex_lock(&mutex02_pLinkHead);
+		WrLogTxt();
+		pthread_mutex_unlock(&mutex02_pLinkHead);
+#endif
 		usleep(2000000);
 	}
 }
@@ -147,10 +177,13 @@ void xbee_routine_thread(void)
 void xbee_routine_thread_process_other_api_buf(void)
 {
 	static uint8 rbuf[255]={0};
-	static int16 len=0;
+	uint16 len;
 	while(1)
 	{
-		len = read_one_package_f_xbee_other_api_buff(rbuf);
+		//len = read_one_package_f_xbee_other_api_buff(rbuf);
+		pthread_mutex_lock(&mutex09_xbee_other_api_buf);
+		len = read_one_package_f_queue( &xbee_other_api_buf , rbuf );
+		pthread_mutex_unlock(&mutex09_xbee_other_api_buf);	
 		if(len)
 	 	{
 			//TestPrintf("1",len,rbuf);
@@ -173,84 +206,102 @@ void xbee_routine_thread_process_other_api_buf(void)
 					break;
 			}
 		}
-		usleep(10);
+		usleep(100);
 	 }
 }
 
 void xbee_routine_thread_process_trans_status_buf(void)
 {
 	static uint8 rbuf[255]={0};
-	static int16 len=0;
-	uint8 i=0;
+	uint16 len;
 	while(1)
 	{
-		len = read_one_package_f_trans_status_buf(rbuf);
-		if(len)
+		//len = read_one_package_f_trans_status_buf(rbuf);
+		pthread_mutex_lock(&mutex08_trans_status_buf);
+		len = read_one_package_f_queue( &trans_status_buf , rbuf );
+		pthread_mutex_unlock(&mutex08_trans_status_buf);
+		if(len > 0 && *(rbuf+3) == transmit_status)
 		{
-			switch(rbuf[3])
-			{
-				case transmit_status:
-					//ProcessTranState();
-					if(*(rbuf+8) != 0 )
-					{
-						for(i=0;i<11;i++)
-							printf("%02x ",*(rbuf+i));
-						puts(" ");
-					}					
-					pthread_mutex_lock(&mutex03_send_xbee_state);
-					if(send_xbee_state > 0)
-						send_xbee_state--;
-					pthread_cond_signal(&cond_send_xbee);
-					pthread_mutex_unlock(&mutex03_send_xbee_state);
-					break;
-				default:
-					break;
-			}
+			//if(*(rbuf+8) != 0 )
+			//{
+			//	for(i=0;i<11;i++)
+			//		printf("%02x ",*(rbuf+i));
+			//	puts(" ");
+			//}
+			pthread_mutex_lock(&mutex03_send_xbee_state);
+			if(send_xbee_state > 0)
+				send_xbee_state--;
+			pthread_cond_signal(&cond_send_xbee);
+			pthread_mutex_unlock(&mutex03_send_xbee_state);
+#if __XBEE_TEST_LAR_NODE__
+			//pthread_mutex_lock(&mutex14_ts_buf);
+			//write_cqueue(&ts_buf,rbuf,len);
+			//pthread_mutex_unlock(&mutex14_ts_buf);
+#endif
 		}
-		usleep(10);
+		usleep(100);
 	}
 }
 
 void xbee_routine_thread_write_serial(void)
 {
-	static uint8 rbuf[255]={0};
-	static int16 len=0;
+	static uint8 buf[255]={0};
+	uint16 len;
 	while(1)
 	{
-		len = read_one_package_f_serial_wbuf(rbuf);
+		//len = read_one_package_f_serial_wbuf(rbuf);
+		pthread_mutex_lock(&mutex10_serial_wbuf);
+		//printf("\033[32m");
+		//print_queue( &serial_wbuf );
+		//printf("\033[0m");
+		len = read_one_package_f_queue(&serial_wbuf , buf);
+		pthread_mutex_unlock(&mutex10_serial_wbuf);
 		if(len)
 		{
-			WriteComPort(rbuf, len);
+			//printf("\033[31here\033[0m\n");
+			//uint8 i=0;			
+			//for(i=0;i<len+4;i++)
+				//printf("%02x ",buf[i]);
+			//printf("\n");
+			WriteComPort(buf, len);
 		}
-		usleep(10);
+		usleep(100);
 	}
 }
 
 void xbee_routine_thread_read_serial(void)
 {
 	uint32 len=0;
-	static uint8 serial_buf[255];
+	static uint8 buf[255];
 	while(1)
 	{
-		len = ReadComPort (serial_buf, 255);
+		len = ReadComPort (buf, 255);
+		//printf("\033[32mread serial  len = %d\033[0m\n",len);
 		if(len > 0)
 		{
-			write_serial_rbuf(serial_buf,len);
+			pthread_mutex_lock(&mutex01_serial_rbuf);
+			write_cqueue( &serial_rbuf , buf , len );
+			//uint8 i=0;
+			//for(i=0;i<len;i++)
+				//printf("%02x " , *(buf+i));
+			//puts(" ");
+			pthread_mutex_unlock(&mutex01_serial_rbuf);
+			//write_serial_rbuf(buf,len);
 		}
-		usleep(10);
+		usleep(100);
 	}
 }
 
 void xbee_routine_thread_process_trans_req_buf(void)
 {
-	uint32 len=0;
+	uint16 len;
 	static uint8 rbuf[255];
 	while(1)
 	{
-		pthread_mutex_lock(&mutex03_send_xbee_state);
 		//struct timespec time_cur;
 		//clock_gettime(CLOCK_MONOTONIC,&time_cur);
 		//time_cur.tv_nsec += 300000000;
+		pthread_mutex_lock(&mutex03_send_xbee_state);
 		while(send_xbee_state > _SEND_DATA_MAX)
 		{
 			//pthread_cond_timedwait(&cond_send_xbee,&mutex03_send_xbee_state,&time_cur);
@@ -258,23 +309,55 @@ void xbee_routine_thread_process_trans_req_buf(void)
 		}
 		pthread_mutex_unlock(&mutex03_send_xbee_state);
 
-		len = read_one_package_f_trans_req_buf(rbuf);
+		//len = read_one_package_f_trans_req_buf(rbuf);
+		pthread_mutex_lock(&mutex12_trans_req_buf);
+		len = read_one_package_f_queue(&trans_req_buf , rbuf);
+		pthread_mutex_unlock(&mutex12_trans_req_buf);
 		if(len)
 		{
-			write_serial_wbuf(rbuf,len);
-			pthread_mutex_lock(&mutex03_send_xbee_state);
-			send_xbee_state++;
-			pthread_mutex_unlock(&mutex03_send_xbee_state);
+			//uint16 i=0;
+			//for(i=0;i<len;i++)
+			//{
+				//printf("%02x ",*(rbuf+i));
+			//}
+			pthread_mutex_lock(&mutex10_serial_wbuf);
+			write_cqueue(&serial_wbuf , rbuf , len);
+			pthread_mutex_unlock(&mutex10_serial_wbuf);
+			//write_serial_wbuf(rbuf,len);
+			if(*(rbuf + 3) == 0x10)
+			{
+				//puts(" ");
+				pthread_mutex_lock(&mutex03_send_xbee_state);
+				send_xbee_state++;
+				pthread_mutex_unlock(&mutex03_send_xbee_state);
+			}
 		}
-		usleep(10);
+		usleep(100);
 	}
 }
 
 void xbee_routine_thread_process_route_record_buf(void)
 {
+	uint8 buf[128];
+	uint16 len;
 	while(1)
 	{
-		
+		pthread_mutex_lock(&mutex11_route_record_buf);
+		len = read_one_package_f_queue(&route_record_buf , buf);
+		pthread_mutex_unlock(&mutex11_route_record_buf);
+		if(len)
+		{
+			//uint8 i=0;
+			//for(i=0;i<len;i++)
+			//{
+				//printf("%02x ",*(buf+i));
+			//}
+			//printf("\033[31m%\%\%\%\033[0m");
+			pthread_mutex_lock(&mutex13_pSourcePathList);
+			XBeeProcessRoutRcord(pSourcePathList , buf);
+			pthread_mutex_unlock(&mutex13_pSourcePathList);
+		}
+		usleep(100);
 	}
 }
 
@@ -283,21 +366,43 @@ void xbee_routine_thread_process_serial_rbuf(void)
 	uint16 len=0;
 	uint8 buf[255];
 
-	len = read_one_package_f_serial_rbuf(buf);
-	if(len > 0)
+	while(1)
 	{
-		if(*(buf+3) == transmit_status)
+		pthread_mutex_lock(&mutex01_serial_rbuf);
+		//len = read_one_package_f_serial_rbuf(buf);
+		len = read_one_package_f_queue(&serial_rbuf , buf);
+		pthread_mutex_unlock(&mutex01_serial_rbuf);
+		//uint8 i=0;
+		//for(i=0;i<len;i++)
+			//printf("\033[32m%02x \033[0m",*(buf+i));
+		//printf("\033[31mlen = %d\033[0m\n",len);
+		if(len)
 		{
-			write_trans_status_buf(buf,len);
+			switch(*(buf+3))
+			{
+				case transmit_status:
+					//write_trans_status_buf(buf,len);
+					pthread_mutex_lock( &mutex08_trans_status_buf );
+					write_cqueue( &trans_status_buf , buf , len );
+					pthread_mutex_unlock( &mutex08_trans_status_buf );
+					break;
+				case route_record_indicator:
+					pthread_mutex_lock( &mutex11_route_record_buf );
+					write_cqueue( &route_record_buf , buf , len );
+					pthread_mutex_unlock( &mutex11_route_record_buf );
+					break;
+				default:
+					//write_xbee_other_api_buf(buf,len);
+					pthread_mutex_lock(&mutex09_xbee_other_api_buf);
+					write_cqueue( &xbee_other_api_buf , buf , len );
+					pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
+					break;
+			}
 		}
-		else
-		{
-			write_xbee_other_api_buf(buf,len);
-		}
+		usleep(100);
 	}
-	usleep(10);
 }	
-
+#if __XBEE_TEST_LAR_NODE__
 void xbee_routine_thread_test_lar_node(void)
 {
 	uint8 i;
@@ -319,14 +424,11 @@ void xbee_routine_thread_test_lar_node(void)
 			}
 		}
 		pthread_mutex_unlock(&mutex02_pLinkHead);
-
-		pthread_mutex_lock(&mutex02_pLinkHead);
-		WrLogTxt();
-		pthread_mutex_unlock(&mutex02_pLinkHead);
-		usleep(10000000);
+		usleep(20000000);
 	}
 }
-
+#endif
+#if __XBEE_TEST__
 void xbee_routine_thread_test(void)
 {
 	int8 in_cmd[100];
@@ -336,13 +438,28 @@ void xbee_routine_thread_test(void)
 	while(1)
 	{
 		reval = scanf("%s",in_cmd);
-		if(strncmp("list",in_cmd,strlen("list")) == 0)
+		if(strncmp("list",in_cmd,strlen(in_cmd)) == 0)
 		{
-			pthread_mutex_lock(&mutex02_pLinkHead);
-			LinkPrintf(pLinkHead);
-			pthread_mutex_unlock(&mutex02_pLinkHead);
+			pthread_mutex_lock(&mutex13_pSourcePathList);
+			LinkPrintf(pSourcePathList);
+			pthread_mutex_unlock(&mutex13_pSourcePathList);
 		}
-		else if(strncmp("op",in_cmd,strlen("op")) == 0)
+		else if(strncmp("ar",in_cmd,strlen(in_cmd)) == 0)
+		{
+			XBeeSetAR(2,NO_RES);
+		}
+		else if(strncmp("arclose",in_cmd,strlen(in_cmd)) == 0)
+		{
+			XBeeSetAR(0xff,NO_RES);
+		}
+		else if(strncmp("clear",in_cmd,strlen(in_cmd)) == 0)
+		{
+			pthread_mutex_lock(&mutex03_send_xbee_state);
+			send_xbee_state=0;
+			printf("\033[32msend_xbee_state = %d\033[0m\n",send_xbee_state);
+			pthread_mutex_unlock(&mutex03_send_xbee_state);
+		}
+		else if(strncmp("op",in_cmd,strlen(in_cmd)) == 0)
 		{
 			XBeeReadAT("OP");
 			sleep(1);
@@ -351,7 +468,7 @@ void xbee_routine_thread_test(void)
 				printf("0x%02x ",CoorInfo.panID64[i]);
 			printf("\n");
 		}
-		else if(strncmp("id",in_cmd,strlen("id")) == 0)
+		else if(strncmp("id",in_cmd,strlen(in_cmd)) == 0)
 		{
 			XBeeReadAT("ID");
 			sleep(1);
@@ -360,25 +477,25 @@ void xbee_routine_thread_test(void)
 				printf("0x%02x ",CoorInfo.panID64[i]);
 			printf("\n");
 		}
-		else if(strncmp("oi",in_cmd,strlen("oi")) == 0)
+		else if(strncmp("oi",in_cmd,strlen(in_cmd)) == 0)
 		{
 			XBeeReadAT("OI");
 			sleep(1);
 			printf("\033[35m16位panID: \033[0m0x%04x\n",CoorInfo.panID16);
 		}
-		else if(strncmp("nj",in_cmd,strlen("nj")) == 0)
+		else if(strncmp("nj",in_cmd,strlen(in_cmd)) == 0)
 		{
 			XBeeReadAT("NJ");
 			sleep(1);
 			printf("\033[35m允许入网时间 \033[0m0x%02x\n",CoorInfo.nj);
 		}
-		else if(strncmp("ch",in_cmd,strlen("ch")) == 0)
+		else if(strncmp("ch",in_cmd,strlen(in_cmd)) == 0)
 		{
 			XBeeReadAT("CH");
 			sleep(1);
 			printf("\033[35m网络信道: \033[0m0x%04x\n",CoorInfo.channel);
 		}
-		else if(strncmp("check",in_cmd,strlen("check")) == 0)
+		else if(strncmp("check",in_cmd,strlen(in_cmd)) == 0)
 		{
 			if(networking_over() == 1)
 				printf("\033[35m全部锁已入网\033[0m\n");
@@ -390,6 +507,7 @@ void xbee_routine_thread_test(void)
 		usleep(1000);
 	}
 }
+#endif
 void TestPrintf(int8* sss,int16 lens,uint8 *buf)
 {
 	int loop=0;

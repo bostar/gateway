@@ -41,7 +41,6 @@ void SendCmd(void)
 	}
 }
 
-
 int WrLogTxt(void)
 {
 	static char w_buf[256];
@@ -127,8 +126,38 @@ int printt_log(void)
 	}
 	return 0;
 }
+int ts_log(void)
+{
+	char filename[] = "qts_Log.txt";
+	int fd=-1,res=0,cur;
+	char wbuf[20],buf[20],i;
+	uint16 len;
 
-
+	fd = open(filename , O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IRWXO);
+	if(fd < 0)
+	{
+		printf("打开失败\n");
+		return -1;
+	}
+	cur = ftruncate(fd, 0);
+	if(cur < 0)
+		return -1;
+	//lseek(fd, 0, SEEK_SET);
+	cur = lseek(fd,-1,SEEK_CUR);
+	len = read_one_package_f_queue( &ts_buf , (uint8*)buf );
+	while(len)
+	{
+		for(i=0;i<len;i++)
+			sprintf(wbuf+3*i,"%02x ",buf[(uint8)i]);
+		printf("%s \n",wbuf);
+		res = write(fd,wbuf,len*3);
+		res = write(fd,"\n",1);
+		len = read_one_package_f_queue( &ts_buf , (uint8*)buf );
+	}
+	fsync(fd);
+	close(fd);
+	return res;
+}
 
 
 

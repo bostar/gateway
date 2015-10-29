@@ -323,7 +323,9 @@ void parking_state_check_routin(void)
                 break;
         }
     }
+#if !defined __XBEE_TEST_LAR_NODE__
     printf("========================================\r\n");
+#endif
     pthread_mutex_unlock(&parking_info_mutex);
     }
 }

@@ -15,7 +15,6 @@ SourceRouterLinkType *CreatRouterLink(uint8 *mac_adr,uint16 target_adr,uint8 *mi
 	for(i=0;i<num*2;i++)
 		pRouterLink->mid_adr[i] = mid_adr[i];
 	pRouterLink->num_mid_adr = num;
-	pRouterLink->dev_type = 0;
 	pRouterLink->next = NULL;
 	return pRouterLink;
 }
@@ -36,8 +35,7 @@ SourceRouterLinkType *CreatNode(uint8 *mac_adr,uint8 *target_adr)
 	for(i=0;i<40;i++)
 		pRouterLink->mid_adr[i] = 0;
 	pRouterLink->num_mid_adr = 0;
-	pRouterLink->dev_type = 0;
-	pRouterLink->lock_state = 0;
+	//pRouterLink->lock_state = 0;
 	pRouterLink->send_cmd_times = 0;
 	pRouterLink->rev_rep_times = 0;
 	pRouterLink->next = NULL;
@@ -138,7 +136,7 @@ uint8 DeleteNode(const SourceRouterLinkType *pNode,SourceRouterLinkType *deleteN
 	SourceRouterLinkType *p=NULL,*pS=NULL;
 	p = (SourceRouterLinkType*)pNode;
 	while(p != NULL && p != deleteNode)
-	{	
+	{
 		pS = p;
 		p = p->next;
 	}	
@@ -185,7 +183,6 @@ uint8 compareNode(SourceRouterLinkType *pNode,SourceRouterLinkType *pNodeS)
 void NodePrintf(SourceRouterLinkType *pNode)
 {
 	uint8 i;
-	printf("0x");
 	for(i=0;i<8;i++)
 	{
 		printf("%02x ",pNode->mac_adr[i]);
@@ -356,12 +353,15 @@ uint16 read_cqueue(CircularQueueType* p_cqueue , uint8* buf , uint16 n)
 		state = out_queue( p_cqueue , buf+i);
 		if(state == true)
 		{
+			//printf("\033[32m%02x \033[0m",*(buf+i));
 			reval++;
 			//printf("%02x ",*(rbuf+i));
 		}
 		else
 			break;
 	}
+	//if(reval > 0)
+		//printf("\033[35mreval = %d \033[0m",reval);
 	return reval;
 }
 

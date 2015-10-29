@@ -42,13 +42,17 @@ int16 XBeeSendATCmd(int8* atcmd,uint8* pparam,uint8 len,uint8 IsRes)
 	for(i=0;i<len;i++)
 		*(((uint8*)cmd)+7+i) = *(pparam+i);
 	*(((uint8*)cmd)+7+len) = XBeeApiChecksum(((uint8*)cmd)+3,4+len);
-#if defined USE_PRINTF
+#if 0
  	printf("api cmd is:");
   	for(i=0;i<8+len;i++)
      printf("0x%02x ",*(((uint8*)cmd)+i));
   	printf("\r\n");
 #endif
-	write_serial_wbuf((uint8*)cmd,8+len);
+	//write_serial_wbuf((uint8*)cmd,8+len);
+	pthread_mutex_lock(&mutex10_serial_wbuf);
+	write_cqueue( &serial_wbuf , (uint8*)cmd , 8+len );
+	//print_queue( &serial_wbuf );
+	pthread_mutex_unlock(&mutex10_serial_wbuf);
 	return 0;
   	//return WriteComPort((uint8*)cmd,8+len);
 }
@@ -67,7 +71,7 @@ int16 XBeeTransReq(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,u
 {
   	uint8 wbuf[256],cnt=0;
   	XBeeTransReqType *frame = (XBeeTransReqType*)wbuf;
-
+	
   	frame->start_delimiter = 0x7E;
 	frame->len_msb         = (uint8)((14+len)>>8);
   	frame->len_lsb         = (uint8)(14+len);
@@ -82,19 +86,38 @@ int16 XBeeTransReq(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,u
   	for(cnt=0;cnt<len;cnt++)
     	*((uint8*)frame + 17 + cnt) = *(rf_data + cnt);
   	*(((uint8*)frame)+17+len) = XBeeApiChecksum(((uint8*)frame)+3,14+len);
-#if defined USE_PRINTF
-	printf("\033[32m\033[1m发送数据: \033[0m \n");	
+#if 0
+	printf("\033[32m\033[1m写入: \033[0m \n");	
   	for(cnt=0;cnt<18+len;cnt++)
-    	printf("0x%02x ",*(((uint8*)frame)+cnt));
+    	printf("%02x ",*(((uint8*)frame)+cnt));
   	printf("\n");
 #endif
-	write_trans_req_buf((uint8*)frame,18+len);
-	//write_serial_wbuf((uint8*)frame,18+len);
+	SourceRouterLinkType *p=NULL;
+	int16 n=0;
+	uint8 re_buf[128];
+
+	pthread_mutex_lock(&mutex12_trans_req_buf);
+	pthread_mutex_lock(&mutex13_pSourcePathList);
+	p = FindMacAdr(pSourcePathList , adr);
+	if(p != NULL)
+	{
+		n = XBeeCreatSourceRout( p->mac_adr, p->target_adr , p->num_mid_adr , p->mid_adr , re_buf);
+		write_cqueue(&trans_req_buf , re_buf , n);
+		//for(cnt=0;cnt<n;cnt++)
+		//{
+			//printf("%02x ",re_buf[cnt]);
+		//}
+		//puts(" ");
+	}
+	write_cqueue(&trans_req_buf , (uint8*)frame , 18+len);
+	//print_queue(&trans_req_buf);
+	pthread_mutex_unlock(&mutex12_trans_req_buf);
+	pthread_mutex_unlock(&mutex13_pSourcePathList);
+	//write_trans_req_buf((uint8*)frame,18+len);
 	return 0;
-  	//return WriteComPort((uint8*)frame,18+len);
 }
 /*********************************************************
-**brief 发送源路由请求
+**brief 创建源路由帧
 **param mac_adr 目标的物理地址
 		net_adr 目标网络地址 比如 0xEEFF 对应网络地址 0xEE 0xFF
 		num 目标与发送者间的节点数量
@@ -105,7 +128,7 @@ int16 XBeeTransReq(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,u
 							D	0xEEFF
 			输入参数的排列顺序为	EE FF CC DD AA BB  
 *********************************************************/
-int16 XBeeCreatSourceRout(uint8 *mac_adr,uint16 net_adr,uint16 num,uint8 *mid_adr)
+int16 XBeeCreatSourceRout(uint8 *mac_adr,uint16 net_adr,uint16 num,uint8 *mid_adr,uint8* re_buf)
 {
 	static uint8 wbuf_temp[128],wbuf_len=0,i=0;
 	uint16 lenth=0;
@@ -129,16 +152,15 @@ int16 XBeeCreatSourceRout(uint8 *mac_adr,uint16 net_adr,uint16 num,uint8 *mid_ad
 	for(i=3;i<wbuf_len-1;i++)
 		*(wbuf_temp + wbuf_len-1) += *(wbuf_temp + i);
 	*(wbuf_temp + wbuf_len-1) = 0xff - *(wbuf_temp + wbuf_len-1);
-//#if defined USE_PRINTF
-#if 1
+	for(i=0;i<wbuf_len;i++)
+		re_buf[i] = wbuf_temp[i];
+#if 0
 	printf("\n"); 
 	for(i=0;i<wbuf_len;i++)
 		printf("\033[33m0x%02x \033[0m",*(wbuf_temp+i));
 	printf("\n"); 
 #endif
-	write_serial_wbuf(wbuf_temp,wbuf_len);
-	return 0;
-	//return WriteComPort(wbuf_temp,wbuf_len);
+	return wbuf_len;
 }
 
 /*********************************************************
