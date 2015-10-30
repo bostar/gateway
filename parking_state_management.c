@@ -35,6 +35,7 @@ typedef enum{
     parking_state_have_paid_unlock_failed = 0x08, // 支付后解锁硬件异常
     parking_state_have_paid_relock_failed = 0x24, // 支付解锁后车未离开重新加锁失败
     parking_state_offline = 0x25, // offline can not be booking
+    parking_state_init = 0x26,
     en_parking_state_max = 0xff
 }en_parking_state;
 
@@ -92,7 +93,7 @@ void parking_init(void)
         pstParkingState[loop].state = parking_state_offline;
         need_to_send_to_sever = 1;
         pstParkingState[loop].online = enOffline;
-        pstParkingState[loop].onlinecpy = 0;
+        pstParkingState[loop].onlinecpy = enOffline;
         pstParkingState[loop].event = en_max_event;
     }
     pthread_mutex_unlock(&parking_info_mutex);
@@ -123,6 +124,7 @@ char* const parking_state_string[en_parking_state_max] = {
     [parking_state_have_paid_relock] = "parking_state_have_paid_relock", // 支付解锁后车未离开重新加锁计费
     [parking_state_have_paid_relock_failed] = "parking_state_have_paid_relock_failed", // 支付解锁后车未离开重新加锁失败
     [parking_state_offline] = "need repair", // report, need repair
+    [parking_state_init] = "parking_state_init",
 };
 
 char* const parking_online_string[2] = {
@@ -152,12 +154,12 @@ void parking_state_check_routin(void)
         printf("%s; ",parking_online_string[pstParkingState[loop].online]);
         printf("%s",parking_state_string[pstParkingState[loop].state]);
         printf("\r\n");
-        if(pstParkingState[loop].online == 1)
+        if(pstParkingState[loop].online == enOnline)
         {
             if((time_in_second - pstParkingState[loop].offline_time_out) > 5)
             {
-                pstParkingState[loop].onlinecpy = 0;
-                pstParkingState[loop].online = 0;
+                pstParkingState[loop].onlinecpy = enOffline;
+                pstParkingState[loop].online = enOffline;
                 pstParkingState[loop].state = parking_state_offline;
                 need_to_send_to_sever = 1;
             }
@@ -608,12 +610,12 @@ void set_online(unsigned short netaddr)
     {
         if(pstParkingState[loop].parking_id == netaddr)
         {
-            if(pstParkingState[loop].onlinecpy == 0)
+            if(pstParkingState[loop].onlinecpy == enOffline)
             {
-                pstParkingState[loop].state =  parking_state_idle;
-                pstParkingState[loop].onlinecpy = 1;
+                pstParkingState[loop].state =  parking_state_init;
+                pstParkingState[loop].onlinecpy = enOnline;
             }
-            pstParkingState[loop].online = 1;
+            pstParkingState[loop].online = enOnline;
             pstParkingState[loop].offline_time_out = time((time_t*)NULL);
             need_to_send_to_sever = 1;
             break;
@@ -658,9 +660,9 @@ void set_node_online(unsigned char *macaddr)
     {
         if(memcmp(pstParkingState[loop].parking_mac_addr,macaddr,8) == 0)
         {
-            pstParkingState[loop].onlinecpy = 1;
-            pstParkingState[loop].state = parking_state_idle;
-            pstParkingState[loop].online = 1;
+            pstParkingState[loop].onlinecpy = enOnline;
+            pstParkingState[loop].state = parking_state_init;
+            pstParkingState[loop].online = enOnline;
             need_to_send_to_sever = 1;
             break;
         }
@@ -786,6 +788,13 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
     switch(state)
     {
         case parking_state_idle:
+            if(p->state == parking_state_init)
+            {
+                printf("######### set parking state to idle\r\n");
+                p->state = parking_state_idle;
+                putCtlCmd(parking_id,en_order_unlock);
+            }
+
             if(p->state == parking_state_booking_lock_failed)
             {
                 p->state = parking_state_idle;
