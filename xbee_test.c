@@ -12,7 +12,7 @@
 #include "xbee_api.h"
 #include "server_duty.h"
 #include <time.h>
-#include <stdio.h>                                                                                                                                    
+#include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <time.h>
@@ -20,32 +20,12 @@
 #include<sys/types.h>
 #include<sys/stat.h>
 
-void SendCmd(void)
-{
-	uint8 i;
-	uint16 temp;
-	SourceRouterLinkType *p;
-
-	for(i=2;i<=LinkLenth(pLinkHead);i++)
-	{
-		p = FindnNode(pLinkHead,i);
-		if(p != NULL)
-		{
-			temp = 0;
-			temp |= (p->target_adr >> 8);
-			temp |= (p->target_adr << 8);
-			p->send_cmd_times++;
-			XBeePutCtlCmd(p->mac_adr,temp,1);
-			//waite_send_head_num++;
-		}
-	}
-}
-
+#if __XBEE_TEST_LAR_NODE__
 int WrLogTxt(void)
 {
 	static char w_buf[256];
 	char title[] = "编号 长地址                  网络地址 发数据数 接收数   发送/接收差 通信成功率 \n";
-	char filename[] = "test_Log.txt";
+	char filename[] = "/mnt/gateway/test_Log.txt";
 	int fd=-1,res,cur;
 	char i,j;
 	SourceRouterLinkType *p;
@@ -113,9 +93,11 @@ int WrLogTxt(void)
 	close(fd);
 	return res;
 }
+#endif
+#if __XBEE_TEST_LAR_NODE__
 int printt_log(void)
 {
-	char filename[] = "test_Log.txt";
+	char filename[] = "/mnt/gateway/test_Log.txt";
 	int fd=-1;
 
 	fd = open(filename , O_RDONLY);
@@ -126,11 +108,13 @@ int printt_log(void)
 	}
 	return 0;
 }
+#endif
+#if __XBEE_TEST_LAR_NODE__
 int ts_log(void)
 {
-	char filename[] = "qts_Log.txt";
+	char filename[] = "/mnt/gateway/qts_Log.txt";
 	int fd=-1,res=0,cur;
-	char wbuf[20],buf[20],i;
+	char wbuf[50],buf[20],i;
 	uint16 len;
 
 	fd = open(filename , O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IRWXO);
@@ -139,26 +123,29 @@ int ts_log(void)
 		printf("打开失败\n");
 		return -1;
 	}
-	cur = ftruncate(fd, 0);
+	cur = lseek(fd,0,SEEK_END);
 	if(cur < 0)
-		return -1;
-	//lseek(fd, 0, SEEK_SET);
-	cur = lseek(fd,-1,SEEK_CUR);
-	len = read_one_package_f_queue( &ts_buf , (uint8*)buf );
-	while(len)
 	{
-		for(i=0;i<len;i++)
-			sprintf(wbuf+3*i,"%02x ",buf[(uint8)i]);
-		printf("%s \n",wbuf);
-		res = write(fd,wbuf,len*3);
-		res = write(fd,"\n",1);
-		len = read_one_package_f_queue( &ts_buf , (uint8*)buf );
+		printf("确定位置失败！\n");
+		return -1;
 	}
+	do
+	{
+		len = read_one_package_f_queue( &ts_buf , (uint8*)buf );
+		if(len)
+		{
+			for(i=0;i<len;i++)
+				sprintf(wbuf+3*i,"%02x ",buf[(uint8)i]);
+			printf("%s \n",wbuf);
+			res = write(fd,wbuf,len*3);
+			res = write(fd,"\n",1);
+		}
+	}while(len);
 	fsync(fd);
 	close(fd);
 	return res;
 }
-
+#endif
 
 
 

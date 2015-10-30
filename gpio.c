@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <limits.h>
 
+
 int fd1,fd2,fd3,fd4,fd5;
 void gpio_init(void)
 {
@@ -34,7 +35,7 @@ void gpio_init(void)
     {
         printf("Open gpio59 failed!\r\n");
     }
-    fd5 = open("/sys/class/gpio/gpio45/value",O_RDWR);
+    fd5 = open("/sys/class/gpio/gpio45/value",O_RDONLY);
     if(fd5 < 0)
     {
         printf("Open gpio45 failed!\r\n");
@@ -82,3 +83,25 @@ void reset_zm516x(void)
     usleep(100000);
     printf("reset zm516x\r\n");
 }
+
+bool read_xbee_cts(char *buf)
+{
+	int res=-1;
+
+	lseek(fd5, 0, SEEK_SET);
+	res = read(fd5 , buf , 1);
+	if(res == 1)
+	{
+		return true;
+	}
+	return false;
+}
+
+
+
+
+
+
+
+
+

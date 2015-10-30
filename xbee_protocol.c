@@ -49,6 +49,7 @@ void XBeeProcessCFG(uint8 *rbuf)
 					p->target_adr |= ((uint16)*(rbuf+12))<<8;
 				}
 				pthread_mutex_unlock(&mutex02_pLinkHead);
+				XBeeSetAR(0,RES);
 			}
 #else
 			temp = get_local_addr(rbuf+12,rbuf+4);
@@ -57,6 +58,7 @@ void XBeeProcessCFG(uint8 *rbuf)
 				XBeeJionEnable((rbuf+4),(rbuf+12));
 				//printf("\033[33m\033[1m已发送允许入网指令 \033[0m \n");
 				set_node_online(rbuf+4);
+				XBeeSetAR(0,RES);
 				//printf("\033[33m\033[1m已将锁加入网络 \033[0m \n");
 			}
 #endif
@@ -64,11 +66,11 @@ void XBeeProcessCFG(uint8 *rbuf)
 			{
 				XBeeJionDisable((rbuf+4),(rbuf+12));
 				printf("\033[33m\033[1m已发送拒绝入网指令 \033[0m \n");
-				pthread_mutex_lock(&mutex02_pLinkHead);
-				p = FindMacAdr(pLinkHead,rbuf+4); 
+				pthread_mutex_lock(&mutex13_pSourcePathList);
+				p = FindMacAdr(pSourcePathList,rbuf+4); 
 				if(p != NULL)
-					DeleteNode(pLinkHead,FindMacAdr(pLinkHead,rbuf+4));//删除节点
-				pthread_mutex_unlock(&mutex02_pLinkHead);
+					DeleteNode(pSourcePathList,FindMacAdr(pSourcePathList,rbuf+4));//删除节点
+				pthread_mutex_unlock(&mutex13_pSourcePathList);
 			}
 			break;
 		default:
@@ -253,6 +255,10 @@ void ProcessATRes(uint8 *rbuf)
 	{
 		CoorInfo.nj = *(rbuf+8);
 	}
+	else if(*(rbuf+5) == 'A' && *(rbuf+6) == 'R')
+	{
+		CoorInfo.ar = *(rbuf+8);
+	}
 	return;
 }
 /*************************************************
@@ -268,41 +274,7 @@ void ProcessTranState(void)
 *************************************************/
 void ProcessND(uint8 *rbuf)
 {
-	uint16 target_adr=0;
-	SourceRouterLinkType *p,*pS;
-	if(*(rbuf+20)==0 && *(rbuf+21)==0 )  
-	{
-		target_adr |= (((uint16)*(rbuf+8)) << 8);
-		target_adr |= (uint16)*(rbuf+9);
-		pS = CreatRouterLink(rbuf+10,target_adr,rbuf,0);
-		p = FindMacAdr(pLinkHead,rbuf+10);
-		if(p == NULL)
-		{
-			AddData(pLinkHead,pS);
-			printf("\033[33m新的锁终端路径加入列表...直属节点\033[0m\n");
-			return ;
-		}
-		switch(compareNode(p,pS))
-		{ 
-			case 0:
-				free(pS);
-				pS = NULL;
-				//printf("\033[33m锁终端路径已存在...直属节点\033[0m\n");
-				break;
-			case 1:
-				DeleteNode(pLinkHead,p);
-				AddData(pLinkHead,pS);
-				printf("\033[33m更新锁终端路径...直属节点\033[0m\n");
-				break;
-			case 2:
-				AddData(pLinkHead,pS);
-				printf("\033[33m新的锁终端路径加入列表...直属节点\033[0m\n");
-				break;
-			default:
-				break;
-		}
-	}
-	return;
+	
 }
 /*************************************************
 **brief 向router发送限时加入网络命令
@@ -460,14 +432,17 @@ void XBeeNetInit(void)
 	uint8 panID[8],i;
 	bool status;
 
+	printf("\n\033[33mcreat xbee network ...\033[0m\n");
 	xbee_serial_port_init(115200);
+	usleep(100000);
 	XBeeSendAT("RE");
-	usleep(1000);
+	usleep(100000);
 	LeaveNetwork();
 	usleep(300000);
 	xbee_serial_port_init(9600);
+	usleep(10000);
 	XBeeSendAT("RE");
-	usleep(1000);
+	usleep(10000);
 	LeaveNetwork();	
 	usleep(300000);
 	for(i=0;i<8;i++)
@@ -479,7 +454,6 @@ void XBeeNetInit(void)
 	state = 1;
 	while(state != 0)
 	{
-		//len = read_one_package_f_xbee_other_api_buff(rbuf);
 		pthread_mutex_lock(&mutex09_xbee_other_api_buf);
 		status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
 		pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
@@ -501,7 +475,7 @@ void XBeeNetInit(void)
 	xbee_serial_port_init(115200);
 	XBeeSendWR(NO_RES);
 	CoorInfo.NetState = 1;
-	printf("\n\033[33m组建网络完成！\033[0m\n");
+	printf("\n\033[33mxbee network established！\033[0m\n");
 }
 /***************************************************************
 **brief 两个字节合并一个unt16

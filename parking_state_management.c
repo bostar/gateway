@@ -777,8 +777,9 @@ int get_all_parking_state(unsigned char* buf)
 int set_parking_state(unsigned short parking_id,unsigned char state)
 {
     pst_parkingState p;
-
+#if !defined __XBEE_TEST_LAR_NODE__
     printf("==========0x%04x,state is 0x%02x\r\n",parking_id,state); 
+#endif
     pthread_mutex_lock(&parking_info_mutex);
     p = search_use_parking_id(parking_id);
     if((p == NULL) || (p->state == state))
@@ -786,7 +787,9 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
         pthread_mutex_unlock(&parking_info_mutex);
         return 1;
     }
+#if !defined __XBEE_TEST_LAR_NODE__
     printf("==========0x%04x,state is 0x%02x\r\n",parking_id,state); 
+#endif
     switch(state)
     {
         case parking_state_idle:

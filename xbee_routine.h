@@ -40,6 +40,7 @@ typedef struct
 	uint8 panID64[8];
 	uint8 channel;
 	uint8 nj;
+	uint8 ar;
 }CoorInfoType;
 
 struct XBeeDataWaiteSend
@@ -69,7 +70,7 @@ extern CircularQueueType serial_rbuf;
 extern uint8 *HeadMidAdr;
 extern pthread_mutex_t xbee_mutex;
 extern pthread_cond_t cond_send_xbee;
-extern int32 send_xbee_state;
+extern uint8 send_xbee_state;
 extern uint32 waite_send_head_num;
 extern CircularQueueType trans_status_buf;
 extern CircularQueueType xbee_other_api_buf;

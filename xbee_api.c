@@ -36,8 +36,10 @@ SourceRouterLinkType *CreatNode(uint8 *mac_adr,uint8 *target_adr)
 		pRouterLink->mid_adr[i] = 0;
 	pRouterLink->num_mid_adr = 0;
 	//pRouterLink->lock_state = 0;
+#if __XBEE_TEST_LAR_NODE__
 	pRouterLink->send_cmd_times = 0;
 	pRouterLink->rev_rep_times = 0;
+#endif
 	pRouterLink->next = NULL;
 	return pRouterLink;
 }
