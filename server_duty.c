@@ -7,6 +7,7 @@
 #include <pthread.h>
 #include "zlg_protocol.h"
 #include <time.h>
+#include "zlg_cmd.h"
 #include "parking_state_management.h"
 static const unsigned char mac_addr[8] = {0xf1,0xf2,0xf3,0xf4,0xf5,0xf6,0xf7,0xf8};
 unsigned short freetime = 1;
@@ -43,11 +44,19 @@ void server_duty_thread(void)
     time_t time_out = time((time_t*)NULL);
     int ret;
     pthread_t id;
+    unsigned char gatewaymac[8];
     //static unsigned char ctl;
     tcp_init();
+    while(get_gateway_mac_addr(gatewaymac) != 0)usleep(100000);
+    printf("get mac addr: ");
+    for(loop = 0;loop < 8;loop ++)
+    {
+        printf("%02x",gatewaymac[loop]);
+    }
+    printf("\r\n");
 cfg:
     memcpy(wbuf,"size",4); // pkg head
-    memcpy((unsigned char *)&wbuf[4],(unsigned char *)mac_addr,8); // mac addr
+    memcpy((unsigned char *)&wbuf[4],(unsigned char *)gatewaymac,8); // mac addr
     while((len = tcp_send_to_server(12,wbuf)) < 12)
     {
         printf("[SERVER]send to server err\r\n");
