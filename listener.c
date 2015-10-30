@@ -135,7 +135,7 @@ int tcp_send_to_server(int len,unsigned char *bytes)
     {
         printf("ERROR: Failed to sent string.\n");
         //close(sockfd);
-        exit(1);
+        //exit(1);
     }
     //printf("OK: Sent %d bytes sucessful\n", num);
     return num;

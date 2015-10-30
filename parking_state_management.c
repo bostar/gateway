@@ -663,6 +663,7 @@ void set_node_online(unsigned char *macaddr)
             pstParkingState[loop].onlinecpy = enOnline;
             pstParkingState[loop].state = parking_state_init;
             pstParkingState[loop].online = enOnline;
+            pstParkingState[loop].offline_time_out = time((time_t*)NULL);
             need_to_send_to_sever = 1;
             break;
         }
