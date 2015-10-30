@@ -172,6 +172,20 @@ void read_local_cfg(void)
     //write_local_cfg();
 }
 
+int get_gateway_mac_addr(unsigned char *macAddr)
+{
+    int i;
+    for(i = 0; i < 8; i++)
+    {
+      if(stDevInfo.devLoacalIEEEAddr[i] != 0)
+        break;
+    }
+    if(i == 8)
+      return -1;
+    memcpy((void *)macAddr, (const void *)&stDevInfo.devLoacalIEEEAddr[0], 8);
+    return 0;    
+}
+
 void write_local_cfg(void)
 {
     int i,len = 0;

@@ -71,6 +71,7 @@ extern search_info_t searchInfo;
 
 void init_zlg_zm516x(void);
 void read_local_cfg(void);
+int get_gateway_mac_addr(unsigned char *macAddr);
 //void send_data_to_remote_node(unsigned char *destAddr,unsigned char *data,int len);
 ////////long term setting//////////////
 void set_channel_nv(unsigned char nv);
