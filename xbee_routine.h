@@ -41,6 +41,7 @@ typedef struct
 	uint8 channel;
 	uint8 nj;
 	uint8 ar;
+	uint8 mac_adr[8];
 }CoorInfoType;
 
 struct XBeeDataWaiteSend

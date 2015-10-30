@@ -79,5 +79,11 @@ void CloseNet(uint8 time);
 void printf_local_time(void);
 void XBeeNetInit(void);
 
+void get_mac(void);
+int get_gateway_mac_addr(unsigned char *macAddr);
+
+
+
+
 
 #endif

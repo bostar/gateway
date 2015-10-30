@@ -124,6 +124,7 @@ void xbee_routine_thread(void)
 		printf ("start xbee_routine_thread_process_serial_rbuf ok!\n");
 
 	XBeeNetInit();	//
+	get_mac();
 
 	printf("\033[33mstart xbee_routine_thread_process_trans_status_buf...\033[0m\r\n");
     ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_process_trans_status_buf,NULL);

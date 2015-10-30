@@ -459,7 +459,7 @@ void XBeeNetInit(void)
 		pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
 		if(status == true)
 		{
-			if(rbuf[3] == 0x88 || rbuf[5] == 'A' || rbuf[6] == 'I' || rbuf[7] == 0)
+			if(rbuf[3] == 0x88 && rbuf[5] == 'A' && rbuf[6] == 'I' && rbuf[7] == 0)
 			{
 				state = rbuf[8];
 			}
@@ -477,6 +477,79 @@ void XBeeNetInit(void)
 	CoorInfo.NetState = 1;
 	printf("\n\033[33mxbee network established！\033[0m\n");
 }
+/***************************************************************
+**brief get mac addr from xbee
+**
+***************************************************************/
+void get_mac(void)
+{
+	uint8 i=0,rbuf[128];
+	bool status=false;
+	
+	XBeeReadAT("SH");
+	while(status == false)
+	{
+		usleep(1000);
+		pthread_mutex_lock(&mutex09_xbee_other_api_buf);
+		status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
+		pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
+		if(status == true)
+		{
+			if(rbuf[3] == 0x88 && rbuf[5] == 'S' && rbuf[6] == 'H' && rbuf[7] == 0)
+			{
+				for(i=0;i<4;i++)
+					CoorInfo.mac_adr[i] = rbuf[8+i];
+			}
+			else if(rbuf[3] == 0x88 && rbuf[5] == 'S' && rbuf[6] == 'H' && rbuf[7] != 0)
+			{
+				XBeeReadAT("SH");
+				status = false;
+			}
+			else
+				status = false;
+		}
+	}
+	XBeeReadAT("SL");
+	status = false;
+	while(status == false)
+	{
+		usleep(1000);
+		pthread_mutex_lock(&mutex09_xbee_other_api_buf);
+		status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
+		pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
+		if(status == true)
+		{
+			if(rbuf[3] == 0x88 && rbuf[5] == 'S' && rbuf[6] == 'L' && rbuf[7] == 0)
+			{
+				for(i=0;i<4;i++)
+					CoorInfo.mac_adr[4+i] = rbuf[8+i];
+			}
+			else if(rbuf[3] == 0x88 && rbuf[5] == 'S' && rbuf[6] == 'L' && rbuf[7] != 0)
+			{
+				XBeeReadAT("SL");
+				status = false;
+			}
+			else
+				status = false;
+		}
+	}
+	printf("\033[34mcoor mac addr : ");
+	for(i=0;i<8;i++)
+		printf("%02x ",CoorInfo.mac_adr[i]);
+	puts("\033[0m");
+}
+/***************************************************************
+**brief get mac addr from CoorInfo
+**
+***************************************************************/
+int get_gateway_mac_addr(unsigned char *macAddr)
+{
+	uint8 i=0;
+	for(i=0;i<8;i++)
+		macAddr[i] = CoorInfo.mac_adr[i];
+	return 0;
+}
+
 /***************************************************************
 **brief 两个字节合并一个unt16
 ***************************************************************/
