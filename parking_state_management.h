@@ -14,6 +14,7 @@ typedef struct {
 }st_parkingState,*pst_parkingState;
 pst_parkingState pstParkingState;
 extern unsigned short freetime;
+extern unsigned short leavetime;
 unsigned char need_to_send_to_sever;
 int pkg(unsigned char *);
 void set_depot_info(int depot_id,int depot_size,unsigned char wireless_channel,unsigned short net_id);

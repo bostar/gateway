@@ -10,7 +10,8 @@
 #include "zlg_cmd.h"
 #include "parking_state_management.h"
 static const unsigned char mac_addr[8] = {0xf1,0xf2,0xf3,0xf4,0xf5,0xf6,0xf7,0xf8};
-unsigned short freetime = 1;
+unsigned short freetime = 30;
+unsigned short leavetime = 30;
 
 void get_channel_panid(unsigned char* channel,unsigned short*panid)
 {
@@ -101,7 +102,7 @@ down:
 
     }
 time:
-    len = tcp_listen(rbuf,10);
+    len = tcp_listen(rbuf,12);
     if(memcmp("TIME",rbuf,4) != 0)
     {
         printf("[SERVER]is not TIME cmd\r\n");
@@ -109,7 +110,9 @@ time:
         goto time;
     }
     swap(2,&rbuf[8]);
+    swap(2,&rbuf[10]);
     freetime = *(unsigned short*)&rbuf[8];
+    leavetime = *(unsigned short*)&rbuf[10];
     printf("[SERVER]free time is %d minute\r\n",freetime);
 
 
@@ -184,9 +187,11 @@ time:
         else if(memcmp("TIME",rbuf,4) == 0)
         {
             printf("[SERVER]TIME cmd\r\n");
-            len = tcp_listen(&rbuf[4],6);
+            len = tcp_listen(&rbuf[4],8);
             swap(2,&rbuf[8]);
+            swap(2,&rbuf[10]);
             freetime = *(unsigned short*)&rbuf[8];
+            leavetime = *(unsigned short*)&rbuf[10];
             printf("[SERVER]free time is %d minute\r\n",freetime);
 
         }
