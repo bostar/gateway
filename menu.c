@@ -289,7 +289,7 @@ void menu_thread(void)
 				if(!strncmp(&wbuf[strlen(wbuf)-6],"0x",2))
 				{
 					sscanf(&wbuf[strlen(wbuf)-4],"%04x",&temp);
-					putCtlCmd(temp,0x08);					
+          reset_node_sensor(temp);
           printf("reset node 0x%04x sensor...\r\n",temp);
 				}
 				else

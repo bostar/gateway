@@ -12,6 +12,7 @@
 static const unsigned char mac_addr[8] = {0xf1,0xf2,0xf3,0xf4,0xf5,0xf6,0xf7,0xf8};
 unsigned short freetime = 30;
 unsigned short leavetime = 30;
+//static const unsigned char mac_addr[8] = {0x00,0x97,0x19,0x2b,0x00,0x15,0x8d,0x00};
 
 void get_channel_panid(unsigned char* channel,unsigned short*panid)
 {

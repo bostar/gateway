@@ -9,6 +9,7 @@
 #include "serial.h"
 #include "server_duty.h"
 #include "ctl_cmd_cache.h"
+#include "parking_state_management.h"
 
 unsigned char iEEEAddress[8];
 unsigned short requestAddress;
@@ -407,4 +408,27 @@ void ackNoControlCmd(unsigned short DstAddr)
 //    set_temporary_DestAddr(DstAddr);
 //    usleep(100000);
     WriteComPort(wbuf, 5);
+}
+
+void reset_node_sensor(unsigned short DstAddr)
+{
+    int loop = 0;
+
+    if(DstAddr != 0xffff)
+    {
+        putCtlCmd(DstAddr, 0x08);
+        return;
+    }
+    pthread_mutex_lock(&parking_info_mutex);
+    if(pstParkingState == NULL)
+    {
+        pthread_mutex_unlock(&parking_info_mutex);
+        return;
+    }
+
+    for(loop = 0;loop < get_depot_size();loop ++)
+    {
+        putCtlCmd(pstParkingState[loop].parking_id, 0x08);
+    }
+    pthread_mutex_unlock(&parking_info_mutex);
 }

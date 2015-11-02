@@ -5,7 +5,7 @@
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.9~svn20110310	//
 Allow	zlg_protocol.h	/^	Allow = 0x01,$/;"	e	enum:ackCmd
-BACKLOG	listener.c	42;"	d	file:
+BACKLOG	listener.c	44;"	d	file:
 BUFFER_LEN	serial.c	38;"	d	file:
 Bxx2baudrate	serial.c	/^static INT32 Bxx2baudrate (INT32 _baudrate)$/;"	f	file:
 CC	Makefile	/^CC = arm-none-linux-gnueabi-gcc$/;"	m
@@ -28,8 +28,8 @@ INT16	serial.h	/^typedef short   INT16;$/;"	t
 INT32	serial.h	/^typedef int     INT32;$/;"	t
 INT8	serial.h	/^typedef char    INT8;$/;"	t
 InitList	dul_link_list.c	/^Status InitList(DuLinkList *L)$/;"	f
-LEN	main.c	14;"	d	file:
-LENGTH	listener.c	43;"	d	file:
+LEN	main.c	16;"	d	file:
+LENGTH	listener.c	45;"	d	file:
 ListDelete	dul_link_list.c	/^Status ListDelete(DuLinkList L,int i,ElemType *e) \/* 算法2.19 *\/$/;"	f
 ListEmpty	dul_link_list.c	/^Status ListEmpty(DuLinkList L)$/;"	f
 ListInsert	dul_link_list.c	/^Status ListInsert(DuLinkList L,int i,ElemType e) \/* 改进算法2.18 *\/$/;"	f
@@ -43,13 +43,13 @@ OBJS	Makefile	/^OBJS = main.o uart_hal.o listener.o zlg_cmd.o gpio.o serial.o me
 OK	dul_link_list.h	6;"	d
 OVERFLOW	dul_link_list.h	7;"	d
 OpenComPort	serial.c	/^INT32 OpenComPort (INT32 ComPort, INT32 baudrate, INT32 databit,$/;"	f
-PORT	listener.c	41;"	d	file:
+PORT	listener.c	43;"	d	file:
 PriorElem	dul_link_list.c	/^Status PriorElem(DuLinkList L,ElemType cur_e,ElemType *pre_e)$/;"	f
 ReadComPort	serial.c	/^INT32 ReadComPort (void *data, INT32 datalength)$/;"	f
 ReadComPortA	serial.c	/^INT32 ReadComPortA (void *data, INT32 datalength)$/;"	f
 Refuse	zlg_protocol.h	/^	Refuse = 0x00$/;"	e	enum:ackCmd
-SERVER_IP	listener.c	39;"	d	file:
-SERVER_PORT	listener.c	40;"	d	file:
+SERVER_IP	listener.c	41;"	d	file:
+SERVER_PORT	listener.c	42;"	d	file:
 SRC	Makefile	/^SRC  = main.c uart_hal.c listener.c zlg_cmd.c gpio.c serial.c menu.c zlg_protocol.c ota.c server_duty.c xbee_api.c xbee_protocol.c xbee_routine.c xbee_atcmd.c dul_link_list.c ctl_cmd_cache.c parking_state_management.c$/;"	m
 Status	dul_link_list.h	/^typedef int 	Status;$/;"	t
 TIMEOUT_SEC	serial.c	32;"	d	file:
@@ -70,7 +70,7 @@ __PARKING_STATE_MANAGEMENT_H__	parking_state_management.h	2;"	d
 __SERVER_DUTY_H_	server_duty.h	2;"	d
 __UART_HAL_H__	uart_hal.h	2;"	d
 __UART_RAW__	uart_raw.h	2;"	d
-__USE_ZM516X__	main.c	20;"	d	file:
+__USE_ZM516X__	main.c	22;"	d	file:
 __XBEE_API__	xbee_api.h	2;"	d
 __XBEE_AT_CMD_H__	xbee_atcmd.h	2;"	d
 __XBEE_PROTOCOL_H__	xbee_protocol.h	2;"	d
@@ -82,6 +82,7 @@ _dev_info_t	zlg_cmd.h	/^typedef struct _dev_info_t {$/;"	s
 _search_info_t	zlg_cmd.h	/^typedef struct _search_info_t { $/;"	s
 ackCmd	zlg_protocol.h	/^typedef enum ackCmd {$/;"	g
 ackCmd_t	zlg_protocol.h	/^}ackCmd_t;$/;"	t	typeref:enum:ackCmd
+ackNoControlCmd	zlg_protocol.c	/^void ackNoControlCmd(unsigned short DstAddr)$/;"	f
 ackRegisterNetwork	zlg_protocol.c	/^void ackRegisterNetwork(unsigned short NetAddress,ackCmd_t cmd,unsigned short panid,unsigned char channel)$/;"	f
 addr	dul_link_list.h	/^	unsigned short addr;$/;"	m	struct:_cmd
 addr_server	listener.c	/^struct sockaddr_in addr_server;$/;"	v	typeref:struct:sockaddr_in
@@ -89,9 +90,9 @@ addr_server	listener.h	/^struct sockaddr_in addr_server;$/;"	v	typeref:struct:so
 addresses	zlg_protocol.c	/^const unsigned short addresses[20];$/;"	v
 baudrate2Bxx	serial.c	/^static INT32 baudrate2Bxx (INT32 baudrate)$/;"	f	file:
 beep_cmd	zlg_protocol.h	/^enum beep_cmd {$/;"	g
-broadcast	zlg_cmd.h	/^    broadcast = 0x01$/;"	e	enum:__anon8
+broadcast	zlg_cmd.h	/^    broadcast = 0x01$/;"	e	enum:__anon5
 broadcastAddr	zlg_cmd.c	/^const unsigned short broadcastAddr = 0xffff;$/;"	v
-cast_mode_t	zlg_cmd.h	/^}cast_mode_t;$/;"	t	typeref:enum:__anon8
+cast_mode_t	zlg_cmd.h	/^}cast_mode_t;$/;"	t	typeref:enum:__anon5
 cfg_cmd	zlg_protocol.h	/^enum cfg_cmd {$/;"	g
 channel	zlg_cmd.h	/^    unsigned char channel;$/;"	m	struct:_search_info_t
 cmd	dul_link_list.h	/^	unsigned char  cmd;$/;"	m	struct:_cmd
@@ -119,7 +120,8 @@ crc16	ota.c	/^static unsigned short crc16(unsigned short crc, unsigned char val)
 ctl_cmd_t	dul_link_list.h	/^}ctl_cmd_t;$/;"	t	typeref:struct:_cmd
 data	dul_link_list.h	/^	ElemType data;$/;"	m	struct:DuLNode
 depot_id	parking_state_management.c	/^    int depot_id;$/;"	m	struct:__anon3	file:
-depot_info	parking_state_management.c	/^}depot_info;$/;"	v	typeref:struct:__anon3	file:
+depot_info	parking_state_management.c	/^static depot_info_t *depot_info;$/;"	v	file:
+depot_info_t	parking_state_management.c	/^}depot_info_t;$/;"	t	typeref:struct:__anon3	file:
 depot_size	parking_state_management.c	/^    int depot_size;$/;"	m	struct:__anon3	file:
 devChannel	zlg_cmd.h	/^    unsigned char devChannel;$/;"	m	struct:_dev_info_t
 devDestIEEEAddr	zlg_cmd.h	/^    unsigned char devDestIEEEAddr[8];$/;"	m	struct:_dev_info_t
@@ -162,22 +164,26 @@ enSetIoDirection	zlg_cmd.h	/^    enSetIoDirection = 0xd4,$/;"	e	enum:temporarypa
 enSetIoStatus	zlg_cmd.h	/^    enSetIoStatus = 0xd6,$/;"	e	enum:temporaryparamoptcmd
 enSetUnicastOrBroadcast	zlg_cmd.h	/^    enSetUnicastOrBroadcast = 0xd9,$/;"	e	enum:temporaryparamoptcmd
 enShowSrcAddr	zlg_cmd.h	/^    enShowSrcAddr = 0xd3,$/;"	e	enum:temporaryparamoptcmd
-en_lock_failed	server_duty.h	/^    en_lock_failed,$/;"	e	enum:__anon5
-en_lock_success	server_duty.h	/^    en_lock_success,$/;"	e	enum:__anon5
-en_max_event	server_duty.h	/^    en_max_event$/;"	e	enum:__anon5
+en_lock_failed	server_duty.h	/^    en_lock_failed,$/;"	e	enum:__anon6
+en_lock_success	server_duty.h	/^    en_lock_success,$/;"	e	enum:__anon6
+en_max_event	server_duty.h	/^    en_max_event$/;"	e	enum:__anon6
 en_netState	parking_state_management.c	/^}en_netState;$/;"	t	typeref:enum:__anon2	file:
-en_order_lock	server_duty.h	/^    en_order_lock = 0x01,$/;"	e	enum:__anon6
-en_order_unlock	server_duty.h	/^    en_order_unlock = 0x00$/;"	e	enum:__anon6
-en_parkingEvent	server_duty.h	/^}en_parkingEvent,*pen_parkingEvent;$/;"	t	typeref:enum:__anon5
-en_parking_order	server_duty.h	/^}en_parking_order;$/;"	t	typeref:enum:__anon6
+en_order_lock	server_duty.h	/^    en_order_lock = 0x01,$/;"	e	enum:__anon7
+en_order_unlock	server_duty.h	/^    en_order_unlock = 0x00$/;"	e	enum:__anon7
+en_parkingEvent	server_duty.h	/^}en_parkingEvent,*pen_parkingEvent;$/;"	t	typeref:enum:__anon6
+en_parking_order	server_duty.h	/^}en_parking_order;$/;"	t	typeref:enum:__anon7
 en_parking_state	parking_state_management.c	/^}en_parking_state;$/;"	t	typeref:enum:__anon1	file:
 en_parking_state_max	parking_state_management.c	/^    en_parking_state_max = 0xff$/;"	e	enum:__anon1	file:
-en_unlock_failed	server_duty.h	/^    en_unlock_failed,$/;"	e	enum:__anon5
-en_unlock_success	server_duty.h	/^    en_unlock_success,$/;"	e	enum:__anon5
-en_vehicle_comming	server_duty.h	/^    en_vehicle_comming,$/;"	e	enum:__anon5
-en_vehicle_leave	server_duty.h	/^    en_vehicle_leave,$/;"	e	enum:__anon5
+en_parking_state_report	server_duty.h	/^}en_parking_state_report;$/;"	t	typeref:enum:__anon8
+en_state_lock	server_duty.h	/^    en_state_lock = 0x02,$/;"	e	enum:__anon8
+en_state_unlock	server_duty.h	/^    en_state_unlock = 0x04$/;"	e	enum:__anon8
+en_unlock_failed	server_duty.h	/^    en_unlock_failed,$/;"	e	enum:__anon6
+en_unlock_success	server_duty.h	/^    en_unlock_success,$/;"	e	enum:__anon6
+en_vehicle_comming	server_duty.h	/^    en_vehicle_comming,$/;"	e	enum:__anon6
+en_vehicle_leave	server_duty.h	/^    en_vehicle_leave,$/;"	e	enum:__anon6
 endDevice	zlg_protocol.h	/^	endDevice = 0x00,$/;"	e	enum:devTypeCmd
 enter_sleep_mode	zlg_cmd.c	/^void enter_sleep_mode(void)$/;"	f
+event	parking_state_management.h	/^    en_parkingEvent event;$/;"	m	struct:__anon9
 event_report	parking_state_management.c	/^void event_report(unsigned short netaddr,unsigned char event)$/;"	f
 event_string	parking_state_management.c	/^char * const event_string[en_max_event] = {"en_vehicle_comming\\r\\n","en_vehicle_leave\\r\\n","en_lock_success\\r\\n","en_lock_failed\\r\\n","en_unlock_success\\r\\n","en_unlock_failed\\r\\n"};$/;"	v
 fd	serial.c	/^static INT32    fd;             \/\/File descriptor for the port$/;"	v	file:
@@ -186,7 +192,8 @@ fd2	gpio.c	/^int fd1,fd2,fd3,fd4,fd5;$/;"	v
 fd3	gpio.c	/^int fd1,fd2,fd3,fd4,fd5;$/;"	v
 fd4	gpio.c	/^int fd1,fd2,fd3,fd4,fd5;$/;"	v
 fd5	gpio.c	/^int fd1,fd2,fd3,fd4,fd5;$/;"	v
-fireware_file_path	ota.c	9;"	d	file:
+fireware_file_path	ota.c	15;"	d	file:
+freetime	server_duty.c	/^unsigned short freetime = 1;$/;"	v
 fs_read	serial.c	/^static fd_set   fs_read, fs_write;$/;"	v	file:
 fs_write	serial.c	/^static fd_set   fs_read, fs_write;$/;"	v	file:
 getCtlAddres	ctl_cmd_cache.c	/^int getCtlAddres(const unsigned short *addres,unsigned char *num)$/;"	f
@@ -200,12 +207,11 @@ get_depot_size	parking_state_management.c	/^int get_depot_size(void)$/;"	f
 get_local_addr	parking_state_management.c	/^int get_local_addr(unsigned char *local_addr,unsigned char* long_addr)$/;"	f
 get_remote_info	zlg_cmd.c	/^void get_remote_info(unsigned short DstAddr)$/;"	f
 gpio_init	gpio.c	/^void gpio_init(void)$/;"	f
-heart_beat_thread	zlg_protocol.c	/^void heart_beat_thread(void *arg)$/;"	f
-heartbeat	zlg_protocol.c	/^void heartbeat(const unsigned short *needRequestAddresses,unsigned char nodes)$/;"	f
 iEEEAddress	zlg_protocol.c	/^unsigned char iEEEAddress[8];$/;"	v
 iFd	uart_raw.c	/^int iFd;$/;"	v
 initCtlCmdCache	ctl_cmd_cache.c	/^int initCtlCmdCache(void)$/;"	f
 init_zlg_zm516x	zlg_cmd.c	/^void init_zlg_zm516x(void)$/;"	f
+keep_wake_node	zlg_protocol.c	/^void keep_wake_node(void)$/;"	f
 list_mux	ctl_cmd_cache.c	/^pthread_mutex_t list_mux;$/;"	v
 localAddr	zlg_cmd.h	/^    unsigned char localAddr[2];$/;"	m	struct:_search_info_t
 mac2str	zlg_protocol.c	/^void mac2str(char *str,const char *ieeeAddress)$/;"	f
@@ -216,54 +222,73 @@ menu_thread	menu.c	/^void menu_thread(void)$/;"	f
 motor_cmd	zlg_protocol.h	/^enum motor_cmd {$/;"	g
 mut	serial.c	/^pthread_mutex_t mut;$/;"	v
 n_com_port	zlg_cmd.c	/^static int n_com_port = ttyO1;$/;"	v	file:
+need_to_send_to_sever	parking_state_management.c	/^unsigned char need_to_send_to_sever = 1;$/;"	v
+need_to_send_to_sever	parking_state_management.h	/^unsigned char need_to_send_to_sever;$/;"	v
 netNum	zlg_cmd.h	/^    unsigned char netNum[2];$/;"	m	struct:_search_info_t
 net_id	parking_state_management.c	/^    unsigned short net_id;$/;"	m	struct:__anon3	file:
 networking_over	parking_state_management.c	/^int networking_over(void)$/;"	f
 next	dul_link_list.h	/^	struct DuLNode *prior,*next;	$/;"	m	struct:DuLNode	typeref:struct:DuLNode::
 nvparamoptcmd	zlg_cmd.h	/^enum nvparamoptcmd{$/;"	g
-online	parking_state_management.h	/^    unsigned char online;$/;"	m	struct:__anon4
+offline_time_out	parking_state_management.h	/^    time_t offline_time_out;$/;"	m	struct:__anon9
+online	parking_state_management.h	/^    unsigned char online;$/;"	m	struct:__anon9
+ota_begin	ota.c	/^sem_t ota_begin;$/;"	v
+ota_over	ota.c	/^sem_t ota_over;$/;"	v
 ota_thread	ota.c	/^void ota_thread(void)$/;"	f
-parking_id	parking_state_management.h	/^    unsigned short parking_id;$/;"	m	struct:__anon4
+parking_id	parking_state_management.h	/^    unsigned short parking_id;$/;"	m	struct:__anon9
 parking_id_macaddr_mapping	parking_state_management.c	/^void parking_id_macaddr_mapping(unsigned short parking_id,unsigned char *macaddr)$/;"	f
 parking_info_mutex	parking_state_management.c	/^pthread_mutex_t parking_info_mutex = PTHREAD_MUTEX_INITIALIZER;$/;"	v
+parking_info_mutex	parking_state_management.h	/^pthread_mutex_t parking_info_mutex;$/;"	v
 parking_init	parking_state_management.c	/^void parking_init(void)$/;"	f
-parking_mac_addr	parking_state_management.h	/^    unsigned char parking_mac_addr[8];$/;"	m	struct:__anon4
-parking_state_booked_coming_lock	parking_state_management.c	/^    parking_state_booked_coming_lock = 0xf1, \/\/ 被预定车位，车到达，已上锁$/;"	e	enum:__anon1	file:
-parking_state_booked_coming_lock_failed	parking_state_management.c	/^    parking_state_booked_coming_lock_failed = 0xf2, \/\/ 被预定车位，车到达，上锁失败$/;"	e	enum:__anon1	file:
+parking_mac_addr	parking_state_management.h	/^    unsigned char parking_mac_addr[8];$/;"	m	struct:__anon9
+parking_online_string	parking_state_management.c	/^char* const parking_online_string[2] = {$/;"	v
+parking_state_booked_coming	parking_state_management.c	/^    parking_state_booked_coming = 0x82, \/\/ 被预定车位解锁，车主到达现场$/;"	e	enum:__anon1	file:
+parking_state_booked_coming_lock	parking_state_management.c	/^    parking_state_booked_coming_lock = 0x21, \/\/ 被预定车位，车到达，已上锁$/;"	e	enum:__anon1	file:
+parking_state_booked_coming_lock_failed	parking_state_management.c	/^    parking_state_booked_coming_lock_failed = 0x22, \/\/ 被预定车位，车到达，上锁失败$/;"	e	enum:__anon1	file:
 parking_state_booked_coming_unlock	parking_state_management.c	/^    parking_state_booked_coming_unlock = 0x1c, \/\/ 被预定车位解锁成功$/;"	e	enum:__anon1	file:
 parking_state_booked_coming_unlock_failed	parking_state_management.c	/^    parking_state_booked_coming_unlock_failed = 0x1d, \/\/ 被预定车位解锁失败$/;"	e	enum:__anon1	file:
+parking_state_booked_coming_unlock_goto_idle	parking_state_management.c	/^    parking_state_booked_coming_unlock_goto_idle = 0x20,\/\/ 降锁，免费时间内车未到达（即将转为空闲）$/;"	e	enum:__anon1	file:
 parking_state_booking	parking_state_management.c	/^    parking_state_booking = 0x81, \/\/ 车位被预定$/;"	e	enum:__anon1	file:
 parking_state_booking_busy	parking_state_management.c	/^    parking_state_booking_busy = 0x1a, \/\/ 预定车位失败（被抢占）$/;"	e	enum:__anon1	file:
 parking_state_booking_lock	parking_state_management.c	/^    parking_state_booking_lock = 0x09, \/\/ 预定成功，且车位已上锁$/;"	e	enum:__anon1	file:
 parking_state_booking_lock_failed	parking_state_management.c	/^    parking_state_booking_lock_failed = 0x1b, \/\/ 预定车位，上锁失败（硬件故障）$/;"	e	enum:__anon1	file:
 parking_state_check_routin	parking_state_management.c	/^void parking_state_check_routin(void)$/;"	f
+parking_state_have_paid	parking_state_management.c	/^    parking_state_have_paid = 0x84, \/\/ 已支付$/;"	e	enum:__anon1	file:
+parking_state_have_paid_relock	parking_state_management.c	/^    parking_state_have_paid_relock = 0x23, \/\/ 支付解锁后车未离开重新加锁计费$/;"	e	enum:__anon1	file:
+parking_state_have_paid_relock_failed	parking_state_management.c	/^    parking_state_have_paid_relock_failed = 0x24, \/\/ 支付解锁后车未离开重新加锁失败$/;"	e	enum:__anon1	file:
 parking_state_have_paid_unlock	parking_state_management.c	/^    parking_state_have_paid_unlock = 0x05, \/\/ 支付后解锁成功$/;"	e	enum:__anon1	file:
 parking_state_have_paid_unlock_failed	parking_state_management.c	/^    parking_state_have_paid_unlock_failed = 0x08, \/\/ 支付后解锁硬件异常$/;"	e	enum:__anon1	file:
+parking_state_have_paid_unlock_vehicle_leave	parking_state_management.c	/^    parking_state_have_paid_unlock_vehicle_leave = 0x06, \/\/ 支付解锁成功N分钟内车离开$/;"	e	enum:__anon1	file:
 parking_state_idle	parking_state_management.c	/^    parking_state_idle = 0x00, \/\/ 空闲$/;"	e	enum:__anon1	file:
 parking_state_prestop	parking_state_management.c	/^    parking_state_prestop = 0x01, \/\/ 车来$/;"	e	enum:__anon1	file:
+parking_state_report	parking_state_management.c	/^void parking_state_report(unsigned short netaddr, en_parking_state_report enParking_state)$/;"	f
 parking_state_stop_lock	parking_state_management.c	/^    parking_state_stop_lock = 0x03, \/\/ 车来超N分钟已上锁$/;"	e	enum:__anon1	file:
 parking_state_stop_lock_failed	parking_state_management.c	/^    parking_state_stop_lock_failed = 0x04, \/\/ 车来超N分钟但加锁失败（硬件故障）$/;"	e	enum:__anon1	file:
 parking_state_string	parking_state_management.c	/^char* const parking_state_string[en_parking_state_max] = {$/;"	v
+parking_state_unbooking	parking_state_management.c	/^    parking_state_unbooking = 0x83, \/\/ 取消预定$/;"	e	enum:__anon1	file:
 parking_state_unbooking_unlock	parking_state_management.c	/^    parking_state_unbooking_unlock = 0x1e, \/\/ 取消预定成功已解锁$/;"	e	enum:__anon1	file:
 parking_state_unbooking_unlock_failed	parking_state_management.c	/^    parking_state_unbooking_unlock_failed = 0x1f, \/\/ 取消预定失败，硬件故障$/;"	e	enum:__anon1	file:
-pen_parkingEvent	server_duty.h	/^}en_parkingEvent,*pen_parkingEvent;$/;"	t	typeref:enum:__anon5
+pen_parkingEvent	server_duty.h	/^}en_parkingEvent,*pen_parkingEvent;$/;"	t	typeref:enum:__anon6
 printElem	ctl_cmd_cache.c	/^void printElem(ctl_cmd_t *e)$/;"	f
 prior	dul_link_list.h	/^	struct DuLNode *prior,*next;	$/;"	m	struct:DuLNode	typeref:struct:DuLNode::DuLNode
 pstParkingState	parking_state_management.c	/^pst_parkingState pstParkingState = NULL;$/;"	v
 pstParkingState	parking_state_management.h	/^pst_parkingState pstParkingState;$/;"	v
-pst_parkingState	parking_state_management.h	/^}st_parkingState,*pst_parkingState;$/;"	t	typeref:struct:__anon4
+pst_parkingState	parking_state_management.h	/^}st_parkingState,*pst_parkingState;$/;"	t	typeref:struct:__anon9
 putCtlCmd	ctl_cmd_cache.c	/^int putCtlCmd(const unsigned short addr,const unsigned char cmd)$/;"	f
 q	ctl_cmd_cache.c	/^DuLinkList q;$/;"	v
 rate	zlg_cmd.h	/^    unsigned char rate;$/;"	m	struct:_search_info_t
+rbuf	zlg_cmd.c	/^static unsigned char wbuf[100],rbuf[255];$/;"	v	file:
 read_local_cfg	zlg_cmd.c	/^void read_local_cfg(void)$/;"	f
 read_temporary_adc_value	zlg_cmd.c	/^unsigned short read_temporary_adc_value(unsigned short DstAddr)$/;"	f
 read_temporary_io_level	zlg_cmd.c	/^unsigned char read_temporary_io_level(unsigned short DstAddr)$/;"	f
 read_temporary_node_rssi	zlg_cmd.c	/^unsigned char read_temporary_node_rssi(unsigned short DstAddr)$/;"	f
+reboot_node	zlg_protocol.c	/^void reboot_node(unsigned short DstAddr)\/\/DstAddr = 0xffff,means reboot all node$/;"	f
 remoteDevInfo	zlg_cmd.c	/^dev_info_t remoteDevInfo;$/;"	v
 requestAddress	zlg_protocol.c	/^unsigned short requestAddress;$/;"	v
 reset_node	zlg_cmd.c	/^void reset_node(unsigned short DstAddr)$/;"	f
+reset_node_sensor	zlg_protocol.c	/^void reset_node_sensor(unsigned short DstAddr)$/;"	f
 reset_params_zm516x	gpio.c	/^void reset_params_zm516x(void)$/;"	f
 reset_zm516x	gpio.c	/^void reset_zm516x(void)$/;"	f
+restart_all_parking_node	parking_state_management.c	/^int restart_all_parking_node(void)$/;"	f
 restoreFactoryConfig	zlg_protocol.c	/^void restoreFactoryConfig(unsigned short DstAddr)$/;"	f
 restore_factory_settings	zlg_cmd.c	/^void restore_factory_settings(unsigned short DstAddr)$/;"	f
 routerDevice	zlg_protocol.h	/^	routerDevice = 0x01$/;"	e	enum:devTypeCmd
@@ -274,7 +299,7 @@ search_node	zlg_cmd.c	/^void search_node(void)$/;"	f
 search_use_netaddr	parking_state_management.c	/^pst_parkingState search_use_netaddr(unsigned short netaddr)$/;"	f
 sen_cmd	zlg_protocol.h	/^enum sen_cmd {$/;"	g
 send_data_to_remote_node	zlg_cmd.c	/^void send_data_to_remote_node(unsigned short destAddr,unsigned char *data,int len)$/;"	f
-sendtonode	ota.c	/^void sendtonode(unsigned char *destaddr,unsigned char *data,int len)$/;"	f
+sendtonode	ota.c	/^void sendtonode(unsigned short destaddr,unsigned char *data,int len)$/;"	f
 serialport_init	zlg_cmd.c	/^void serialport_init(void)$/;"	f
 server_duty_thread	server_duty.c	/^void server_duty_thread(void)$/;"	f
 set_baudrate	serial.c	/^static void set_baudrate (INT32 baudrate)$/;"	f	file:
@@ -282,6 +307,7 @@ set_channel_nv	zlg_cmd.c	/^void set_channel_nv(unsigned char nv)$/;"	f
 set_data_bit	serial.c	/^static void set_data_bit (INT32 databit)$/;"	f	file:
 set_depot_info	parking_state_management.c	/^void set_depot_info(int depot_id,int depot_size,unsigned char wireless_channel,unsigned short net_id)$/;"	f
 set_node_online	parking_state_management.c	/^void set_node_online(unsigned char *macaddr)$/;"	f
+set_online	parking_state_management.c	/^void set_online(unsigned short netaddr)$/;"	f
 set_parity	serial.c	/^static void set_parity (char parity)$/;"	f	file:
 set_parking_state	parking_state_management.c	/^int set_parking_state(unsigned short parking_id,unsigned char state)$/;"	f
 set_port_attr	serial.c	/^static INT32 set_port_attr ($/;"	f	file:
@@ -292,17 +318,20 @@ set_temporary_cast_mode	zlg_cmd.c	/^void set_temporary_cast_mode(cast_mode_t mod
 set_temporary_channel	zlg_cmd.c	/^void set_temporary_channel(unsigned char channel)$/;"	f
 set_temporary_io_dir	zlg_cmd.c	/^void set_temporary_io_dir(unsigned short DstAddr,unsigned char IO_Dir)$/;"	f
 set_temporary_io_level	zlg_cmd.c	/^void set_temporary_io_level(unsigned short DstAddr,unsigned char IO_Level)$/;"	f
-showSrcAddr_cmd_t	zlg_cmd.h	/^}showSrcAddr_cmd_t;$/;"	t	typeref:enum:__anon7
-show_disable	zlg_cmd.h	/^    show_disable = 0x00$/;"	e	enum:__anon7
-show_enable	zlg_cmd.h	/^    show_enable = 0x01,$/;"	e	enum:__anon7
+showSrcAddr_cmd_t	zlg_cmd.h	/^}showSrcAddr_cmd_t;$/;"	t	typeref:enum:__anon4
+show_disable	zlg_cmd.h	/^    show_disable = 0x00$/;"	e	enum:__anon4
+show_enable	zlg_cmd.h	/^    show_enable = 0x01,$/;"	e	enum:__anon4
+sigroutine	parking_state_management.c	/^void sigroutine(int signo)$/;"	f
 sleep_zm516x	gpio.c	/^void sleep_zm516x(unsigned char state)$/;"	f
 sockfd	listener.c	/^int sockfd;                                                                            $/;"	v
 stDevInfo	zlg_cmd.c	/^dev_info_t stDevInfo;$/;"	v
-st_parkingState	parking_state_management.h	/^}st_parkingState,*pst_parkingState;$/;"	t	typeref:struct:__anon4
+st_parkingState	parking_state_management.h	/^}st_parkingState,*pst_parkingState;$/;"	t	typeref:struct:__anon9
 startSensorCalibration	zlg_protocol.c	/^void startSensorCalibration(void)$/;"	f
-state	parking_state_management.h	/^    unsigned char state;$/;"	m	struct:__anon4
-swap	server_duty.c	/^static void swap(unsigned char len,unsigned char *array)$/;"	f	file:
+state	parking_state_management.h	/^    unsigned char state;$/;"	m	struct:__anon9
+swap	server_duty.c	/^void swap(unsigned char len,unsigned char *array)$/;"	f
 switchLockControl	zlg_protocol.c	/^void switchLockControl(unsigned short DstAddr,unsigned char cmd)$/;"	f
+syn_all_parking_node	parking_state_management.c	/^int syn_all_parking_node(void)$/;"	f
+syn_node	zlg_protocol.c	/^void syn_node(unsigned short DstAddr)\/\/DstAddr = 0xffff,means reboot all node$/;"	f
 tcp_exit	listener.c	/^void tcp_exit(void)$/;"	f
 tcp_init	listener.c	/^void tcp_init(void)$/;"	f
 tcp_listen	listener.c	/^int tcp_listen(unsigned char *revbuf,int bufsize)$/;"	f
@@ -315,7 +344,9 @@ testLed	zlg_protocol.c	/^void testLed(unsigned short DstAddr,unsigned char ioLev
 testLink	zlg_protocol.c	/^void testLink(const char * ieeeAddress)$/;"	f
 testMotor	zlg_protocol.c	/^void testMotor(unsigned short DstAddr,unsigned char cmd)$/;"	f
 test_cmd_thread	main.c	/^void test_cmd_thread(void)$/;"	f
-time	parking_state_management.h	/^    time_t time;$/;"	m	struct:__anon4
+time	parking_state_management.h	/^    time_t time;$/;"	m	struct:__anon9
+total_ack_link	zlg_protocol.c	/^int total_ack_link; $/;"	v
+total_online_link	parking_state_management.c	/^static int total_online_link;$/;"	v	file:
 tst_cmd	zlg_protocol.h	/^enum tst_cmd {$/;"	g
 ttyO0	zlg_cmd.c	14;"	d	file:
 ttyO1	zlg_cmd.c	15;"	d	file:
@@ -331,7 +362,8 @@ uart_read	uart_raw.c	/^int uart_read(unsigned char *buf)$/;"	f
 uart_read_thread	main.c	/^void uart_read_thread(void)$/;"	f
 uart_test	uart_raw.c	/^void uart_test(void)$/;"	f
 uart_write	uart_raw.c	/^void uart_write(unsigned char *buf,int len)$/;"	f
-unicast	zlg_cmd.h	/^    unicast = 0x00,$/;"	e	enum:__anon8
+unicast	zlg_cmd.h	/^    unicast = 0x00,$/;"	e	enum:__anon5
+wbuf	zlg_cmd.c	/^static unsigned char wbuf[100],rbuf[255];$/;"	v	file:
 wireless_channel	parking_state_management.c	/^    unsigned char wireless_channel;$/;"	m	struct:__anon3	file:
 write_local_cfg	zlg_cmd.c	/^void write_local_cfg(void)$/;"	f
 write_remote_cfg	zlg_cmd.c	/^void write_remote_cfg(unsigned short DstAddr, dev_info_t *DevInfo )$/;"	f

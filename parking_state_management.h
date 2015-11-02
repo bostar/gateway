@@ -13,6 +13,7 @@ typedef struct {
     time_t offline_time_out;
 }st_parkingState,*pst_parkingState;
 pst_parkingState pstParkingState;
+extern pthread_mutex_t parking_info_mutex;
 extern unsigned short freetime;
 extern unsigned short leavetime;
 unsigned char need_to_send_to_sever;
