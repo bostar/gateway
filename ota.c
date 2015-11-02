@@ -161,6 +161,45 @@ void ota_thread(void)
                 usleep(1000000);
             }
         }
+        else
+        {
+            printf("do you want to erase all flash?(y/n)\r\n");
+            do{
+                unsigned char ch = 0;
+                scanf("%c",&ch);
+                if(ch == 'y')
+                {
+                    printf("[OTA]:fireware has changed!,erase all flash\r\n");
+                    versionold = version;
+                    crcwordold = crcword;
+                    /* handshake erase all flash */
+                    wbuf[0] = 0xfe;
+                    wbuf[1] = 0x02;
+                    wbuf[2] = 0x4d;
+                    wbuf[3] = 0x04; // cmd word
+                    wbuf[4] = 0;
+                    wbuf[5] = 0;
+                    wbuf[6] = 0x00;
+                    for(loop = 1;loop < 6;loop ++)
+                    {
+                        wbuf[6] ^= wbuf[loop]; // end byte
+                    }
+                    for(loop = 0;loop < 3;loop ++)
+                    {
+                        WriteComPort(wbuf,7);
+                        usleep(1000000);
+                    }
+                    break;
+                }
+                else if(ch == 'n')
+                {
+                    break;
+                }
+                else
+                {
+                }
+            }while(1);
+        }
 #if 1    
         /* transfer ota datas ... */
         for(loop = 0;loop < pkgnum;loop ++)
