@@ -283,6 +283,21 @@ void menu_thread(void)
 				else
 					printf("paramter error...\r\n");
 			}
+      else if(!strncmp(wbuf,"reboot",6))
+      {
+        printf("reboot all node################\r\n");
+        restart_all_parking_node();
+      }
+      else if(!strncmp(wbuf,"syn",3))
+      {
+        printf("syn all node$$$$$$$$$$$$$$$$$$$\r\n");
+        syn_all_parking_node();
+      }
+      else if(!strncmp(wbuf,"wake",4))
+      {
+        printf("wake up all nodes...\r\n");
+        keep_wake_nodes();
+      }
       else if(!strncmp(wbuf, "rsen", 4))
       {
 				unsigned int temp;

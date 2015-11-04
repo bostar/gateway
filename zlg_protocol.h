@@ -65,6 +65,9 @@ void testLed(unsigned short DstAddr,unsigned char ioLevel);
 void testMotor(unsigned short DstAddr,unsigned char cmd);
 void switchLockControl(unsigned short DstAddr,unsigned char cmd);
 void mac2str(char *str,const char *ieeeAddress);
+void keep_wake_nodes(void);
+int restart_all_parking_node(void);
+int syn_all_parking_node(void);
 void reset_node_sensor(unsigned short DstAddr);
 
 #endif

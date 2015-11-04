@@ -75,13 +75,15 @@ void communicate_thread(void)
                     printf("0x%s LinkTest ACK...\r\n",macstr);
                 break;
                 case cmdDataRequest:
-		    rlen = ReadComPort(rbuf+4,4);
-                    if(rlen != 4)
+		    rlen = ReadComPort(rbuf+4,5);
+                    if(rlen != 5)
                         break;
                     requestAddress = (unsigned short)rbuf[4] << 8 | rbuf[5];
                     set_online(requestAddress);
                     event_report(requestAddress,rbuf[6]);
                     event_report(requestAddress,rbuf[7]);
+                    if(rbuf[8] == 0x00)
+                      printf("test sucess");
                     if(!getCtlCmd(requestAddress,&ctl_cmd))
                     {  
                         switchLockControl(requestAddress,ctl_cmd);
@@ -410,6 +412,94 @@ void ackNoControlCmd(unsigned short DstAddr)
     WriteComPort(wbuf, 5);
 }
 
+void syn_node(unsigned short DstAddr)
+{
+      unsigned char wbuf[7];
+      wbuf[0] = 'C';
+      wbuf[1] = 'T';
+      wbuf[2] = 'L';
+      wbuf[3] = 0x00;//cmd
+      wbuf[4] = 0x05;//cmd
+      wbuf[5] = DstAddr >> 8;
+      wbuf[6] = DstAddr;
+
+      WriteComPort(wbuf, 7);
+}
+
+void reboot_node(unsigned short DstAddr)
+{
+      unsigned char wbuf[7];
+      wbuf[0] = 'C';
+      wbuf[1] = 'T';
+      wbuf[2] = 'L';
+      wbuf[3] = 0x00;//cmd
+      wbuf[4] = 0x04;//cmd
+      wbuf[5] = DstAddr >> 8;
+      wbuf[6] = DstAddr;
+
+      WriteComPort(wbuf, 7);
+}
+
+void keep_wake_nodes(void)
+{
+    int loop;
+
+    pthread_mutex_lock(&parking_info_mutex);
+    for(loop = 0;loop < get_depot_size();loop ++)
+    {
+      putCtlCmd(pstParkingState[loop].parking_id,0x07);
+    }
+    pthread_mutex_unlock(&parking_info_mutex);
+    return;
+}
+
+int syn_all_parking_node(void)
+{
+      int loop = 0;
+      pthread_mutex_lock(&parking_info_mutex);
+      if(pstParkingState == NULL)
+      {
+        pthread_mutex_unlock(&parking_info_mutex);
+        return -1;
+      }
+      else
+      {
+        for(loop = 0;loop < get_depot_size();loop ++)
+        {
+          syn_node(pstParkingState[loop].parking_id);
+          //printf("syn node: 0x%04x\r\n",pstParkingState[loop].parking_id);
+          usleep(80000);
+        }
+        printf("syned all nodes...\r\n");
+        pthread_mutex_unlock(&parking_info_mutex);
+        return 0;
+      }
+}
+
+
+int restart_all_parking_node(void)
+{
+      int loop = 0;
+      pthread_mutex_lock(&parking_info_mutex);
+      if(pstParkingState == NULL)
+      {
+        pthread_mutex_unlock(&parking_info_mutex);
+        return -1;
+      }
+      else
+      {
+        for(loop = 0;loop < get_depot_size();loop ++)
+        {
+          reboot_node(pstParkingState[loop].parking_id);
+          //printf("reboot node: 0x%04x\r\n",pstParkingState[loop].parking_id);
+          usleep(80000);
+        }
+        printf("rebooted all nodes...\r\n");
+        pthread_mutex_unlock(&parking_info_mutex);
+        return 0;
+      }
+}
+
 void reset_node_sensor(unsigned short DstAddr)
 {
     int loop = 0;
@@ -432,3 +522,5 @@ void reset_node_sensor(unsigned short DstAddr)
     }
     pthread_mutex_unlock(&parking_info_mutex);
 }
+
+
