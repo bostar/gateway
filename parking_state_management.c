@@ -61,7 +61,7 @@ void set_depot_info(int depot_id,int depot_size,unsigned char wireless_channel,u
     depot_info.depot_size = depot_size;
     depot_info.wireless_channel = wireless_channel;
     depot_info.net_id = net_id;
-    printf("depot_id = %d;depot_size = %d;wireless_channel = %d",depot_info.depot_id,depot_info.depot_size,depot_info.wireless_channel);
+    printf("depot_id = %d;depot_size = %d;wireless_channel = %d,ned_id = 0x%04x\r\n",depot_info.depot_id,depot_info.depot_size,depot_info.wireless_channel,depot_info.net_id);
 }
 
 int get_depot_size(void)
