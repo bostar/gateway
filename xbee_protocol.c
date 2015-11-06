@@ -233,6 +233,7 @@ void ProcessATRes(uint8 *rbuf)
 	uint8 i;
 	if(*(rbuf+7) != 0)
 		return;
+	pthread_mutex_lock(&mutex14_CoorInfo);
 	if(*(rbuf+5) == 'O' && *(rbuf+6) == 'I')
 	{	
 		CoorInfo.panID16 = 0;
@@ -259,6 +260,7 @@ void ProcessATRes(uint8 *rbuf)
 	{
 		CoorInfo.ar = *(rbuf+8);
 	}
+	pthread_mutex_unlock(&mutex14_CoorInfo);
 	return;
 }
 /*************************************************
@@ -483,9 +485,9 @@ void XBeeNetInit(void)
 ***************************************************************/
 void get_mac(void)
 {
-	uint8 i=0,rbuf[128];
+	uint8 i=0,rbuf[128],mac_adr[8];
 	bool status=false;
-	
+
 	XBeeReadAT("SH");
 	while(status == false)
 	{
@@ -498,7 +500,7 @@ void get_mac(void)
 			if(rbuf[3] == 0x88 && rbuf[5] == 'S' && rbuf[6] == 'H' && rbuf[7] == 0)
 			{
 				for(i=0;i<4;i++)
-					CoorInfo.mac_adr[i] = rbuf[8+i];
+					mac_adr[i] = rbuf[8+i];
 			}
 			else if(rbuf[3] == 0x88 && rbuf[5] == 'S' && rbuf[6] == 'H' && rbuf[7] != 0)
 			{
@@ -522,7 +524,7 @@ void get_mac(void)
 			if(rbuf[3] == 0x88 && rbuf[5] == 'S' && rbuf[6] == 'L' && rbuf[7] == 0)
 			{
 				for(i=0;i<4;i++)
-					CoorInfo.mac_adr[4+i] = rbuf[8+i];
+					mac_adr[4+i] = rbuf[8+i];
 			}
 			else if(rbuf[3] == 0x88 && rbuf[5] == 'S' && rbuf[6] == 'L' && rbuf[7] != 0)
 			{
@@ -534,8 +536,13 @@ void get_mac(void)
 		}
 	}
 	printf("\033[34mcoor mac addr : ");
+	pthread_mutex_lock(&mutex14_CoorInfo);
 	for(i=0;i<8;i++)
+	{
+		CoorInfo.mac_adr[i] = mac_adr[i];
 		printf("%02x ",CoorInfo.mac_adr[i]);
+	}
+	pthread_mutex_unlock(&mutex14_CoorInfo);
 	puts("\033[0m");
 }
 /***************************************************************
@@ -544,10 +551,18 @@ void get_mac(void)
 ***************************************************************/
 int get_gateway_mac_addr(unsigned char *macAddr)
 {
-	uint8 i=0;
+	uint8 i=0,sum=0;
+	pthread_mutex_lock(&mutex14_CoorInfo);
 	for(i=0;i<8;i++)
+	{
 		macAddr[i] = CoorInfo.mac_adr[i];
-	return 0;
+		sum |= CoorInfo.mac_adr[i];
+	}
+	pthread_mutex_unlock(&mutex14_CoorInfo);
+	if(sum == 0)
+		return -1;
+	else
+		return 0;
 }
 
 /***************************************************************

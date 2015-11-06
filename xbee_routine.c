@@ -41,6 +41,7 @@ pthread_mutex_t mutex10_serial_wbuf = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex11_route_record_buf = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex12_trans_req_buf = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex13_pSourcePathList = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex14_CoorInfo = PTHREAD_MUTEX_INITIALIZER;
 #if __XBEE_TEST_LAR_NODE__
 pthread_mutex_t mutex14_ts_buf = PTHREAD_MUTEX_INITIALIZER;
 #endif

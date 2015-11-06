@@ -9,6 +9,11 @@ SourceRouterLinkType *CreatRouterLink(uint8 *mac_adr,uint16 target_adr,uint8 *mi
 	uint8 i=0;
 
 	pRouterLink = (SourceRouterLinkType*)malloc(sizeof(SourceRouterLinkType));
+	if(pRouterLink == NULL)
+	{
+		printf("\033[31mno enough menmary\r\n");
+		return NULL;
+	}
 	for(i=0;i<8;i++)
 		pRouterLink->mac_adr[i] = mac_adr[i];
 	pRouterLink->target_adr = target_adr;
@@ -27,6 +32,11 @@ SourceRouterLinkType *CreatNode(uint8 *mac_adr,uint8 *target_adr)
 	uint8 i=0;
  	 
 	pRouterLink = (SourceRouterLinkType*)malloc(sizeof(SourceRouterLinkType));
+	if(pRouterLink == NULL)
+	{
+		printf("\033[31mno enough menmary\r\n");
+		return NULL;
+	}
 	for(i=0;i<8;i++)
 		pRouterLink->mac_adr[i] = mac_adr[i];
 	pRouterLink->target_adr = 0;
@@ -248,6 +258,11 @@ void queue_push_in(uint8 *mac_adr,uint16 net_adr,uint8 *data ,uint16 len ,uint8 
 	XBeeDataWaiteSendType *p;
 	uint16 i;
 	p = (XBeeDataWaiteSendType*)malloc(sizeof(XBeeDataWaiteSendType));
+	if(p == NULL)
+	{
+		printf("\033[31mno enough menmary\r\n");
+		return;
+	}
 	for(i=0;i<8;i++)
 		p->mac_adr[i] = *(mac_adr+i);
 	p->net_adr[0] = (uint8)net_adr;
