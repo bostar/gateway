@@ -36,7 +36,7 @@
 #include <arpa/inet.h>
 #include <time.h>
 
-
+unsigned char socketisok = 1;
 struct sockaddr_in addr_server;
 #define SERVER_IP	"121.43.69.176"
 #define SERVER_PORT	8099                                  
@@ -44,6 +44,7 @@ struct sockaddr_in addr_server;
 #define BACKLOG 10
 #define LENGTH  512                    // Buffer length     
 
+extern void parking_init(void);
 int sockfd;                                                                            
 void tcp_init(void)
 { 
@@ -95,12 +96,12 @@ int tcp_listen(unsigned char *revbuf,int bufsize)
             //printf ("OK: Receviced numbytes = %d\n", num);
             break;
     }
-    if(num > 0)
+    if(num == 0)
     {
-        time_in_second = time((time_t *)NULL);
-    }
-    if(time((time_t *)NULL) - time_in_second > 1 * 5)//60 * 60)
-    {
+        printf("socket is disconect\r\n");
+        printf("%s == %d\r\n",__func__,num);
+        socketisok = 0;
+        parking_init();
         close(sockfd);
         while((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         {
@@ -121,8 +122,44 @@ int tcp_listen(unsigned char *revbuf,int bufsize)
             usleep(1000000);
         }
         printf ("OK: Have connected to the server.\r\n");
+        socketisok = 1;
+        time_in_second = time((time_t *)NULL);
+
+    }
+    if(num > 0)
+    {
         time_in_second = time((time_t *)NULL);
     }
+    if(time((time_t *)NULL) - time_in_second > 1 * 5 *2)//60 * 60)
+    {
+        printf("socket is disconect\r\n");
+        printf("%s == %d\r\n",__func__,num);
+        socketisok = 0;
+        parking_init();
+        close(sockfd);
+        while((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+        {
+            printf("ERROR: Failed to obtain Socket Descriptor!\n");
+            usleep(1000000);
+        }
+
+        /* Fill the socket address struct */
+        remote_addr.sin_family = AF_INET;                   // Protocol Family
+        remote_addr.sin_port = htons(SERVER_PORT);                 // Port number
+        inet_pton(AF_INET, SERVER_IP, &remote_addr.sin_addr); // Net Address
+        bzero(&(remote_addr.sin_zero), 8);                  // Flush the rest of struct
+
+        /* Try to connect the remote */
+        while (connect(sockfd, (struct sockaddr *)&remote_addr,  sizeof(struct sockaddr)) == -1)
+        {
+            printf ("ERROR: Failed to connect to the host!\n");
+            usleep(1000000);
+        }
+        printf ("OK: Have connected to the server.\r\n");
+        socketisok = 1;
+        time_in_second = time((time_t *)NULL);
+    }
+    if(num > 0)
     revbuf[num] = '\0';
     //printf ("OK: Receviced string is: %s\n", revbuf);
     return num;
@@ -131,13 +168,44 @@ int tcp_listen(unsigned char *revbuf,int bufsize)
 int tcp_send_to_server(int len,unsigned char *bytes)
 {
     int num;
-    if((num = send(sockfd, bytes, len, MSG_DONTWAIT )) == -1)
+    static time_t time_in_second = 0;
+    struct sockaddr_in remote_addr;    // Host address information
+    if((num = send(sockfd, bytes, len, MSG_DONTWAIT )) > 0)
     {
-        printf("ERROR: Failed to sent string.\n");
+        //printf("ERROR: Failed to sent string.\n");
         //close(sockfd);
         //exit(1);
     }
-    //printf("OK: Sent %d bytes sucessful\n", num);
+    else
+    {
+        printf("socket is disconect\r\n");
+        printf("%s == %d\r\n",__func__,num);
+        socketisok = 0;
+        parking_init();
+        close(sockfd);
+        while((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+        {
+            printf("ERROR: Failed to obtain Socket Descriptor!\n");
+            usleep(1000000);
+        }
+
+        /* Fill the socket address struct */
+        remote_addr.sin_family = AF_INET;                   // Protocol Family
+        remote_addr.sin_port = htons(SERVER_PORT);                 // Port number
+        inet_pton(AF_INET, SERVER_IP, &remote_addr.sin_addr); // Net Address
+        bzero(&(remote_addr.sin_zero), 8);                  // Flush the rest of struct
+
+        /* Try to connect the remote */
+        while (connect(sockfd, (struct sockaddr *)&remote_addr,  sizeof(struct sockaddr)) == -1)
+        {
+            printf ("ERROR: Failed to connect to the host!\n");
+            usleep(1000000);
+        }
+        printf ("OK: Have connected to the server.\r\n");
+        socketisok = 1;
+        time_in_second = time((time_t *)NULL);
+
+    } 
     return num;
 }
 

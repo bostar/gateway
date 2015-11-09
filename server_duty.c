@@ -13,6 +13,7 @@ static const unsigned char mac_addr[8] = {0xf1,0xf2,0xf3,0xf4,0xf5,0xf6,0xf7,0xf
 unsigned short freetime = 30;
 unsigned short leavetime = 30;
 //static const unsigned char mac_addr[8] = {0x00,0x97,0x19,0x2b,0x00,0x15,0x8d,0x00};
+extern unsigned char socketisok;
 
 void get_channel_panid(unsigned char* channel,unsigned short*panid)
 {
@@ -128,24 +129,32 @@ time:
 
     while(1)
     {
-        if((need_to_send_to_sever == 1) || (time((time_t*)NULL) - time_out > 2))
+        if(socketisok == 1)
         {
-            time_out = time((time_t*)NULL);
-            //usleep(2000000);
-            /* send all parking info */
-            memcpy(wbuf,"data",4); // pkg head
-            ftime(&tp);
-            memcpy(&wbuf[4],(void *)&tp,8);
-            swap(8,&wbuf[4]);
-            *(int*)&wbuf[12] = get_depot_id();
-            swap(4,&wbuf[12]);
-            len = 16 + get_all_parking_state(&wbuf[16]);
-            while((tcp_send_to_server(len,wbuf)) < len)
+            if((need_to_send_to_sever == 1) || (time((time_t*)NULL) - time_out > 2))
             {
-                 printf("[SERVER]send to server err\r\n");
-                 usleep(1000000);
+                time_out = time((time_t*)NULL);
+                //usleep(2000000);
+                /* send all parking info */
+                memcpy(wbuf,"data",4); // pkg head
+                ftime(&tp);
+                memcpy(&wbuf[4],(void *)&tp,8);
+                swap(8,&wbuf[4]);
+                *(int*)&wbuf[12] = get_depot_id();
+                swap(4,&wbuf[12]);
+                len = 16 + get_all_parking_state(&wbuf[16]);
+                while((tcp_send_to_server(len,wbuf)) < len)
+                {
+                     printf("[SERVER]send to server err\r\n");
+                     usleep(1000000);
+                }
+                need_to_send_to_sever = 0;
             }
-            need_to_send_to_sever = 0;
+        }
+        else
+        {
+            usleep(1000000);
+            continue;
         }
         memset(rbuf,0,255);
         len = tcp_listen(rbuf,4);

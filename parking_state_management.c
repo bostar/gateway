@@ -156,7 +156,7 @@ void parking_state_check_routin(void)
         printf("\r\n");
         if(pstParkingState[loop].online == enOnline)
         {
-            if((time_in_second - pstParkingState[loop].offline_time_out) > 5)
+            if((time_in_second - pstParkingState[loop].offline_time_out) > 10)
             {
                 pstParkingState[loop].onlinecpy = enOffline;
                 pstParkingState[loop].online = enOffline;
@@ -369,6 +369,10 @@ void event_report(unsigned short netaddr,unsigned char event)
     {
         pthread_mutex_unlock(&parking_info_mutex);
         return ;
+    }
+    if((p->state == parking_state_init) && (event == en_lock_success))
+    {
+        putCtlCmd(p->parking_id,en_order_unlock);
     }
     if(p->event == event)
     {
@@ -623,6 +627,7 @@ void set_online(unsigned short netaddr)
                 pstParkingState[loop].state =  parking_state_init;
                 pstParkingState[loop].onlinecpy = enOnline;
             }
+            printf("\033[31m******** %d is update state ********\r\n\033[0m",netaddr);
             pstParkingState[loop].online = enOnline;
             pstParkingState[loop].offline_time_out = time((time_t*)NULL);
             need_to_send_to_sever = 1;
