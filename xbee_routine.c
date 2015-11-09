@@ -1,4 +1,8 @@
-//#include "xbee_include.h"
+/*****************************************************************************************************
+**name	xbee_routine.c
+**brief	主要包括硬件的初始化，通讯协议线程的建立及初始化，读取/写入串口数据
+**
+*****************************************************************************************************/
 
 #include "xbee_routine.h"
 #include "xbee_api.h"
@@ -10,7 +14,7 @@
 #include "gpio.h"
 /**************************gloable variable************************/
 CircularQueueType serial_rbuf;			//the serial read buffer
-#if __XBEE_TEST_LAR_NODE__
+#if 0//__XBEE_TEST_LAR_NODE__
 SourceRouterLinkType *pLinkHead=NULL;
 #endif
 uint8 send_xbee_state=0;
@@ -22,12 +26,12 @@ CircularQueueType serial_wbuf;			//the serial write buffer
 CircularQueueType trans_req_buf;		//xbee transmit status API buffer
 CircularQueueType route_record_buf;		//
 SourceRouterLinkType *pSourcePathList=NULL;
-#if __XBEE_TEST_LAR_NODE__
+#if 0//__XBEE_TEST_LAR_NODE__
 CircularQueueType ts_buf;
 #endif
 /*************************** mutex ********************************/
 pthread_mutex_t mutex01_serial_rbuf = PTHREAD_MUTEX_INITIALIZER;
-#if __XBEE_TEST_LAR_NODE__
+#if 0//__XBEE_TEST_LAR_NODE__
 pthread_mutex_t mutex02_pLinkHead = PTHREAD_MUTEX_INITIALIZER;
 #endif
 pthread_mutex_t mutex03_send_xbee_state = PTHREAD_MUTEX_INITIALIZER;
@@ -42,7 +46,7 @@ pthread_mutex_t mutex11_route_record_buf = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex12_trans_req_buf = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex13_pSourcePathList = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex14_CoorInfo = PTHREAD_MUTEX_INITIALIZER;
-#if __XBEE_TEST_LAR_NODE__
+#if 0//__XBEE_TEST_LAR_NODE__
 pthread_mutex_t mutex14_ts_buf = PTHREAD_MUTEX_INITIALIZER;
 #endif
 /*************************** cond *********************************/
@@ -60,7 +64,7 @@ void xbee_routine_thread(void)
 
 	for(_i=0;_i<8;_i++)
 		_adr[_i] = 0;
-#if __XBEE_TEST_LAR_NODE__
+#if 0//__XBEE_TEST_LAR_NODE__
 	pthread_mutex_lock(&mutex02_pLinkHead);
 	pLinkHead = CreatRouterLink(_adr,0,HeadMidAdr,0); //test list
 	pthread_mutex_unlock(&mutex02_pLinkHead);
@@ -158,7 +162,7 @@ void xbee_routine_thread(void)
         printf ("Create xbee_routine_thread_test error!n");
     }
 #endif
-#if __XBEE_TEST_LAR_NODE__
+#if 0//__XBEE_TEST_LAR_NODE__
 	printf("\033[33mstart xbee_routine_thread_test_lar_node...\033[0m\r\n");
     ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_test_lar_node,NULL);
     if(ret!=0){
@@ -169,7 +173,8 @@ void xbee_routine_thread(void)
 	//XBeeSetAR(2,NO_RES);
 	while(1)
 	{
-#if __XBEE_TEST_LAR_NODE__
+		usleep(2000000);
+#if 0//__XBEE_TEST_LAR_NODE__
 		pthread_mutex_lock(&mutex03_send_xbee_state);
 		pthread_mutex_lock(&mutex10_serial_wbuf);
 		pthread_mutex_lock(&mutex12_trans_req_buf);
@@ -186,7 +191,6 @@ void xbee_routine_thread(void)
 		WrLogTxt();
 		pthread_mutex_unlock(&mutex02_pLinkHead);
 #endif
-		usleep(2000000);
 	}
 }
 
@@ -198,7 +202,7 @@ void xbee_routine_thread_process_other_api_buf(void)
 	{
 		pthread_mutex_lock(&mutex09_xbee_other_api_buf);
 		len = read_one_package_f_queue( &xbee_other_api_buf , rbuf );
-		pthread_mutex_unlock(&mutex09_xbee_other_api_buf);	
+		pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
 		if(len)
 	 	{
 			switch(rbuf[3])
@@ -209,7 +213,10 @@ void xbee_routine_thread_process_other_api_buf(void)
 					else if(rbuf[15]=='C' && rbuf[16]=='T' && rbuf[17]=='L')
 						XBeeProcessCTL(rbuf);
 					else if(rbuf[15]=='S' && rbuf[16]=='E' && rbuf[17]=='N')
+					{	
+						//TestPrintf("buf",len,rbuf);						
 						XBeeProcessSEN(rbuf);
+					}
 					else if(rbuf[15]=='O' && rbuf[16]=='T' && rbuf[17]=='A')
 					{}
 					break;
@@ -248,7 +255,7 @@ void xbee_routine_thread_process_trans_status_buf(void)
 				send_xbee_state--;
 			pthread_cond_signal(&cond_send_xbee);
 			pthread_mutex_unlock(&mutex03_send_xbee_state);
-#if __XBEE_TEST_LAR_NODE__
+#if 0//__XBEE_TEST_LAR_NODE__
 			if(*(rbuf+8) != 0)
 			{
 				pthread_mutex_lock(&mutex14_ts_buf);
@@ -452,7 +459,7 @@ void xbee_routine_thread_process_serial_rbuf(void)
 		usleep(15000);
 	}
 }	
-#if __XBEE_TEST_LAR_NODE__
+#if 0//__XBEE_TEST_LAR_NODE__
 static int8 start='0';
 void xbee_routine_thread_test_lar_node(void)
 {
@@ -585,35 +592,40 @@ void xbee_routine_thread_test(void)
 void TestPrintf(int8* sss,int16 lens,uint8 *buf)
 {
 	int loop=0;
-	if((int8)*(buf+15) == 'S' && (int8)*(buf+16) == 'E' && (int8)*(buf+17) == 'N')
-		return;
+
 	printf("\033[34m数据序列--%s:数据长度--%d; 数据内容:\033[0m\n",sss,lens);
 	for( loop = 0;loop < lens;loop ++)
 	{
-		if(*(buf+3) == 0x88)
+		switch(*(buf+3))
 		{
-			if(loop==5 || loop==6)
-				printf("\033[32m%c \033[0m",(int8)buf[loop]);
-			else
+			case 0x88:
+				if(loop==5 || loop==6)
+					printf("\033[32m%c \033[0m",(int8)buf[loop]);
+				else
+					printf("0x%02x ",buf[loop]);
+				break;
+			case 0x90:
+				if(loop==15 || loop==16 || loop==17)
+					printf("\033[32m%c \033[0m",(int8)buf[loop]);
+				else
+					printf("0x%02x ",buf[loop]);
+				break;
+			case 0xa1:
+				if(loop == 3)
+					printf("\033[32m0x%02x \033[0m",buf[loop]);
+				else
+					printf("0x%02x ",buf[loop]);
+				break;
+			case 0x8b:
+				if(loop == 3)
+					printf("\033[35m0x%02x \033[0m",buf[loop]);
+				else
+					printf("0x%02x ",buf[loop]);
+				break;
+			default:
 				printf("0x%02x ",buf[loop]);
+				break;
 		}
-		else if(*(buf+3) == 0x90)
-		{
-			if(loop==15 || loop==16 || loop==17)
-				printf("\033[32m%c \033[0m",(int8)buf[loop]);
-			else
-				printf("0x%02x ",buf[loop]);
-		}
-		else if(*(buf+3) == 0xa1 && loop == 3)
-		{
-			printf("\033[32m0x%02x \033[0m",buf[loop]);
-		}
-		else if(*(buf+3) == 0x8b && loop == 3)
-		{
-			printf("\033[35m0x%02x \033[0m",buf[loop]);
-		}
-		else
-			printf("0x%02x ",buf[loop]);
 	}
 	printf("\n");
 }

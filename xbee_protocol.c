@@ -1,3 +1,8 @@
+/*****************************************************************************************************
+**name	xbee_protocol.c
+**brief	主要包括xbee通讯协议函数/上报的事件处理函数
+**
+*****************************************************************************************************/
 #include "xbee_protocol.h"
 #include "xbee_atcmd.h"
 #include "xbee_bsp.h"
@@ -56,7 +61,7 @@ void XBeeProcessCFG(uint8 *rbuf)
 			if(temp == 0)	//属于该网络,允许加入网络
 			{
 				XBeeJionEnable((rbuf+4),(rbuf+12));
-				//printf("\033[33m\033[1m已发送允许入网指令 \033[0m \n");
+				printf("\033[33m\033[1ma locker has jioned the park net...\033[0m \n");
 				set_node_online(rbuf+4);
 				XBeeSetAR(0,RES);
 				//printf("\033[33m\033[1m已将锁加入网络 \033[0m \n");
@@ -65,7 +70,7 @@ void XBeeProcessCFG(uint8 *rbuf)
 			else if(temp == -1)
 			{
 				XBeeJionDisable((rbuf+4),(rbuf+12));
-				printf("\033[33m\033[1m已发送拒绝入网指令 \033[0m \n");
+				printf("\033[31m\r\nprevent a locker jioned	the park net...\033[1m\033[0m \r\n");
 				pthread_mutex_lock(&mutex13_pSourcePathList);
 				p = FindMacAdr(pSourcePathList,rbuf+4); 
 				if(p != NULL)
@@ -113,7 +118,7 @@ void XBeeProcessSEN(uint8 *rbuf)
 		//set_node_online(rbuf+4);
 	switch(*(rbuf+18))
 	{
-		case 1:
+		case 0x01:
 			if(*(rbuf+19) == ParkingUsed)
 			{
 				//printf("\033[33m\033[1m当前车位有车辆\033[0m \n");
