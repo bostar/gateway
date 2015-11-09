@@ -156,7 +156,7 @@ void parking_state_check_routin(void)
         printf("\r\n");
         if(pstParkingState[loop].online == enOnline)
         {
-            if((time_in_second - pstParkingState[loop].offline_time_out) > 10)
+            if((time_in_second - pstParkingState[loop].offline_time_out) > 20)
             {
                 pstParkingState[loop].onlinecpy = enOffline;
                 pstParkingState[loop].online = enOffline;

@@ -163,6 +163,7 @@ void ota_thread(void)
         }
         else
         {
+          #if 0
             printf("do you want to erase all flash?(y/n)\r\n");
             do{
                 unsigned char ch = 0;
@@ -199,6 +200,7 @@ void ota_thread(void)
                 {
                 }
             }while(1);
+          #endif
         }
 #if 1    
         /* transfer ota datas ... */
