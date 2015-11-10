@@ -316,6 +316,7 @@ void menu_thread(void)
 			printf("zlg_zm516x > ");
 			pthread_mutex_unlock(&mut);
 		}
+    usleep(200000);
 	}
 }
 
