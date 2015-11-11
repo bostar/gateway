@@ -13,7 +13,6 @@
 #include <sys/timeb.h>
 #include "ctl_cmd_cache.h"
 #include "ota.h"
-#define LEN	1000
 
 //#define __USE_ZM516X__
 //#define __USE_XBEE__
@@ -23,57 +22,48 @@
 #endif
 
 #if defined(__USE_ZM516X__)
-unsigned char uart_rcv_buf[LEN];
-void test_cmd_thread(void)
+void zigbee_routine_thread(void)
 {
-    int ret,ret2;
-    pthread_t id,id2;
+    int ret;
+    pthread_t id;
+
+    init_zlg_zm516x();
 	
-	
+    ret=pthread_create(&id,NULL,(void *) communicate_thread, NULL);
+    if(ret!=0){
+        printf ("Create communicate_thread error!n");
+    }  
+
     ret=pthread_create(&id,NULL,(void *) menu_thread, NULL);
     if(ret!=0){
         printf ("Create menu_thread error!n");
     }
-    ret2=pthread_create(&id2,NULL,(void *) communicate_thread, NULL);
-    if(ret2!=0){
-        printf ("Create communicate_thread error!n");
-    }  
-	
-    while(1)
-    {
-        usleep(10000);	
-    }
-}
 
-void uart_read_thread(void)
-{
-    init_zlg_zm516x();
-    
-    int ret2;
-    pthread_t id2;
-    ret2=pthread_create(&id2,NULL,(void *) test_cmd_thread,NULL);
-    if(ret2!=0){
-        printf ("Create test_cmd_thread error!n");
-    }
     while(1)
     {
-        usleep(1000);
+        usleep(10000);
     }
 }
 #endif
+
 int main(int argc, char *argv[])
 {
     int ret;
     pthread_t id;
-	if(initCtlCmdCache())
-		printf("init ctl cmd cache failed!\r\n");
+
+#if defined(__USE_ZM516X__)
+    if(initCtlCmdCache())
+    {
+        printf("init ctl cmd cache failed!\r\n");
+    }
+#endif
     ret=pthread_create(&id,NULL,(void *) server_duty_thread,NULL);
     if(ret!=0){
         printf ("Create server_duty_thread error!n");
     }
 #if defined(__USE_ZM516X__)
     printf("start uart_read_thread...\r\n");
-    ret=pthread_create(&id,NULL,(void *) uart_read_thread,NULL);
+    ret=pthread_create(&id,NULL,(void *) zigbee_routine_thread,NULL);
     if(ret!=0){
         printf ("Create uart_read_thread error!n");
     }
