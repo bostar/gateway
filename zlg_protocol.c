@@ -12,16 +12,13 @@
 #include "parking_state_management.h"
 
 unsigned char iEEEAddress[8];
-unsigned short requestAddress;
-const unsigned short addresses[20];
-
-void mac2str(char *str,const char *ieeeAddress);
+static unsigned short requestAddress;
 
 
 void communicate_thread(void)
 {
-    unsigned char rbuf[255];
-    int rlen;
+    static unsigned char rbuf[50];
+    int rlen,rlened;
     unsigned short allocLocalAddress;
     unsigned char allocChannel;
     unsigned short allocPanid;
@@ -30,24 +27,29 @@ void communicate_thread(void)
 
     while(1)
     {
-        memset(rbuf, 0x00, 255);
+        memset(rbuf, 0x00, 50);
         do{
             rlen = ReadComPort(rbuf,1);
         }while(!(rbuf[0] == 'C' || rbuf[0] == 'S'));
-        usleep(2000);
-        rlen = ReadComPort(rbuf+1,1);
-        rlen = ReadComPort(rbuf+2,1);
+        do{
+            rlen = ReadComPort(rbuf+1,1);
+        }while( rlen != 1 );
+        do{
+            rlen = ReadComPort(rbuf+2,1);
+        }while( rlen != 1 );
         if(rbuf[0] == 'C' && rbuf[1] == 'F' && rbuf[2] == 'G')
         {
-            rlen = ReadComPort(rbuf+3,1);
-            if(rlen != 1)
-                continue;
+            do{
+                rlen = ReadComPort(rbuf+3,1);
+            }while( rlen != 1 );
             switch(rbuf[3])
             {
                 case cmdCheckIn:
-                    rlen = ReadComPort(rbuf+4,8);
-                    if(rlen != 8)
-                        break;
+                    rlened = 0;
+                    do{
+                        rlen = ReadComPort(rbuf + 4 + rlened, 8 - rlened);
+                        rlened += rlen;
+                    }while(rlened != 8);
                     memcpy(&iEEEAddress,&rbuf[4],8);
                     mac2str(macstr,(const char *)iEEEAddress);
                     printf("check in node ieee address is:0x%s\r\n",macstr);
@@ -67,23 +69,28 @@ void communicate_thread(void)
                         printf("server can not alloc address\r\n");
                 break;
                 case cmdAckLinkTest:
-                    rlen = ReadComPort(rbuf+4,7);
-                    if(rlen != 7)
-                        break;
+                    rlened = 0;
+                    do{
+                        rlen = ReadComPort(rbuf + 4 + rlened, 7 - rlened);
+                        rlened += rlen;
+                    }while(rlened != 7);
                     memcpy(&iEEEAddress,&rbuf[4],8);
                     mac2str(macstr,(const char *)iEEEAddress);
                     printf("0x%s LinkTest ACK...\r\n",macstr);
                 break;
                 case cmdDataRequest:
-		    rlen = ReadComPort(rbuf+4,5);
-                    if(rlen != 5)
-                        break;
+                    rlened = 0;
+                    do{
+                        rlen = ReadComPort(rbuf + 4 + rlened, 5 - rlened);
+                        rlened += rlen;
+                    }while(rlened != 5);
                     requestAddress = (unsigned short)rbuf[4] << 8 | rbuf[5];
+                    //mark_node_last_online_time(requestAddress);
                     set_online(requestAddress);
                     event_report(requestAddress,rbuf[6]);
                     event_report(requestAddress,rbuf[7]);
-                    if(rbuf[8] == 0x00)
-                      printf("test sucess");
+                    /*if(rbuf[8] == 0x00)
+                      printf("test sucess");*/
                     if(!getCtlCmd(requestAddress,&ctl_cmd))
                     {  
                         switchLockControl(requestAddress,ctl_cmd);
@@ -99,29 +106,29 @@ void communicate_thread(void)
 
         if(rbuf[0] == 'S' && rbuf[1] == 'E' && rbuf[2] == 'N')
         {
-            rlen = ReadComPort(rbuf+3,1);
-            if(rlen != 1)
-                continue;
+            do{
+                rlen = ReadComPort(rbuf+3,1);
+            }while( rlen != 1 );
             switch(rbuf[3])
             {
                 case cmdEventReport://now this case is useless
-                    rlen = ReadComPort(rbuf+4,3);
-                    if(rlen != 3)
-                        break;
+                    do{
+                        rlen = ReadComPort(rbuf+4,3);
+                    }while( rlen != 3);
                     requestAddress = (unsigned short)rbuf[5] << 8 | rbuf[6];
                     printf("node 0x%04x is reporting event...\r\n",requestAddress);
                     event_report(requestAddress,rbuf[4]);
                 break;
                 case cmdBatteryRemainReport:
-                    rlen = ReadComPort(rbuf+4,3);
-                    if(rlen != 3)
-                        break;
+                    do{
+                        rlen = ReadComPort(rbuf+4,3);
+                    }while( rlen != 3);
                     requestAddress = (unsigned short)rbuf[5] << 8 | rbuf[6];
                 break;
                 case 0x03:
-                    rlen = ReadComPort(rbuf+4,4);
-                    if(rlen != 4)
-                        break;
+                    do{
+                        rlen = ReadComPort(rbuf+4,4);
+                    }while( rlen != 4);
                     requestAddress = (unsigned short)rbuf[6] << 8 | rbuf[7];
                     printf("-------------------node 0x%04x: voltage is:0x%04x\r\n",requestAddress,rbuf[4] << 8| rbuf[5]);
                 break;
@@ -130,83 +137,6 @@ void communicate_thread(void)
             }
         }
     }
-#if 0
-    while(1)
-    {
-        rlen = ReadComPort(rbuf,255);
-//        pthread_mutex_lock(&mut);
-        rlen = ReadComPort(rbuf,255);
-//        pthread_mutex_unlock(&mut);
-        if(rlen)
-        {
-            printf("recevie form node %d bytes\r\n",rlen);
-            if(rbuf[0] == 'C' && rbuf[1] == 'F' && rbuf[2] == 'G')
-            {
-                switch(rbuf[3])
-                {
-                    case cmdCheckIn:
-                        memcpy(&iEEEAddress,&rbuf[4],8);
-                        mac2str(macstr,(const char *)iEEEAddress);
-                        printf("check in node ieee address is:0x%s\r\n",macstr);
-                        if(!get_local_addr((unsigned char *)&allocLocalAddress,(unsigned char *)&iEEEAddress))
-                        {
-                            get_channel_panid(&allocChannel,&allocPanid);
-                            ackRegisterNetwork(allocLocalAddress,Allow,0x00,15);
-                            //ackRegisterNetwork(allocLocalAddress,Allow,allocPanid,allocChannel);
-                            usleep(100000);
-                            printf("server alloc node address:0x%04x success\r\n",allocLocalAddress);
-                            set_node_online((unsigned char *)&iEEEAddress);
-                            if(networking_over())
-                            {
-                                printf ("***********************networking_over...\r\n!n");
-                            } 
-                        }
-                        else
-                            printf("server can not alloc address\r\n");
-                    break;
-                    case cmdAckLinkTest:
-                        memcpy(&iEEEAddress,&rbuf[4],8);
-                        mac2str(macstr,(const char *)iEEEAddress);
-                        printf("0x%s LinkTest ACK...\r\n",macstr);
-                    break;
-                    case cmdDataRequest:
-                        requestAddress = (unsigned short)rbuf[4] << 8 | rbuf[5];
-//                        printf("node 0x%04x is requesting data...\r\n",requestAddress);
-                        if(!getCtlCmd(requestAddress,&ctl_cmd))
-                            switchLockControl(requestAddress,ctl_cmd);
-                        else
-                            printf("cache not exist node 0x%04x ctl_cmd\r\n",requestAddress);
-                    break;
-                    default:
-                    break;
-                }
-            }
-            if(rbuf[0] == 'S' && rbuf[1] == 'E' && rbuf[2] == 'N')
-            {
-                switch(rbuf[3])
-                {
-                    case cmdEventReport:
-                        requestAddress = (unsigned short)rbuf[5] << 8 | rbuf[6];
-                        ackEventReport(requestAddress);
-                        printf("node 0x%04x is reporting event...\r\n",requestAddress);
-                         event_report(requestAddress,rbuf[4]);
-                    break;
-                    case cmdBatteryRemainReport:
-                        requestAddress = (unsigned short)rbuf[5] << 8 | rbuf[6];
-                    break;
-                    case 0x03:
-                        requestAddress = (unsigned short)rbuf[6] << 8 | rbuf[7];
-                        printf("-------------------node 0x%04x: voltage is:0x%04x\r\n",requestAddress,rbuf[4] << 8| rbuf[5]);
-                    break;
-                    default:
-                    break;
-                }
-            }
-            memset(rbuf,0x0,rlen);
-        }
-        usleep(10000);
-    }
-#endif
 }
 
 void mac2str(char *str,const char *ieeeAddress)
@@ -240,8 +170,6 @@ void ackRegisterNetwork(unsigned short NetAddress,ackCmd_t cmd,unsigned short pa
     wbuf[16] = panid;
     wbuf[17] = channel;
 
-//     set_temporary_DestAddr(0xfffe);
-//    set_temporary_cast_mode(unicast);
     usleep(100000);
     WriteComPort((unsigned char *)wbuf, 18);
 
@@ -263,8 +191,6 @@ void testLink(const char * ieeeAddress)
     wbuf[3] = cmdLinkTest;
     memcpy(&wbuf[4],ieeeAddress,8);
     
-//    set_temporary_cast_mode(unicast);
-//    usleep(100000);
     WriteComPort( wbuf, 12);
     
     mac2str(str,ieeeAddress);
@@ -280,8 +206,6 @@ void startSensorCalibration(void)
     wbuf[2] = 'N';
     wbuf[3] = cmdSensorCalibration;
     
-//    set_temporary_cast_mode(broadcast);
-//    usleep(100000);
     WriteComPort(wbuf, 4);
     
     printf("taking sensor calibration...\r\n"); 
@@ -299,9 +223,6 @@ void testBeep(unsigned short DstAddr,unsigned char cmd)
     wbuf[5] = DstAddr >> 8;
     wbuf[6] = DstAddr;
     
-//    set_temporary_DestAddr(DstAddr);
-//    set_temporary_cast_mode(unicast);
-//    usleep(100000);
     WriteComPort(wbuf, 7);
     
     if(cmd == cmdSilence)
@@ -322,9 +243,6 @@ void testLed(unsigned short DstAddr,unsigned char ioLevel)
     wbuf[5] = DstAddr >> 8;
     wbuf[6] = DstAddr;
     
-//    set_temporary_DestAddr(DstAddr);
-//    set_temporary_cast_mode(unicast);
-//    usleep(100000);
     WriteComPort(wbuf, 7);
     
     printf("led value is : 0x%02x\r\n",ioLevel);
@@ -342,9 +260,6 @@ void testMotor(unsigned short DstAddr,unsigned char cmd)
     wbuf[5] = DstAddr >> 8;
     wbuf[6] = DstAddr;
     
-//    set_temporary_DestAddr(DstAddr);
-//    set_temporary_cast_mode(unicast);
-//    usleep(100000);
     WriteComPort(wbuf, 7);
     
     switch(cmd)
@@ -374,8 +289,6 @@ void restoreFactoryConfig(unsigned short DstAddr)
     wbuf[4] = DstAddr >> 8;
     wbuf[5] = DstAddr;
 
-//    set_temporary_DestAddr(DstAddr);
-//        usleep(100000);
     WriteComPort(wbuf, 6);
     printf("restore node 0x%04x factory config...\r\n",DstAddr);
 }
@@ -391,9 +304,6 @@ void switchLockControl(unsigned short DstAddr,unsigned char cmd)
     wbuf[5] = DstAddr >> 8;
     wbuf[6] = DstAddr;
         
-//    set_temporary_cast_mode(unicast);
-//    set_temporary_DestAddr(DstAddr);
-//    usleep(100000);
     WriteComPort(wbuf, 7);
 }
 
@@ -406,9 +316,6 @@ void ackNoControlCmd(unsigned short DstAddr)
     wbuf[3] = 0x01;//cmd
     wbuf[4] = 0x00;
 
-//    set_temporary_cast_mode(unicast);
-//    set_temporary_DestAddr(DstAddr);
-//    usleep(100000);
     WriteComPort(wbuf, 5);
 }
 
@@ -524,3 +431,24 @@ void reset_node_sensor(unsigned short DstAddr)
 }
 
 
+void mark_node_last_online_time(unsigned short node_address)
+{
+    static time_t last_time[9], this_time;
+    int time_interval[9],num;
+    static int max_interval[9] = {0};
+    this_time = time((time_t *)NULL);
+    num = node_address;
+    if( num > 9)
+    {
+          printf("#####################\r\n");
+          return;
+    }
+    num = num - 1;
+    time_interval[num] = this_time - last_time[num];
+    last_time[num] = this_time;
+    if( (time_interval[num] > max_interval[num]) && (time_interval[num] < 100))
+    {
+          max_interval[num] = time_interval[num];
+    }
+    printf(BLUE"node 0x%04x last online time is %ds before,max_interval = %ds\r\n"NONE,node_address,time_interval[num],max_interval[num]); 
+}
