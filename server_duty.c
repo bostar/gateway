@@ -160,7 +160,7 @@ time:
         len = tcp_listen(rbuf,4);
         if(len <= 0)
         {
-            usleep(2000);
+            usleep(200000);
             continue;
         }
         if(memcmp("TALL",rbuf,4) == 0)
