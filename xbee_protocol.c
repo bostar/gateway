@@ -114,6 +114,7 @@ void XBeeProcessCTL(uint8 *rbuf)
 *******************************************************/
 void XBeeProcessSEN(uint8 *rbuf)
 {
+	get_local_addr(rbuf+12,rbuf+4);
 	if(*(rbuf+19) == 0x01)	//传感器事件使能
 	{
 		if(*(rbuf+20) == ParkingUsed)
@@ -367,6 +368,7 @@ int16 XBeePutCtlCmd(uint8 *ieeeadr,uint16 netadr,uint8 lockstate)
 	uint8 netadr_s[2];
 	netadr_s[1] = (uint8)(netadr>>8);
 	netadr_s[0] = (uint8)netadr;
+	printf("\033[31m 控制锁指令\033[0m\r\n");
 	XBeeUnicastTrans(ieeeadr,netadr_s,Default,data,5,RES);
 	return 0;
 }
