@@ -214,7 +214,7 @@ void xbee_routine_thread_process_other_api_buf(void)
 						XBeeProcessCTL(rbuf);
 					else if(rbuf[15]=='S' && rbuf[16]=='E' && rbuf[17]=='N')
 					{	
-						//TestPrintf("buf",len,rbuf);						
+						TestPrintf("buf",len,rbuf);						
 						XBeeProcessSEN(rbuf);
 					}
 					else if(rbuf[15]=='O' && rbuf[16]=='T' && rbuf[17]=='A')

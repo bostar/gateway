@@ -70,7 +70,7 @@ void XBeeProcessCFG(uint8 *rbuf)
 			else if(temp == -1)
 			{
 				XBeeJionDisable((rbuf+4),(rbuf+12));
-				printf("\033[31m\r\nprevent a locker jioned	the park net...\033[1m\033[0m \r\n");
+				printf("\033[31m\r\nprevent a locker jioned	the park net...\033[0m \r\n");
 				pthread_mutex_lock(&mutex13_pSourcePathList);
 				p = FindMacAdr(pSourcePathList,rbuf+4); 
 				if(p != NULL)
@@ -114,56 +114,46 @@ void XBeeProcessCTL(uint8 *rbuf)
 *******************************************************/
 void XBeeProcessSEN(uint8 *rbuf)
 {
-	//if(get_local_addr(rbuf+12,rbuf+4) == 0)
-		//set_node_online(rbuf+4);
-	switch(*(rbuf+18))
+	if(*(rbuf+19) == 0x01)	//传感器事件使能
 	{
-		case 0x01:
-			if(*(rbuf+19) == ParkingUsed)
-			{
-				//printf("\033[33m\033[1m当前车位有车辆\033[0m \n");
-				event_report( char_to_int(rbuf+12),en_vehicle_comming);
-			}
-			else if(*(rbuf+19) == ParkingUnUsed)
-				{ 
-					//printf("\033[33m\033[1m当前车位为空\033[0m \n");
-					event_report( char_to_int(rbuf+12),en_vehicle_leave);
-				}
-			else if(*(rbuf+19) == ParkLockSuccess)
-				{ 
-					//printf("\033[33m\033[1m车位锁定成功 \033[0m \n");
-#if __XBEE_TEST_LAR_NODE__
-					SourceRouterLinkType *p=NULL;
-					pthread_mutex_lock(&mutex02_pLinkHead);
-					p = FindMacAdr(pLinkHead,rbuf+4);
-					if(p != NULL)
-						p->rev_rep_times++;
-					pthread_mutex_unlock(&mutex02_pLinkHead);
-#else
-					event_report( char_to_int(rbuf+12),en_lock_success);
-#endif
-				}
-			else if(*(rbuf+19) == ParkLockFailed)
-				{
-					//printf("\033[33m\033[1m车位锁定失败 \033[0m \n");	
-					event_report( char_to_int(rbuf+12),en_lock_failed);
-				} 
-			else if(*(rbuf+19) == ParkUnlockSuccess)
-				{ 
-					//printf("\033[33m\033[1m车位解锁成功 \033[0m \n");
-					event_report( char_to_int(rbuf+12),en_unlock_success);
-				}
-			else if(*(rbuf+19) == ParkUnlockFailed)
-				{ 
-					//printf("\033[33m\033[1m车位解锁失败 \033[0m \n");
-					event_report( char_to_int(rbuf+12),en_unlock_failed);
-				}
-			break;
-		case bat_event:
-			break;
-		default:
-			break;
-	return;
+		if(*(rbuf+20) == ParkingUsed)
+		{
+			//printf("\033[33m\033[1m当前车位有车辆\033[0m \n");
+			event_report( char_to_int(rbuf+12),en_vehicle_comming);
+		}
+		else if(*(rbuf+20) == ParkingUnUsed)
+		{
+			//printf("\033[33m\033[1m当前车位为空\033[0m \n");
+			event_report( char_to_int(rbuf+12),en_vehicle_leave);
+		}
+	}
+	if(*(rbuf+21) == 0x01)	//锁状态上报
+	{
+		switch(*(rbuf+22))
+		{
+			case ParkLockSuccess:
+				//printf("\033[33m\033[1m车位锁定成功 \033[0m \n");
+				event_report( char_to_int(rbuf+12),en_lock_success);
+				break;
+			case ParkLockFailed:
+				//printf("\033[33m\033[1m车位锁定失败 \033[0m \n");	
+				event_report( char_to_int(rbuf+12),en_lock_failed);
+				break;
+			case ParkUnlockSuccess:
+				//printf("\033[33m\033[1m车位解锁成功 \033[0m \n");
+				event_report( char_to_int(rbuf+12),en_unlock_success);
+				break;
+			case ParkUnlockFailed:
+				//printf("\033[33m\033[1m车位解锁失败 \033[0m \n");
+				event_report( char_to_int(rbuf+12),en_unlock_failed);
+				break;
+			default:
+				break;
+		}
+	}
+	if(*(rbuf+23) == 0x01)	//电量上报
+	{
+		
 	}
 }
 /*************************************************

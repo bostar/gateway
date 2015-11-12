@@ -338,8 +338,15 @@ void event_report(unsigned short netaddr,unsigned char event)
     time_t time_in_second = time((time_t *)NULL);
 #if __XBEE_TEST_LAR_NODE__
 #else
-    printf("[SERVER:]%04x ",netaddr);
-    printf("%s",event_string[event]);
+    printf("\033[35m[SERVER:]%04x \033[0m",netaddr);
+#if 1
+	if(event < 2)
+    	printf("\033[34m%s\033[0m",event_string[event]);
+	else
+		printf("\033[33m%s\033[0m",event_string[event]);
+#else
+	printf("\033[34m%s\033[0m",event_string[event]);
+#endif
 #endif
     pthread_mutex_lock(&parking_info_mutex);
 
