@@ -128,6 +128,10 @@ void XBeeProcessSEN(uint8 *rbuf)
 			event_report( char_to_int(rbuf+12),en_vehicle_leave);
 		}
 	}
+	else
+	{
+		printf("\033[31m\033[1m传感器事件未上报\033[0m\n");
+	}
 	if(*(rbuf+21) == 0x01)	//锁状态上报
 	{
 		switch(*(rbuf+22))
@@ -151,6 +155,10 @@ void XBeeProcessSEN(uint8 *rbuf)
 			default:
 				break;
 		}
+	}
+	else
+	{
+		printf("\033[31m\033[1m锁事件未上报\033[0m\n");
 	}
 	if(*(rbuf+23) == 0x01)	//电量上报
 	{
