@@ -9,7 +9,7 @@
 //数据发送/接收配置
 //#define _SEND_DATA_MAX				4				//最大同时发送数据包数量
 //#define _SEND_DATA_TIMEOUT			300000			//数据包应答最大等待时间（us）
-#define _REV_DATA_MAX           	10485760		//串口最大缓存数据（字节）
+#define _REV_DATA_MAX           	1048576		//串口最大缓存数据（字节）
 
 
 
