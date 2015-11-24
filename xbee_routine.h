@@ -42,6 +42,7 @@ typedef struct
 	uint8 nj;
 	uint8 ar;
 	uint8 mac_adr[8];
+	int8 net_state;
 }CoorInfoType;
 
 struct XBeeDataWaiteSend
@@ -106,6 +107,7 @@ void xbee_routine_thread_process_trans_status_buf(void);
 void xbee_routine_thread_process_trans_req_buf(void);
 void xbee_routine_thread_process_route_record_buf(void);
 
+extern int get_depot_size(void);
 
 void xbee_routine_thread_test(void);
 #if __XBEE_TEST_LAR_NODE__

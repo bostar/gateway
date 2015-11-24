@@ -32,54 +32,51 @@ void XBeeProcessCFG(uint8 *rbuf)
 {
 	int16 temp;
 	SourceRouterLinkType *p;
-	switch(*(rbuf+18))
+
+	if(*(rbuf+18) == net_request)
 	{
-		case net_request:
 #if defined __XBEE_TEST_LAR_NODE__
-			temp = 0;
-			if(temp == 0)  //属于该网络,允许加入网络
+		temp = 0;
+		if(temp == 0)  //属于该网络,允许加入网络
+		{
+			for(temp=0;temp<8;temp++)
+				printf("%02x ",*(rbuf+4+temp));
+			printf("\n");
+			XBeeJionEnable((rbuf+4),(rbuf+12));
+			pthread_mutex_lock(&mutex02_pLinkHead);
+			p = FindMacAdr(pLinkHead,rbuf+4); 
+			if(p == NULL)
+				AddData(pLinkHead,CreatNode(rbuf+4,rbuf+12));
+			else
 			{
-				for(temp=0;temp<8;temp++)
-					printf("%02x ",*(rbuf+4+temp));
-				printf("\n");
-				XBeeJionEnable((rbuf+4),(rbuf+12));
-				pthread_mutex_lock(&mutex02_pLinkHead);
-				p = FindMacAdr(pLinkHead,rbuf+4); 
-				if(p == NULL)
-					AddData(pLinkHead,CreatNode(rbuf+4,rbuf+12));
-				else
-				{
-					p->target_adr = 0;
-					p->target_adr |= (uint16)*(rbuf+13);
-					p->target_adr |= ((uint16)*(rbuf+12))<<8;
-				}
-				pthread_mutex_unlock(&mutex02_pLinkHead);
-				XBeeSetAR(0,RES);
+				p->target_adr = 0;
+				p->target_adr |= (uint16)*(rbuf+13);
+				p->target_adr |= ((uint16)*(rbuf+12))<<8;
 			}
+			pthread_mutex_unlock(&mutex02_pLinkHead);
+			XBeeSetAR(0,RES);
+		}
 #else
-			temp = get_local_addr(rbuf+12,rbuf+4);
-			if(temp == 0)	//属于该网络,允许加入网络
-			{
-				XBeeJionEnable((rbuf+4),(rbuf+12));
-				printf("\033[33m\033[1ma locker has jioned the park net...\033[0m \n");
-				set_node_online(rbuf+4);
-				XBeeSetAR(0,RES);
-				//printf("\033[33m\033[1m已将锁加入网络 \033[0m \n");
-			}
+		temp = get_local_addr(rbuf+12,rbuf+4);
+		printf("\033[33mget_local_addr is\033[0m %d",temp);
+		if(temp == 0)	//属于该网络,允许加入网络
+		{
+			XBeeJionEnable((rbuf+4),(rbuf+12));
+			printf("\033[33m\033[1ma locker has jioned the park net...\033[0m \n");
+			set_node_online(rbuf+4);
+			XBeeSetAR(0,RES);
+			//printf("\033[33m\033[1m已将锁加入网络 \033[0m \n");
+		}
 #endif
-			else if(temp == -1)
-			{
-				XBeeJionDisable((rbuf+4),(rbuf+12));
-				printf("\033[31m\r\nprevent a locker jioned	the park net...\033[0m \r\n");
-				pthread_mutex_lock(&mutex13_pSourcePathList);
-				p = FindMacAdr(pSourcePathList,rbuf+4); 
-				if(p != NULL)
-					DeleteNode(pSourcePathList,FindMacAdr(pSourcePathList,rbuf+4));//删除节点
-				pthread_mutex_unlock(&mutex13_pSourcePathList);
-			}
-			break;
-		default:
-			break;
+		else
+		{
+			XBeeJionDisable((rbuf+4),(rbuf+12));
+			printf("\033[31m\r\nprevent a locker jioned	the park net...\033[0m \r\n");
+			pthread_mutex_lock(&mutex13_pSourcePathList);
+			if((p = FindMacAdr(pSourcePathList,rbuf+4)) != NULL)
+				DeleteNode(pSourcePathList,FindMacAdr(pSourcePathList,rbuf+4));//删除节点
+			pthread_mutex_unlock(&mutex13_pSourcePathList);
+		}
 	}
 	return;
 }
