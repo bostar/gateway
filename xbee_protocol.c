@@ -58,6 +58,7 @@ void XBeeProcessCFG(uint8 *rbuf)
 		}
 #else
 		temp = get_local_addr(rbuf+12,rbuf+4);
+		printf("\033[33mget_local_addr is\033[0m %d",temp);
 		if(temp == 0)	//属于该网络,允许加入网络
 		{
 			XBeeJionEnable((rbuf+4),(rbuf+12));
