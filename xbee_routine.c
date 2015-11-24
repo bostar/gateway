@@ -171,8 +171,21 @@ void xbee_routine_thread(void)
 #endif
 	//SendAR(5);
 	//XBeeSetAR(2,NO_RES);
+	CoorInfo.net_state = 'o';
 	while(1)
 	{
+#if 0
+		if((int)LinkLenth(pSourcePathList) - get_depot_size() != 1)
+		{
+			if(CoorInfo.net_state == 'c')
+				XBeeSetNJ(0xff,NO_RES);
+		}
+		else
+		{
+			if(CoorInfo.net_state == 'o')
+				XBeeSetNJ(10,NO_RES);
+		}
+#endif
 		usleep(2000000);
 #if 0//__XBEE_TEST_LAR_NODE__
 		pthread_mutex_lock(&mutex03_send_xbee_state);
@@ -209,12 +222,15 @@ void xbee_routine_thread_process_other_api_buf(void)
 			{
 				case receive_packet:
 					if(rbuf[15]=='C' && rbuf[16]=='F' && rbuf[17]=='G')
+					{
+						TestPrintf("C F G",len,rbuf);
 						XBeeProcessCFG(rbuf);    
+					}
 					else if(rbuf[15]=='C' && rbuf[16]=='T' && rbuf[17]=='L')
 						XBeeProcessCTL(rbuf);
 					else if(rbuf[15]=='S' && rbuf[16]=='E' && rbuf[17]=='N')
 					{	
-						TestPrintf("buf",len,rbuf);						
+						TestPrintf("S E N",len,rbuf);
 						XBeeProcessSEN(rbuf);
 					}
 					else if(rbuf[15]=='O' && rbuf[16]=='T' && rbuf[17]=='A')
