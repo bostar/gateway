@@ -111,9 +111,15 @@ INT32 OpenComPort (INT32 ComPort, INT32 baudrate, INT32 databit,
 /* close serial port by use of file descriptor fd */
 void CloseComPort ()
 {
+	int ret=-1;
     /* flush output data before close and restore old attribute */
-    tcsetattr (fd, TCSADRAIN, &termios_old);
-    close (fd);
+    ret = tcsetattr (fd, TCSADRAIN, &termios_old);
+	if(ret < 0)
+		printf("close serial port failed\r\n");
+	ret = -1;
+	ret = close (fd);
+	if(ret < 0)
+		printf("close serial port failed\r\n");
 }
 
 int getPortFd(){

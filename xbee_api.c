@@ -334,6 +334,11 @@ bool out_queue(CircularQueueType *queue , uint8 *out_buf)
         return true;
     }  
 }
+void clear_queue(CircularQueueType *queue)
+{
+	queue->rear = queue->front = 0;
+	queue->count=0;
+}
 /**********************************************************************
 **brief	write n byte into queue 
 **param	p_cqueue	pointer of the circular queue

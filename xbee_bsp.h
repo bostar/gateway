@@ -4,11 +4,12 @@
 #include "xbee_atcmd.h"
 
 
-#define SCAN_CHANNEL 0x4200
+
 #define NJ_TIME 0xff
 
 void xbee_gpio_init(void);
 void xbee_serial_port_init(uint32 bd);
+void xbee_close_serial_port(void);
 int xbee_serial_port_read(unsigned char *buf);
 int xbee_serial_port_write(unsigned char *buf,int len);
 void xbee_gpio_set(int gpio,unsigned char level);

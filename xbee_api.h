@@ -17,6 +17,7 @@ typedef struct _SourceRouterLinkType
 	uint8 mac_adr[8];
 	uint8 mid_adr[40];
 	uint8 num_mid_adr;
+	uint8 cnt;
 #if __XBEE_TEST_LAR_NODE__
 	uint32 send_cmd_times;
 	uint32 rev_rep_times;
@@ -62,7 +63,7 @@ bool out_queue( CircularQueueType *queue , uint8 *out_buf);
 void print_queue(CircularQueueType *queue);
 uint16 read_cqueue(CircularQueueType* p_cqueue , uint8* buf , uint16 n);
 uint16 write_cqueue(CircularQueueType* p_cqueue , uint8* buf , uint16 n);
-
+void clear_queue(CircularQueueType *queue);
 
 
 

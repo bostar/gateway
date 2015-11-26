@@ -64,15 +64,7 @@ void xbee_routine_thread(void)
 
 	for(_i=0;_i<8;_i++)
 		_adr[_i] = 0;
-#if 0//__XBEE_TEST_LAR_NODE__
-	pthread_mutex_lock(&mutex02_pLinkHead);
-	pLinkHead = CreatRouterLink(_adr,0,HeadMidAdr,0); //test list
-	pthread_mutex_unlock(&mutex02_pLinkHead);
 
-	pthread_mutex_lock(&mutex14_ts_buf);
-	creat_circular_queue( &ts_buf );
-	pthread_mutex_unlock(&mutex14_ts_buf);
-#endif
 	pthread_mutex_lock(&mutex13_pSourcePathList);
 	pSourcePathList = CreatRouterLink(_adr,0,HeadMidAdr,0);
 	pthread_mutex_unlock(&mutex13_pSourcePathList);
@@ -128,7 +120,7 @@ void xbee_routine_thread(void)
 	else
 		printf ("start xbee_routine_thread_process_serial_rbuf ok!\n");
 
-	XBeeNetInit();	//
+	XBeeNetInit();
 	get_mac();
 
 	printf("\033[33mstart xbee_routine_thread_process_trans_status_buf...\033[0m\r\n");
@@ -171,9 +163,11 @@ void xbee_routine_thread(void)
 #endif
 	//SendAR(5);
 	//XBeeSetAR(2,NO_RES);
-	CoorInfo.net_state = 'o';
+	//CoorInfo.net_state = 'o';
 	while(1)
 	{
+		
+		usleep(2000000);
 #if 0
 		if((int)LinkLenth(pSourcePathList) - get_depot_size() != 1)
 		{
@@ -186,7 +180,7 @@ void xbee_routine_thread(void)
 				XBeeSetNJ(10,NO_RES);
 		}
 #endif
-		usleep(2000000);
+		
 #if 0//__XBEE_TEST_LAR_NODE__
 		pthread_mutex_lock(&mutex03_send_xbee_state);
 		pthread_mutex_lock(&mutex10_serial_wbuf);
@@ -223,14 +217,14 @@ void xbee_routine_thread_process_other_api_buf(void)
 				case receive_packet:
 					if(rbuf[15]=='C' && rbuf[16]=='F' && rbuf[17]=='G')
 					{
-						TestPrintf("C F G",len,rbuf);
+						//TestPrintf("C F G",len,rbuf);
 						XBeeProcessCFG(rbuf);    
 					}
 					else if(rbuf[15]=='C' && rbuf[16]=='T' && rbuf[17]=='L')
 						XBeeProcessCTL(rbuf);
 					else if(rbuf[15]=='S' && rbuf[16]=='E' && rbuf[17]=='N')
 					{	
-						TestPrintf("S E N",len,rbuf);
+						//TestPrintf("S E N",len,rbuf);
 						XBeeProcessSEN(rbuf);
 					}
 					else if(rbuf[15]=='O' && rbuf[16]=='T' && rbuf[17]=='A')
@@ -307,7 +301,7 @@ void xbee_routine_thread_write_serial(void)
 #if 0
 				uint8 i=0;
 				printf("write serial : ");
-				for(i=0;i<len+4;i++)
+				for(i=0;i<len;i++)
 					printf("%02x ",buf[i]);
 				printf("\n");
 #endif		

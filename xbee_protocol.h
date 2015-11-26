@@ -77,9 +77,15 @@ int16 XBeeSendSetNJ(uint8 *mac_adr,uint8 time);
 void SendAR(uint8 perid);
 void CloseNet(uint8 time);
 void printf_local_time(void);
+
 void XBeeNetInit(void);
+void xbee_reset(void);
+void xbee_set_AT(int8 *at_cmd, uint8 *param, uint8 len);
+void xbee_net(void);
+void xbee_BD(void);
 
 void get_mac(void);
+
 int get_gateway_mac_addr(unsigned char *macAddr);
 
 

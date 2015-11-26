@@ -15,6 +15,7 @@
 #include <errno.h>
 #include <limits.h>
 #include "serial.h"
+#include "xbee_config.h"
 
 #define ttyO0  0
 #define ttyO1  1
@@ -63,16 +64,40 @@ void xbee_gpio_init(void)
 void xbee_serial_port_init(uint32 bd)
 {
     int ret = -1;
+	static uint8 count=0;
 
+	if(count> 0)
+	{
+		CloseComPort();
+	}
+	count = 1;
     ret = OpenComPort(n_com_port, bd, 8, "1", 'N');
-    if (ret < 0) {
+    if (ret < 0) 
+	{
         fprintf(stderr, "Error: Opening Com Port %d\n", n_com_port);
         return;
-    }else{
-        printf("Open Com Port %d Success, Now begin work\n", n_com_port);
+    }
+	else
+	{
+        printf("Open Com Port %d Success.BD is %d, Now begin work\n", n_com_port , bd);
     }
 }
 
+void xbee_close_serial_port(void)
+{
+	int32 ret = -1;
+
+	ret = close(n_com_port);
+	if(ret < 0)
+	{
+		fprintf(stderr, "Error: close Com Port %d\n", n_com_port);
+        return;
+	}
+	else
+	{
+		printf("close Com Port %d Success\n", n_com_port);
+	}
+}
 
 int xbee_serial_port_read(unsigned char *buf)
 {
