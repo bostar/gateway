@@ -38,6 +38,7 @@ typedef enum{
     parking_state_have_paid_relock_failed = 0x24, // 支付解锁后车未离开重新加锁失败
     parking_state_offline = 0x25, // offline can not be booking
     parking_state_init = 0x26,
+    parking_state_fixed_unlock = 0x27,
     parking_state_fixed_parking_unlock_req = 0x85,
     en_parking_state_max = 0xff
 }en_parking_state;
@@ -132,6 +133,8 @@ char* const parking_state_string[en_parking_state_max] = {
     [parking_state_have_paid_relock_failed] = "parking_state_have_paid_relock_failed", // 支付解锁后车未离开重新加锁失败
     [parking_state_offline] = "need repair", // report, need repair
     [parking_state_init] = "parking_state_init",
+    [parking_state_fixed_parking_unlock_req] = "parking_state_fixed_parking_unlock_req",
+    [parking_state_fixed_unlock] = "parking_state_fixed_unlock",
 };
 
 char* const parking_online_string[2] = {
@@ -164,7 +167,7 @@ void parking_state_check_routin(void)
         printf("%s; ",parking_online_string[pstParkingState[loop].online]);
         printf("[SERVER:]%04x ",pstParkingState[loop].netaddr);
         printf("%s",parking_state_string[pstParkingState[loop].state]);
-        (pstParkingState[loop].option)?printf(" fixed"):printf(" temporary");
+        (pstParkingState[loop].option)?printf("   fixed"):printf("   temporary");
         printf("\r\n");
 #endif
         if(pstParkingState[loop].online == 1)
@@ -180,6 +183,21 @@ void parking_state_check_routin(void)
         switch(pstParkingState[loop].state)
         {
             case parking_state_idle: // 空闲
+                break;
+            case parking_state_fixed_parking_unlock_req:
+                if(time_in_second - pstParkingState[loop].time > 5) // second
+                {
+                    XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_unlock);
+                    pstParkingState[loop].time = time((time_t*)NULL);
+                }
+                break;
+            case parking_state_fixed_unlock:
+                if(time_in_second - pstParkingState[loop].time > freetime) // second
+                {
+                    pstParkingState[loop].state = parking_state_idle;
+                    XBeePutCtlCmd(pstParkingState[loop].parking_mac_addr,pstParkingState[loop].netaddr,en_order_lock);
+                    pstParkingState[loop].time = time((time_t*)NULL);
+                }
                 break;
             case parking_state_prestop: // 车来
                 if(time_in_second - pstParkingState[loop].time > freetime)//freetime * 60) // second
@@ -385,30 +403,32 @@ void event_report(unsigned short netaddr,unsigned char event)
     }
     if((p->state == parking_state_init) && (event == en_lock_success))
     {
-        XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_unlock);
+        if(p->option == parking_type_temporary)
+            XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_unlock);
+        else
+            XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_lock);
     }
     set_online(netaddr);
-    if((p->state == parking_state_idle) && (p->option == parking_type_fixed))
-    {
-        XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_lock);
-    }
 
     if(p->event == event)
     {
         switch(event)
         {
             case en_lock_success:
-                if(p->option == parking_type_temporary)
-                {
-                if((p->state == parking_state_idle) || (p->state == parking_state_booked_coming_unlock) || (p->state == parking_state_have_paid_unlock))
+                if(p->state == parking_state_fixed_unlock)
                 {
                     XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_unlock);
                 }
-                }
-                else
+                if((p->state == parking_state_idle) || (p->state == parking_state_booked_coming_unlock) || (p->state == parking_state_have_paid_unlock))
                 {
-                    
-
+                    if((p->state == parking_state_idle) && (p->option == parking_type_fixed))
+                    {
+                        //XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_lock);
+                    }
+                    else
+                    {
+                        XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_unlock);
+                    }
                 }
                 break;
             case en_unlock_success:
@@ -436,7 +456,7 @@ void event_report(unsigned short netaddr,unsigned char event)
     switch(event)
     {
         case en_vehicle_comming:
-        if((p->state == parking_state_idle) || (p->state == parking_state_booked_coming_unlock_goto_idle) || (p->state == parking_state_unbooking_unlock) || (p->state == parking_state_have_paid_unlock_vehicle_leave))
+        if((p->state == parking_state_idle) || (p->state == parking_state_fixed_unlock) || (p->state == parking_state_booked_coming_unlock_goto_idle) || (p->state == parking_state_unbooking_unlock) || (p->state == parking_state_have_paid_unlock_vehicle_leave))
         {
             need_to_send_to_sever = 1;
             p->state = parking_state_prestop;
@@ -454,10 +474,11 @@ void event_report(unsigned short netaddr,unsigned char event)
         }
         break;
         case en_vehicle_leave:
-        if((p->option == parking_type_temporary) && (p->state == parking_state_prestop))
+        if(p->state == parking_state_prestop)
         {
             need_to_send_to_sever = 1;
             p->state = parking_state_idle;
+            XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_unlock);
         }
         /*if(p->state == parking_state_booked_coming_unlock)
         {
@@ -504,22 +525,17 @@ void event_report(unsigned short netaddr,unsigned char event)
         case en_lock_success:
         if(p->option == parking_type_temporary)
         {
-        if((p->state == parking_state_idle) || (p->state == parking_state_booked_coming_unlock) || (p->state == parking_state_have_paid_unlock))
-        {
-            XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_unlock);
-        }
+            if((p->state == parking_state_idle) || (p->state == parking_state_booked_coming_unlock) || (p->state == parking_state_have_paid_unlock))
+            {
+                XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_unlock);
+            }
         }
         else
         {
-        if(p->state == parking_state_idle)
-        {
-            //XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_unlock);
-        }
-        else if((p->state == parking_state_booked_coming_unlock) || (p->state == parking_state_have_paid_unlock))
-        {
-            XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_unlock);
-        }
-
+            if((p->state == parking_state_booked_coming_unlock) || (p->state == parking_state_have_paid_unlock))
+            {
+                XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_unlock);
+            }
         }
         if((p->state == parking_state_prestop))// && (time_in_second - p->time > 15))
         {
@@ -581,6 +597,14 @@ void event_report(unsigned short netaddr,unsigned char event)
         {
            XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_lock);
         }
+        if((p->option == parking_type_fixed) && (p->state == parking_state_fixed_parking_unlock_req))
+        {
+            //XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_lock);
+            p->state = parking_state_fixed_unlock;
+            p->time = time_in_second; // second
+            need_to_send_to_sever = 1;
+        }
+
         if((p->state == parking_state_stop_lock) || (p->state == parking_state_booking_lock) || (p->state == parking_state_booked_coming_lock))
         {
             XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_lock);
@@ -750,7 +774,6 @@ int get_local_addr(unsigned char *local_addr,unsigned char* long_addr)
     }
 #else
     int loop = 0;
-    printf("%s:%d  \r\n",__func__,pstParkingState);
     pthread_mutex_lock(&parking_info_mutex);
     if(pstParkingState == NULL)
     {
@@ -769,11 +792,6 @@ int get_local_addr(unsigned char *local_addr,unsigned char* long_addr)
                 return 0;
             }
         }
-        for(loop = 0;loop < 8;loop++)
-        {
-            printf("%02x",long_addr[loop]);
-        }
-        printf("\r\n");
         pthread_mutex_unlock(&parking_info_mutex);
         return -1;
     }
@@ -886,7 +904,10 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
             {
                 printf("######### set parking state to idle\r\n");
                 p->state = parking_state_idle;
-                XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_unlock);
+                if(p->option == parking_type_temporary)
+                    XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_unlock);
+                else
+                    XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_lock);
             }
 
             if(p->state == parking_state_booking_lock_failed)
@@ -930,13 +951,7 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
                || (p->state == parking_state_booked_coming_lock_failed))
             {
                 p->state = parking_state_unbooking;
-                if(p->option == parking_type_fixed)
-                {
-                }
-                else
-                {
-                    XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_unlock);
-                }
+                XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_unlock);
                 p->time = time((time_t)NULL);
             }
             else
@@ -965,7 +980,7 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
             if((p->option == parking_type_fixed) && (p->state == parking_state_idle))
             {
                 XBeePutCtlCmd(p->parking_mac_addr,p->netaddr,en_order_unlock);
-                p->state = parking_state_prestop;
+                p->state = parking_state_fixed_parking_unlock_req;
                 p->time = time((time_t)NULL);
             }
         default:
