@@ -87,7 +87,7 @@ cfg:
 down:
     usleep(1000000);
     /* download the parking info of this depot */
-    len = tcp_listen(rbuf,8 + get_depot_size() * 10);
+    len = tcp_listen(rbuf,8 + get_depot_size() * 11);
     if(memcmp("DOWN",rbuf,4) != 0)
     {
         printf("[SERVER]is not download parking info cmd\r\n");
@@ -97,10 +97,11 @@ down:
 
     for(loop = 0;loop < get_depot_size();loop ++)
     {
-        swap(2,&rbuf[8 + loop * 2 + loop * 8]);
+        swap(2,&rbuf[8 + loop * 2 + loop * 8 + loop]);
         //swap(8,&rbuf[8 + 2 + loop * 2 + loop * 8]);
-        parking_id_macaddr_mapping(*(unsigned short *)&rbuf[8 + loop * 2 + loop * 8],
-                                   &rbuf[8 + 2 + loop * 2 + loop * 8]);
+        parking_id_macaddr_mapping(*(unsigned short *)&rbuf[8 + loop * 2 + loop * 8 + loop],
+                                   &rbuf[8 + 2 + loop * 2 + loop * 8 + loop],
+                                   rbuf[8 + 10 + loop * 2 + loop * 8 + loop]);
 
     }
 time:
@@ -184,12 +185,13 @@ time:
         else if(memcmp("DOWN",rbuf,4) == 0)
         {
             printf("[SERVER]DOWN cmd\r\n");
-            len = tcp_listen(&rbuf[4],8 + get_depot_size() * 10 - 4);
+            len = tcp_listen(&rbuf[4],8 + get_depot_size() * 11 - 4);
             for(loop = 0;loop < get_depot_size();loop ++)
             {
                 swap(2,&rbuf[8 + loop * 2 + loop * 8]);
-                parking_id_macaddr_mapping(*(unsigned short *)&rbuf[8 + loop * 2 + loop * 8],
-                                           &rbuf[8 + 2 + loop * 2 + loop * 8]);
+                parking_id_macaddr_mapping(*(unsigned short *)&rbuf[8 + loop * 2 + loop * 8 + loop],
+                                           &rbuf[8 + 2 + loop * 2 + loop * 8 + loop],
+                                           rbuf[8 + 10 + loop * 2 + loop * 8 + loop]);
 
             }
 

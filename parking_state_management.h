@@ -11,6 +11,7 @@ typedef struct {
     en_parkingEvent event;
     time_t time;
     time_t offline_time_out;
+    unsigned char option;
 }st_parkingState,*pst_parkingState;
 pst_parkingState pstParkingState;
 extern pthread_mutex_t parking_info_mutex;
@@ -28,7 +29,7 @@ int networking_over(void);
 void set_node_online(unsigned char *macaddr);
 int get_local_addr(unsigned char *local_addr,unsigned char* long_addr);
 pst_parkingState search_use_netaddr(unsigned short netaddr);
-void parking_id_macaddr_mapping(unsigned short parking_id,unsigned char *macaddr);
+void parking_id_macaddr_mapping(unsigned short parking_id,unsigned char *macaddr,unsigned char option);
 int get_all_parking_state(unsigned char* buf);
 int set_parking_state(unsigned short parking_id,unsigned char state);
 #endif

@@ -36,8 +36,13 @@ typedef enum{
     parking_state_have_paid_relock_failed = 0x24, // 支付解锁后车未离开重新加锁失败
     parking_state_offline = 0x25, // offline can not be booking
     parking_state_init = 0x26,
+    parking_state_fixed_unlock = 0x27,
+    parking_state_fixed_parking_unlock_req = 0x85,
     en_parking_state_max = 0xff
 }en_parking_state;
+
+#define parking_type_temporary	0x00
+#define parking_type_fixed	0x01
 
 typedef enum{
     enOnline = 1,
@@ -125,6 +130,8 @@ char* const parking_state_string[en_parking_state_max] = {
     [parking_state_have_paid_relock_failed] = "parking_state_have_paid_relock_failed", // 支付解锁后车未离开重新加锁失败
     [parking_state_offline] = "need repair", // report, need repair
     [parking_state_init] = "parking_state_init",
+    [parking_state_fixed_parking_unlock_req] = "parking_state_fixed_parking_unlock_req",
+    [parking_state_fixed_unlock] = "parking_state_fixed_unlock",
 };
 
 char* const parking_online_string[2] = {
@@ -153,6 +160,7 @@ void parking_state_check_routin(void)
         printf("[SERVER:]%04x ",pstParkingState[loop].parking_id);
         printf("%s; ",parking_online_string[pstParkingState[loop].online]);
         printf("%s",parking_state_string[pstParkingState[loop].state]);
+        (pstParkingState[loop].option)?printf("   fixed"):printf("   temporary");
         printf("\r\n");
         if(pstParkingState[loop].online == enOnline)
         {
@@ -167,6 +175,21 @@ void parking_state_check_routin(void)
         switch(pstParkingState[loop].state)
         {
             case parking_state_idle: // 空闲
+                break;
+            case parking_state_fixed_parking_unlock_req:
+                if(time_in_second - pstParkingState[loop].time > 5) // second
+                {
+                    putCtlCmd(pstParkingState[loop].parking_id,en_order_unlock);
+                    pstParkingState[loop].time = time((time_t*)NULL);
+                }
+                break;
+            case parking_state_fixed_unlock:
+                if(time_in_second - pstParkingState[loop].time > freetime) // second
+                {
+                    pstParkingState[loop].state = parking_state_idle;
+                    putCtlCmd(pstParkingState[loop].parking_id,en_order_lock);
+                    pstParkingState[loop].time = time((time_t*)NULL);
+                }
                 break;
             case parking_state_prestop: // 车来
                 if(time_in_second - pstParkingState[loop].time > freetime) // second
@@ -245,10 +268,17 @@ void parking_state_check_routin(void)
                 }
                 break;
             case parking_state_unbooking: // 取消预定
-                if(time_in_second - pstParkingState[loop].time > 5) // secon    d
+                if(pstParkingState[loop].option == parking_type_fixed)
                 {
-                    putCtlCmd(pstParkingState[loop].parking_id,en_order_unlock);
-                    pstParkingState[loop].time = time((time_t*)NULL);
+                    pstParkingState[loop].state = parking_state_idle;
+                }
+                else
+                {
+                    if(time_in_second - pstParkingState[loop].time > 5) // secon    d
+                    {
+                        putCtlCmd(pstParkingState[loop].parking_id,en_order_unlock);
+                        pstParkingState[loop].time = time((time_t*)NULL);
+                    }
                 }
                 break;
             case parking_state_unbooking_unlock: // 取消预定成功已解锁
@@ -283,10 +313,24 @@ void parking_state_check_routin(void)
                 }
                 break;
             case parking_state_have_paid_unlock_vehicle_leave:
-                if(time_in_second - pstParkingState[loop].time > 2) // second
+                if(pstParkingState[loop].option == parking_type_fixed)
                 {
-                    need_to_send_to_sever = 1;
-                    pstParkingState[loop].state = parking_state_idle;
+                    if(time_in_second - pstParkingState[loop].time > 10) // second
+                    {
+                        need_to_send_to_sever = 1;
+                        pstParkingState[loop].state = parking_state_idle;
+                        putCtlCmd(pstParkingState[loop].parking_id,en_order_lock);
+                    }
+
+                }
+                else
+                {
+                    if(time_in_second - pstParkingState[loop].time > 2) // second
+                    {
+                        need_to_send_to_sever = 1;
+                        pstParkingState[loop].state = parking_state_idle;
+                        putCtlCmd(pstParkingState[loop].parking_id,en_order_unlock);
+                    }
                 }
                 break;
             case parking_state_have_paid_relock: // 支付解锁后车未离开重新加锁计费
@@ -372,16 +416,30 @@ void event_report(unsigned short netaddr,unsigned char event)
     }
     if((p->state == parking_state_init) && (event == en_lock_success))
     {
-        putCtlCmd(p->parking_id,en_order_unlock);
+        if(p->option == parking_type_temporary)
+            putCtlCmd(p->parking_id,en_order_unlock);
+        else
+            putCtlCmd(p->parking_id,en_order_lock);
     }
     if(p->event == event)
     {
         switch(event)
         {
             case en_lock_success:
-                if((p->state == parking_state_idle) || (p->state == parking_state_booked_coming_unlock) || (p->state == parking_state_have_paid_unlock))
+                if(p->state == parking_state_fixed_unlock)
                 {
                     putCtlCmd(p->parking_id,en_order_unlock);
+                }
+                if((p->state == parking_state_idle) || (p->state == parking_state_booked_coming_unlock) || (p->state == parking_state_have_paid_unlock))
+                {
+                    if((p->state == parking_state_idle) && (p->option == parking_type_fixed))
+                    {
+                        //putCtlCmd(p->parking_id,en_order_lock);
+                    }
+                    else
+                    {
+                        putCtlCmd(p->parking_id,en_order_unlock);
+                    }
                 }
                 break;
             case en_unlock_success:
@@ -389,12 +447,17 @@ void event_report(unsigned short netaddr,unsigned char event)
                 {
                     putCtlCmd(p->parking_id,en_order_lock);
                 }
+                if((p->state == parking_state_idle) && (p->option == parking_type_fixed))
+                {
+                    putCtlCmd(p->parking_id,en_order_lock);
+                }
+
                 break;
             default:
                 break;
         }
 
-        pthread_mutex_unlock(&parking_info_mutex);
+	pthread_mutex_unlock(&parking_info_mutex);
         return ;
     }
     else
@@ -404,7 +467,7 @@ void event_report(unsigned short netaddr,unsigned char event)
     switch(event)
     {
         case en_vehicle_comming:
-        if((p->state == parking_state_idle) || (p->state == parking_state_booked_coming_unlock_goto_idle) || (p->state == parking_state_unbooking_unlock) || (p->state == parking_state_have_paid_unlock_vehicle_leave))
+        if((p->state == parking_state_idle) || (p->state == parking_state_fixed_unlock) || (p->state == parking_state_booked_coming_unlock_goto_idle) || (p->state == parking_state_unbooking_unlock) || (p->state == parking_state_have_paid_unlock_vehicle_leave))
         {
             need_to_send_to_sever = 1;
             p->state = parking_state_prestop;
@@ -471,11 +534,20 @@ void event_report(unsigned short netaddr,unsigned char event)
         
         break;
         case en_lock_success:
-        if((p->state == parking_state_idle) || (p->state == parking_state_booked_coming_unlock) || (p->state == parking_state_have_paid_unlock))
+        if(p->option == parking_type_temporary)
         {
-            putCtlCmd(p->parking_id,en_order_unlock);
+            if((p->state == parking_state_idle) || (p->state == parking_state_booked_coming_unlock) || (p->state == parking_state_have_paid_unlock))
+            {
+                putCtlCmd(p->parking_id,en_order_unlock);
+            }
         }
-
+        else
+        {
+            if((p->state == parking_state_booked_coming_unlock) || (p->state == parking_state_have_paid_unlock))
+            {
+                putCtlCmd(p->parking_id,en_order_unlock);
+            }
+        }
         if((p->state == parking_state_prestop))// && (time_in_second - p->time > 15))
         {
             need_to_send_to_sever = 1;
@@ -532,6 +604,18 @@ void event_report(unsigned short netaddr,unsigned char event)
         }
         break;
         case en_unlock_success:
+        if((p->option == parking_type_fixed) && (p->state == parking_state_idle))
+        {
+            putCtlCmd(p->parking_id,en_order_lock);
+        }
+        if((p->option == parking_type_fixed) && (p->state == parking_state_fixed_parking_unlock_req))
+        {
+            //putCtlCmd(p->parking_id,en_order_lock);
+            p->state = parking_state_fixed_unlock;
+            p->time = time_in_second; // second
+            need_to_send_to_sever = 1;
+        }
+
         if((p->state == parking_state_stop_lock) || (p->state == parking_state_booking_lock) || (p->state == parking_state_booked_coming_lock))
         {
             putCtlCmd(p->parking_id,en_order_lock);
@@ -746,7 +830,7 @@ pst_parkingState search_use_netaddr(unsigned short netaddr)
     return NULL;
 }
 
-void parking_id_macaddr_mapping(unsigned short parking_id,unsigned char *macaddr)
+void parking_id_macaddr_mapping(unsigned short parking_id,unsigned char *macaddr,unsigned char option)
 {
     int loop = 0;
     pthread_mutex_lock(&parking_info_mutex);
@@ -761,6 +845,7 @@ printf("mapping\r\n");
         if(pstParkingState[loop].parking_id == parking_id)
         {
             memcpy(pstParkingState[loop].parking_mac_addr,macaddr,8);
+            pstParkingState[loop].option = option;
             printf("parking_id = %d;parking_mac_addr = 0x%08x%08x\r\n",pstParkingState[loop].parking_id,*(unsigned int*)&pstParkingState[loop].parking_mac_addr[4],*(unsigned int*)&pstParkingState[loop].parking_mac_addr[0]);
             pthread_mutex_unlock(&parking_info_mutex);
             return;
@@ -806,7 +891,10 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
             {
                 printf("######### set parking state to idle\r\n");
                 p->state = parking_state_idle;
-                putCtlCmd(parking_id,en_order_unlock);
+                if(p->option == parking_type_temporary)
+                    putCtlCmd(parking_id,en_order_unlock);
+                else
+                    putCtlCmd(parking_id,en_order_lock);
             }
 
             if(p->state == parking_state_booking_lock_failed)
@@ -873,6 +961,14 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
                     break;
                 default:
                     break;
+            }
+            break;
+        case parking_state_fixed_parking_unlock_req:
+            if((p->option == parking_type_fixed) && (p->state == parking_state_idle))
+            {
+                putCtlCmd(parking_id,en_order_unlock);
+                p->state = parking_state_fixed_parking_unlock_req;
+                p->time = time((time_t)NULL);
             }
         default:
             break;
