@@ -431,24 +431,23 @@ void CloseNet(uint8 time)
 **************************************************************/
 void XBeeNetInit(void)
 {
-	uint8 param[2];
+	uint8 param[2],rbuf[128];
 
 	xbee_reset();
 	param[0] = 0x42;
 	param[1] = 0x00;
-	xbee_set_AT("SC", param, 2);
+	xbee_set_AT("SC", param, 2 ,rbuf);
 	//XBeeSetZS(1,NO_RES);
-	xbee_set_AT("AC", param, 0);
+	xbee_set_AT("AC", param, 0 ,rbuf);
 	printf("\033[33mcreat xbee network ...\033[0m\n");
 	xbee_net();
-	printf("\r\n");
 	param[0] = 0x0a;
 	param[1] = 0xf0;
-	xbee_set_AT("SP", param, 2);
+	xbee_set_AT("SP", param, 2 ,rbuf);
 	param[0] = 10;
-	xbee_set_AT("SN", param, 1);
+	xbee_set_AT("SN", param, 1 ,rbuf);
 	xbee_BD();
-	xbee_set_AT("AC", param, 0);
+	xbee_set_AT("AC", param, 0 ,rbuf);
 	CoorInfo.NetState = 1;
 	printf("\n\033[33mxbee network established！\033[0m\n");
 }
@@ -481,7 +480,7 @@ void xbee_reset(void)
 			pthread_mutex_lock(&mutex09_xbee_other_api_buf);
 			status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
 			pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
-#if 0
+#if 1
 			uint8 i;
 			if(status == true)
 			{
@@ -491,8 +490,10 @@ void xbee_reset(void)
 			}
 #endif
 			cnt++;
-		}while((*(rbuf+3) != 0x8a || *(rbuf+4) != 0x06) && cnt < 0xff );
-	}while(*(rbuf+3) != 0x8a || *(rbuf+4) != 0x06);
+		}while((*(rbuf+3) != 0x88 || *(rbuf+5) != 'C' || *(rbuf+6) != 'B') && cnt < 0xff );
+		//}while((*(rbuf+3) != 0x8a || *(rbuf+4) != 0x06) && cnt < 0xff );
+	}while(*(rbuf+3) != 0x88 || *(rbuf+5) != 'C' || *(rbuf+6) != 'B' || *(rbuf+7) != 0);
+	//}while(*(rbuf+3) != 0x8a || *(rbuf+4) != 0x06);
 	puts(" ");
 }
 /***************************************************************
@@ -579,9 +580,8 @@ void xbee_BD(void)
 /***************************************************************
 **brief set xbee
 ***************************************************************/
-void xbee_set_AT(int8 *at_cmd, uint8 *param, uint8 len)
+uint8 xbee_set_AT(int8 *at_cmd, uint8 *param, uint8 len, uint8 *rbuf)
 {
-	uint8 rbuf[128];
 	uint32 cnt=0;
 	bool status=false;
 
@@ -612,6 +612,7 @@ void xbee_set_AT(int8 *at_cmd, uint8 *param, uint8 len)
 		}while((*(rbuf+3) != 0x88 || *(rbuf+5) != *at_cmd || *(rbuf+6) != *(at_cmd+1)) && cnt < 0xff );
 	}while(*(rbuf+3) != 0x88 || *(rbuf+5) != *at_cmd || *(rbuf+6) != *(at_cmd+1) || *(rbuf+7) != 0);
 	puts(" ");
+	return (*(rbuf+3)+4);
 }
 /***************************************************************
 **brief get mac addr from xbee
@@ -619,68 +620,24 @@ void xbee_set_AT(int8 *at_cmd, uint8 *param, uint8 len)
 ***************************************************************/
 void get_mac(void)
 {
-	uint8 i=0,rbuf[128],mac_adr[8];
-	bool status=false;
+	uint8 i=0,rbuf[128],len;
+	uint8 param[2];
 
 	printf("\033[33mgetting mac address\033[0m\r\n");
-	XBeeReadAT("SH");
-	while(status == false)
-	{
-		usleep(10000);
-		pthread_mutex_lock(&mutex09_xbee_other_api_buf);
-		status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
-		pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
-		if(status == true)
-		{
-			if(rbuf[3] == 0x88 && rbuf[5] == 'S' && rbuf[6] == 'H' && rbuf[7] == 0)
-			{
-				for(i=0;i<4;i++)
-					mac_adr[i] = rbuf[8+i];
-			}
-			else if(rbuf[3] == 0x88 && rbuf[5] == 'S' && rbuf[6] == 'H' && rbuf[7] != 0)
-			{
-				XBeeReadAT("SH");
-				status = false;
-			}
-			else
-				status = false;
-		}
-		printf(">");
-	}
-	XBeeReadAT("SL");
-	status = false;
-	while(status == false)
-	{
-		usleep(10000);
-		pthread_mutex_lock(&mutex09_xbee_other_api_buf);
-		status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
-		pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
-		if(status == true)
-		{
-			if(rbuf[3] == 0x88 && rbuf[5] == 'S' && rbuf[6] == 'L' && rbuf[7] == 0)
-			{
-				for(i=0;i<4;i++)
-					mac_adr[4+i] = rbuf[8+i];
-			}
-			else if(rbuf[3] == 0x88 && rbuf[5] == 'S' && rbuf[6] == 'L' && rbuf[7] != 0)
-			{
-				XBeeReadAT("SL");
-				status = false;
-			}
-			else
-				status = false;
-		}
-		printf(">");
-	}
-	printf("\033[34m\r\ncoor mac addr : ");
 	pthread_mutex_lock(&mutex14_CoorInfo);
+	len = xbee_set_AT("SH", param, 0 ,rbuf);
+	for(i=0;i<4;i++)
+		CoorInfo.mac_adr[i] = *(rbuf+8+i);
+	len = xbee_set_AT("SL", param, 0 ,rbuf);
+	for(i=0;i<4;i++)
+		CoorInfo.mac_adr[4+i] = *(rbuf+8+i);
+	pthread_mutex_unlock(&mutex14_CoorInfo);
+	printf("\033[34mcoor mac addr \033[0m: ");	
 	for(i=0;i<8;i++)
 	{
-		CoorInfo.mac_adr[i] = mac_adr[i];
 		printf("%02x ",CoorInfo.mac_adr[i]);
 	}
-	pthread_mutex_unlock(&mutex14_CoorInfo);
-	puts("\033[0m");
+	puts(" ");
 }
 /***************************************************************
 **brief get mac addr from CoorInfo

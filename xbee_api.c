@@ -399,10 +399,38 @@ void print_queue(CircularQueueType *queue)
 		i++;
 	}
 }
+/***********************************************************************
+**brief 创建发送应答链表节点
+***********************************************************************/
+transReqListType *creat_trans_req_node(void)
+{
+	transReqListType *p=NULL;
+	uint8 i;
 
-
-
-
+	p = (transReqListType*)malloc(sizeof(transReqListType));
+	if(p == NULL)
+	{
+		printf("\033[31no enough mmomory \033[0m\r\n");
+		return NULL;
+	}
+	for(i=0;i<8;i++)
+		p->mac_adr[i] = 0;
+	p->net_adr[0] = 0;
+	p->net_adr[1] = 0;
+	for(i=0;i<10;i++)
+		p->data[i] = 0;
+	p->len = 0;
+	p->state = false;
+	p->next = NULL;
+	return p;
+}
+/***********************************************************************
+**brief 创建发送应答链表
+***********************************************************************/
+transReqListType *creat_trans_req_list(void)
+{
+	return creat_trans_req_node();
+}
 
 
 

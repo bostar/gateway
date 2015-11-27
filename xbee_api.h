@@ -36,7 +36,15 @@ typedef struct
 	uint8 elements[_REV_DATA_MAX];
 }CircularQueueType;
 
-
+typedef struct _a
+{
+	uint8 mac_adr[8];
+	uint8 net_adr[2];
+	uint8 data[10];
+	uint8 len;
+	bool state;
+	struct _a *next;
+}transReqListType;
 
 
 
@@ -65,8 +73,8 @@ uint16 read_cqueue(CircularQueueType* p_cqueue , uint8* buf , uint16 n);
 uint16 write_cqueue(CircularQueueType* p_cqueue , uint8* buf , uint16 n);
 void clear_queue(CircularQueueType *queue);
 
-
-
+transReqListType *creat_trans_req_node(void);
+transReqListType *creat_trans_req_list(void);
 
 
 

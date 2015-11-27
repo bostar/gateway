@@ -13,7 +13,8 @@ typedef enum
     receive_packet              =   0x90,
     route_record_indicator      =   0xa1,
     mto_route_request_indcator  =   0xa3,
-    remoto_command_response     =   0x97,
+	remote_AT_command_request	=	0x17,
+    remoto_AT_command_response	=   0x97,
     node_identification         =   0x95,
     explicit_rx_indeicator      =   0x91
 }APIFrameType;
@@ -73,52 +74,58 @@ typedef enum
 
 typedef struct       
 {
-  uint8 start_delimiter;
-  uint8 len_msb;
-  uint8 len_lsb;
-  uint8 frame_type;
-  uint8 frame_id;
-  uint8 atCmd[2];
-  uint8 param;
-  uint8 checksum;
+	uint8 start_delimiter;
+	uint8 len_msb;
+	uint8 len_lsb;
+	uint8 frame_type;
+	uint8 frame_id;
+	uint8 atCmd[2];
+	uint8 param;
+	uint8 checksum;
 }XBeeApiIOCmd; //IO口API命令帧
 
 typedef struct       
 {
-  uint8 start_delimiter;
-  uint8 len_msb;
-  uint8 len_lsb;
-  uint8 frame_type;
-  uint8 frame_id;
-  uint8 atCmd[2];
-  uint8 param[8];
-  uint8 checksum;
+	uint8 start_delimiter;
+	uint8 len_msb;
+	uint8 len_lsb;
+	uint8 frame_type;
+	uint8 frame_id;
+	uint8 atCmd[2];
+	uint8 param[8];
+	uint8 checksum;
 }XBeeApiIDCmdType; // ID API命令帧
 
 
 typedef enum    
 {
-  IO_P0    =       1,
-  IO_P1    =       2,
-  IO_P2    =       3,
-  IO_P3    =       4,
-  IO_D0    =       5,
-  IO_D1    =       6,
-  IO_D2    =       7,
-  IO_D3    =       8,
-  IO_D4    =       9,
-  IO_D5    =      10,
-  IO_D6    =      11,
-  IO_D7    =      12,
-  IO_D8    =      13 
+	IO_P0    =       1,
+  	IO_P1    =       2,
+  	IO_P2    =       3,
+  	IO_P3    =       4,
+  	IO_D0    =       5,
+  	IO_D1    =       6,
+  	IO_D2    =       7,
+  	IO_D3    =       8,
+  	IO_D4    =       9,
+  	IO_D5    =      10,
+	IO_D6    =      11,
+	IO_D7    =      12,
+	IO_D8    =      13 
 }XBeeIOParam;
 
 typedef enum
 {
-  High  =  1,
-  Low   =  2
+  	High  =  1,
+  	Low   =  2
 }IOStatus;
 
+typedef enum
+{
+	no_ack	=	0x01,
+	apply	=	0x02,
+	extend_timeout	=	0x04,
+}RemoteATRequestType;
 
 int16 XBeeSetIO(XBeeIOParam ioparam,IOStatus state);	//配置IO口
 uint8 XBeeApiChecksum(uint8 *begin,uint16 length);  //求checksum
@@ -154,7 +161,7 @@ int16 XBeeTransReq(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,u
 int16 XBeeBoardcastTrans(uint8 *data,uint16 len,IsResp IsRes);  
 int16 XBeeUnicastTrans(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,uint16 len,IsResp IsRes);
 int16 XBeeCreatSourceRout(uint8 *mac_adr,uint16 net_adr,uint16 num,uint8 *mid_adr,uint8* re_buf);
-
+int16 XBeeRemoteATCmd(uint8 *mac_adr , uint8 *net_adr , RemoteATRequestType option , int8 *cmd , uint8 *param , uint8 len , IsResp IsRes);
 
 
 

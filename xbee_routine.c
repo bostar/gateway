@@ -154,50 +154,13 @@ void xbee_routine_thread(void)
         printf ("Create xbee_routine_thread_test error!n");
     }
 #endif
-#if 0//__XBEE_TEST_LAR_NODE__
-	printf("\033[33mstart xbee_routine_thread_test_lar_node...\033[0m\r\n");
-    ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_test_lar_node,NULL);
-    if(ret!=0){
-        printf ("Create xbee_routine_thread_test_lar_node error!n");
-    }
-#endif
 	//SendAR(5);
 	//XBeeSetAR(2,NO_RES);
 	//CoorInfo.net_state = 'o';
 	while(1)
 	{
-		
-		usleep(2000000);
-#if 0
-		if((int)LinkLenth(pSourcePathList) - get_depot_size() != 1)
-		{
-			if(CoorInfo.net_state == 'c')
-				XBeeSetNJ(0xff,NO_RES);
-		}
-		else
-		{
-			if(CoorInfo.net_state == 'o')
-				XBeeSetNJ(10,NO_RES);
-		}
-#endif
-		
-#if 0//__XBEE_TEST_LAR_NODE__
-		pthread_mutex_lock(&mutex03_send_xbee_state);
-		pthread_mutex_lock(&mutex10_serial_wbuf);
-		pthread_mutex_lock(&mutex12_trans_req_buf);
-		printf("\033[36mtrans_req_buf->count = %d seroal_wbuf->count = %d send_xbee_state = %d\033[0m\n",trans_req_buf.count,serial_wbuf.count,send_xbee_state);
-		pthread_mutex_unlock(&mutex03_send_xbee_state);
-		pthread_mutex_unlock(&mutex10_serial_wbuf);
-		pthread_mutex_unlock(&mutex12_trans_req_buf);		
-
-		pthread_mutex_lock(&mutex14_ts_buf);
-		ts_log();
-		pthread_mutex_unlock(&mutex14_ts_buf);
-
-		pthread_mutex_lock(&mutex02_pLinkHead);
-		WrLogTxt();
-		pthread_mutex_unlock(&mutex02_pLinkHead);
-#endif
+		usleep(5000000);
+		//usleep(2000000);
 	}
 }
 
@@ -232,6 +195,13 @@ void xbee_routine_thread_process_other_api_buf(void)
 					break;
 				case at_command_response:
 					ProcessATRes(rbuf);
+					break;
+				case remoto_AT_command_response:
+					if(*(rbuf+17) == 1 || *(rbuf+17) == 4)
+					{
+						//XBeeRemoteATCmd(rbuf+5 , rbuf+13 , 2 , (uint8*)(rbuf+15) , param , 1 , 1);
+					}					
+					TestPrintf("remote",len,rbuf);
 					break;
 				default:
 					break;
@@ -298,7 +268,7 @@ void xbee_routine_thread_write_serial(void)
 			pthread_mutex_unlock(&mutex10_serial_wbuf);
 			if(len)
 			{
-#if 0
+#if 1
 				uint8 i=0;
 				printf("write serial : ");
 				for(i=0;i<len;i++)

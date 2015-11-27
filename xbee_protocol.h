@@ -80,7 +80,7 @@ void printf_local_time(void);
 
 void XBeeNetInit(void);
 void xbee_reset(void);
-void xbee_set_AT(int8 *at_cmd, uint8 *param, uint8 len);
+uint8 xbee_set_AT(int8 *at_cmd, uint8 *param, uint8 len, uint8 *rbuf);
 void xbee_net(void);
 void xbee_BD(void);
 
