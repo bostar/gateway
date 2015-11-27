@@ -467,7 +467,7 @@ void event_report(unsigned short netaddr,unsigned char event)
     switch(event)
     {
         case en_vehicle_comming:
-        if((p->state == parking_state_idle) || (p->state == parking_state_fixed_unlock) || (p->state == parking_state_booked_coming_unlock_goto_idle) || (p->state == parking_state_unbooking_unlock) || (p->state == parking_state_have_paid_unlock_vehicle_leave))
+        if(((p->option == parking_type_temporary) && (p->state == parking_state_idle)) || (p->state == parking_state_fixed_unlock) || (p->state == parking_state_booked_coming_unlock_goto_idle) || (p->state == parking_state_unbooking_unlock) || (p->state == parking_state_have_paid_unlock_vehicle_leave))
         {
             need_to_send_to_sever = 1;
             p->state = parking_state_prestop;
