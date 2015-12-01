@@ -61,7 +61,7 @@ void NodePrintf(SourceRouterLinkType *pNode);
 void LinkPrintf(SourceRouterLinkType *pNode);
 int8 arrncmp(uint8 *arr1,uint8 *arr2,uint8 n);
 SourceRouterLinkType *CreatNode(uint8 *mac_adr,uint8 *target_adr);
-SourceRouterLinkType *FindnNode(const SourceRouterLinkType *pNode,uint8 n);
+SourceRouterLinkType *FindnNode(const SourceRouterLinkType *pNode,uint16 n);
 
 void creat_circular_queue( CircularQueueType *queue );
 bool is_empty( CircularQueueType *queue);

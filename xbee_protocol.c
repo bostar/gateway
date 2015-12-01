@@ -32,31 +32,10 @@ void XBeeProcessCFG(uint8 *rbuf)
 {
 	int16 temp;
 	SourceRouterLinkType *p;
+	int ret=0;
 
 	if(*(rbuf+18) == net_request)
 	{
-#if defined __XBEE_TEST_LAR_NODE__
-		temp = 0;
-		if(temp == 0)  //属于该网络,允许加入网络
-		{
-			for(temp=0;temp<8;temp++)
-				printf("%02x ",*(rbuf+4+temp));
-			printf("\n");
-			XBeeJionEnable((rbuf+4),(rbuf+12));
-			pthread_mutex_lock(&mutex02_pLinkHead);
-			p = FindMacAdr(pLinkHead,rbuf+4); 
-			if(p == NULL)
-				AddData(pLinkHead,CreatNode(rbuf+4,rbuf+12));
-			else
-			{
-				p->target_adr = 0;
-				p->target_adr |= (uint16)*(rbuf+13);
-				p->target_adr |= ((uint16)*(rbuf+12))<<8;
-			}
-			pthread_mutex_unlock(&mutex02_pLinkHead);
-			XBeeSetAR(0,RES);
-		}
-#else
 		temp = get_local_addr(rbuf+12,rbuf+4);
 		if(temp == 0)	//属于该网络,允许加入网络
 		{
@@ -66,15 +45,14 @@ void XBeeProcessCFG(uint8 *rbuf)
 			XBeeSetAR(0,RES);
 			//printf("\033[33m\033[1m已将锁加入网络 \033[0m \n");
 		}
-#endif
 		else
 		{
 			XBeeJionDisable((rbuf+4),(rbuf+12));
 			printf("\033[31m\r\nprevent a locker jioned	the park net...\033[0m \r\n");
-			pthread_mutex_lock(&mutex13_pSourcePathList);
-			if((p = FindMacAdr(pSourcePathList,rbuf+4)) != NULL)
+			ret = pthread_mutex_lock(&mutex13_pSourcePathList);
+			if(ret == 0 && (p = FindMacAdr(pSourcePathList,rbuf+4)) != NULL)
 				DeleteNode(pSourcePathList,FindMacAdr(pSourcePathList,rbuf+4));//删除节点
-			pthread_mutex_unlock(&mutex13_pSourcePathList);
+			ret = pthread_mutex_unlock(&mutex13_pSourcePathList);
 		}
 	}
 	return;
@@ -165,10 +143,10 @@ void XBeeProcessSEN(uint8 *rbuf)
 **brief  record source route path
 **       保存经过路由的终端路径
 *************************************************/
-void XBeeProcessRoutRcord(SourceRouterLinkType *p_head , uint8 *rbuf)
+SourceRouterLinkType *XBeeProcessRoutRcord(SourceRouterLinkType *p_head , uint8 *rbuf)
 {
 	uint16 target_adr=0;
-	SourceRouterLinkType *p,*pS;
+	SourceRouterLinkType *p=NULL,*pS=NULL,*pRe=NULL;
 
 	target_adr = 0;
 	target_adr |= (uint16)*(rbuf+13);
@@ -184,16 +162,19 @@ void XBeeProcessRoutRcord(SourceRouterLinkType *p_head , uint8 *rbuf)
 			case 0:
 				free(pS);
 				pS = NULL;
+				pRe = p;
 				//printf("\033[33m锁终端路径已存在...路由节点\033[0m\n");
 				break;
 			case 1:
 				DeleteNode(p_head,p);
 				AddData(p_head,pS);
+				pRe = pS;
 				//printf("\033[33m更新锁终端路径...路由节点\033[0m\n");
 				break;
 			case 2:
 				DeleteNode(p_head,p);
 				AddData(p_head,pS);
+				pRe = pS;
 				//printf("\033[33m新的锁终端路径加入列表...路由节点\033[0m\n");
 				break;
 			default:
@@ -203,9 +184,10 @@ void XBeeProcessRoutRcord(SourceRouterLinkType *p_head , uint8 *rbuf)
 	else
 	{
 		AddData(p_head,pS);
+		pRe = pS;
 		//printf("\033[33m新的锁终端路径加入列表...路由节点\033[0m\n");
 	}
-	return;
+	return pRe;
 }
 /*************************************************
 **brief process mode_status
@@ -231,37 +213,41 @@ void ProcessModState(uint8 *rbuf)
 *************************************************/
 void ProcessATRes(uint8 *rbuf)
 {
-	uint8 i;
+	uint8 i=0;
+	int ret=0;
 	if(*(rbuf+7) != 0)
 		return;
-	pthread_mutex_lock(&mutex14_CoorInfo);
-	if(*(rbuf+5) == 'O' && *(rbuf+6) == 'I')
-	{	
-		CoorInfo.panID16 = 0;
-		CoorInfo.panID16 |= ((uint16)*(rbuf+8))<<8;
-		CoorInfo.panID16 |= (uint16)*(rbuf+9);
-	}
-	else if(*(rbuf+5) == 'O' && *(rbuf+6) == 'P')
+	ret = pthread_mutex_lock(&mutex14_CoorInfo);
+	if(ret == 0)
 	{
-		for(i=0;i<8;i++)
-			CoorInfo.panID64[i] = *(rbuf+8+i);
+		if(*(rbuf+5) == 'O' && *(rbuf+6) == 'I')
+		{	
+			CoorInfo.panID16 = 0;
+			CoorInfo.panID16 |= ((uint16)*(rbuf+8))<<8;
+			CoorInfo.panID16 |= (uint16)*(rbuf+9);
+		}
+		else if(*(rbuf+5) == 'O' && *(rbuf+6) == 'P')
+		{
+			for(i=0;i<8;i++)
+				CoorInfo.panID64[i] = *(rbuf+8+i);
+		}
+		else if(*(rbuf+5) == 'I' && *(rbuf+6) == 'D')
+		{
+			for(i=0;i<8;i++)
+				CoorInfo.panID64[i] = *(rbuf+8+i);
+		}
+		else if(*(rbuf+5) == 'C' && *(rbuf+6) == 'H')
+			CoorInfo.channel = *(rbuf+8);
+		else if(*(rbuf+5) == 'N' && *(rbuf+6) == 'J')
+		{
+			CoorInfo.nj = *(rbuf+8);
+		}
+		else if(*(rbuf+5) == 'A' && *(rbuf+6) == 'R')
+		{
+			CoorInfo.ar = *(rbuf+8);
+		}
 	}
-	else if(*(rbuf+5) == 'I' && *(rbuf+6) == 'D')
-	{
-		for(i=0;i<8;i++)
-			CoorInfo.panID64[i] = *(rbuf+8+i);
-	}
-	else if(*(rbuf+5) == 'C' && *(rbuf+6) == 'H')
-		CoorInfo.channel = *(rbuf+8);
-	else if(*(rbuf+5) == 'N' && *(rbuf+6) == 'J')
-	{
-		CoorInfo.nj = *(rbuf+8);
-	}
-	else if(*(rbuf+5) == 'A' && *(rbuf+6) == 'R')
-	{
-		CoorInfo.ar = *(rbuf+8);
-	}
-	pthread_mutex_unlock(&mutex14_CoorInfo);
+	ret = pthread_mutex_unlock(&mutex14_CoorInfo);
 	return;
 }
 /*************************************************
@@ -440,6 +426,7 @@ void XBeeNetInit(void)
 	//XBeeSetZS(1,NO_RES);
 	xbee_set_AT("AC", param, 0 ,rbuf);
 	printf("\033[33mcreat xbee network ...\033[0m\n");
+	usleep(3000000);
 	xbee_net();
 	param[0] = 0x0a;
 	param[1] = 0xf0;
@@ -457,15 +444,16 @@ void XBeeNetInit(void)
 void xbee_reset(void)
 {
 	uint8 rbuf[128];
-	uint32 cnt=0;
+	uint32 cnt=0,cnts=0;
 	bool status=false;
 	const int8 st[]={0x7e,0x00,0x05,0x08,0x01,0x43,0x42,0x04,0x6d};
-
+	int ret=0;
 	do
 	{
-		pthread_mutex_lock(&mutex09_xbee_other_api_buf);
-		clear_queue(&xbee_other_api_buf);
-		pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
+		ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
+		if(ret == 0)
+			clear_queue(&xbee_other_api_buf);
+		ret = pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
 		xbee_serial_port_init(115200);
 		WriteComPort((uint8*)st, 9);
 		usleep(500000);//按需求定
@@ -476,12 +464,15 @@ void xbee_reset(void)
 		do
 		{
 			usleep(100000);
-			printf(".");
-			pthread_mutex_lock(&mutex09_xbee_other_api_buf);
-			status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
-			pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
-#if 1
 			uint8 i;
+			for(i=0;i<128;i++)
+				rbuf[i] = 0;
+			printf(".");
+			ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
+			if(ret == 0)
+				status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
+			ret = pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
+#if 0			
 			if(status == true)
 			{
 				for(i=0;i<(*(rbuf+2)+4);i++)
@@ -491,9 +482,10 @@ void xbee_reset(void)
 #endif
 			cnt++;
 		}while((*(rbuf+3) != 0x88 || *(rbuf+5) != 'C' || *(rbuf+6) != 'B') && cnt < 0xff );
-		//}while((*(rbuf+3) != 0x8a || *(rbuf+4) != 0x06) && cnt < 0xff );
-	}while(*(rbuf+3) != 0x88 || *(rbuf+5) != 'C' || *(rbuf+6) != 'B' || *(rbuf+7) != 0);
-	//}while(*(rbuf+3) != 0x8a || *(rbuf+4) != 0x06);
+		cnts++;
+	}while((*(rbuf+3) != 0x88 || *(rbuf+5) != 'C' || *(rbuf+6) != 'B' || *(rbuf+7) != 0) && cnts < 0xff);
+	if(cnts >= 0xff)
+		printf("xbee init failed!");
 	puts(" ");
 }
 /***************************************************************
@@ -502,25 +494,29 @@ void xbee_reset(void)
 void xbee_net(void)
 {
 	uint8 rbuf[128];
-	uint32 cnt=0;
+	uint32 cnt=0,cnts=0;
 	bool status=false;
-
+	int ret=0;
 	do
 	{
-		pthread_mutex_lock(&mutex09_xbee_other_api_buf);
-		clear_queue(&xbee_other_api_buf);
-		pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
+		ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
+		if(ret == 0)
+			clear_queue(&xbee_other_api_buf);
+		ret = pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
 		XBeeReadAI();
 		cnt = 0;
 		do
 		{
 			usleep(100000);
 			printf(".");
-			pthread_mutex_lock(&mutex09_xbee_other_api_buf);
-			status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
-			pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
-#if 0
 			uint8 i;
+			for(i=0;i<128;i++)
+				rbuf[i] = 0;
+			ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
+			if(ret == 0)
+				status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
+			ret = pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
+#if 0
 			if(status == true)
 			{
 				for(i=0;i<(*(rbuf+2)+4);i++)
@@ -530,7 +526,10 @@ void xbee_net(void)
 #endif
 			cnt++;
 		}while((*(rbuf+3) != 0x88 || *(rbuf+5) != 'A' || *(rbuf+6) != 'I') && cnt < 0xff);
-	}while(*(rbuf+3) != 0x88 || *(rbuf+5) != 'A' || *(rbuf+6) != 'I' || *(rbuf+7) != 0 || *(rbuf+8) != 0);
+		cnts++;
+	}while((*(rbuf+3) != 0x88 || *(rbuf+5) != 'A' || *(rbuf+6) != 'I' || *(rbuf+7) != 0 || *(rbuf+8) != 0) && cnts <0xff);
+	if(cnts >= 0xff)
+		printf("xbee creat net failed!");
 	puts(" ");
 }
 /***************************************************************
@@ -539,23 +538,28 @@ void xbee_net(void)
 void xbee_BD(void)
 {
 	uint8 state=0,rbuf[128];
-	uint32 cnt=0;
+	uint32 cnt=0,cnts=0;;
 	bool status=false;
-
+	int ret=0;
 	do
 	{
-		pthread_mutex_lock(&mutex09_xbee_other_api_buf);
-		clear_queue(&xbee_other_api_buf);
-		pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
+		ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
+		if(ret == 0)
+			clear_queue(&xbee_other_api_buf);
+		ret = pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
 		XBeeSetBD(115200);
 		cnt = 0;
 		do
 		{
 			usleep(100000);
 			printf(".");
-			pthread_mutex_lock(&mutex09_xbee_other_api_buf);
-			status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
-			pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
+			uint8 i;
+			for(i=0;i<128;i++)
+				rbuf[i] = 0;
+			ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
+			if(ret == 0)
+				status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
+			ret = pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
 #if 0
 			uint8 i;
 			if(status == true)
@@ -573,32 +577,39 @@ void xbee_BD(void)
 			usleep(100000);
 			state = 1;
 		}
-	}while(state == 0);
-//	}while(*(rbuf+3) != 0x88 || *(rbuf+5) != 'B' || *(rbuf+6) != 'D' || *(rbuf+7) != 0);
-	puts(" ");
+		cnts++;
+	}while(state == 0 && cnts < 0xff);
+	if(cnts >= 0xff)
+		printf("change bd failed!");
+	puts("");
 }
 /***************************************************************
 **brief set xbee
 ***************************************************************/
 uint8 xbee_set_AT(int8 *at_cmd, uint8 *param, uint8 len, uint8 *rbuf)
 {
-	uint32 cnt=0;
+	uint32 cnt=0,cnts=0;
 	bool status=false;
-
+	int ret=0;
 	do
 	{
-		pthread_mutex_lock(&mutex09_xbee_other_api_buf);
-		clear_queue(&xbee_other_api_buf);
-		pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
+		ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
+		if(ret == 0)
+			clear_queue(&xbee_other_api_buf);
+		ret = pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
 		XBeeSetAT(at_cmd, param, len, RES);
 		cnt = 0;
 		do
 		{
 			usleep(100000);
 			printf(".");
-			pthread_mutex_lock(&mutex09_xbee_other_api_buf);
-			status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
-			pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
+			uint8 i;
+			for(i=0;i<128;i++)
+				rbuf[i] = 0;
+			ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
+			if(ret == 0)
+				status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
+			ret = pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
 #if 0
 			uint8 i;
 			if(status == true)
@@ -610,7 +621,10 @@ uint8 xbee_set_AT(int8 *at_cmd, uint8 *param, uint8 len, uint8 *rbuf)
 #endif
 			cnt++;
 		}while((*(rbuf+3) != 0x88 || *(rbuf+5) != *at_cmd || *(rbuf+6) != *(at_cmd+1)) && cnt < 0xff );
-	}while(*(rbuf+3) != 0x88 || *(rbuf+5) != *at_cmd || *(rbuf+6) != *(at_cmd+1) || *(rbuf+7) != 0);
+		cnts++;
+	}while((*(rbuf+3) != 0x88 || *(rbuf+5) != *at_cmd || *(rbuf+6) != *(at_cmd+1) || *(rbuf+7) != 0) && cnts < 0xff);
+	if(cnts >= 0xff)
+		printf("xbee %s command failed!",at_cmd);
 	puts(" ");
 	return (*(rbuf+3)+4);
 }
@@ -622,16 +636,20 @@ void get_mac(void)
 {
 	uint8 i=0,rbuf[128],len;
 	uint8 param[2];
+	int ret=0;
 
 	printf("\033[33mgetting mac address\033[0m\r\n");
-	pthread_mutex_lock(&mutex14_CoorInfo);
-	len = xbee_set_AT("SH", param, 0 ,rbuf);
-	for(i=0;i<4;i++)
-		CoorInfo.mac_adr[i] = *(rbuf+8+i);
-	len = xbee_set_AT("SL", param, 0 ,rbuf);
-	for(i=0;i<4;i++)
-		CoorInfo.mac_adr[4+i] = *(rbuf+8+i);
-	pthread_mutex_unlock(&mutex14_CoorInfo);
+	ret = pthread_mutex_lock(&mutex14_CoorInfo);
+	if(ret == 0)
+	{
+		len = xbee_set_AT("SH", param, 0 ,rbuf);
+		for(i=0;i<4;i++)
+			CoorInfo.mac_adr[i] = *(rbuf+8+i);
+		len = xbee_set_AT("SL", param, 0 ,rbuf);
+		for(i=0;i<4;i++)
+			CoorInfo.mac_adr[4+i] = *(rbuf+8+i);
+	}
+	ret = pthread_mutex_unlock(&mutex14_CoorInfo);
 	printf("\033[34mcoor mac addr \033[0m: ");	
 	for(i=0;i<8;i++)
 	{
@@ -646,13 +664,18 @@ void get_mac(void)
 int get_gateway_mac_addr(unsigned char *macAddr)
 {
 	uint8 i=0,sum=0;
-	pthread_mutex_lock(&mutex14_CoorInfo);
-	for(i=0;i<8;i++)
+	int ret=0;
+
+	ret = pthread_mutex_lock(&mutex14_CoorInfo);
+	if(ret == 0)
 	{
-		macAddr[i] = CoorInfo.mac_adr[i];
-		sum |= CoorInfo.mac_adr[i];
+		for(i=0;i<8;i++)
+		{
+			macAddr[i] = CoorInfo.mac_adr[i];
+			sum |= CoorInfo.mac_adr[i];
+		}
 	}
-	pthread_mutex_unlock(&mutex14_CoorInfo);
+	ret = pthread_mutex_unlock(&mutex14_CoorInfo);
 	if(sum == 0)
 		return -1;
 	else

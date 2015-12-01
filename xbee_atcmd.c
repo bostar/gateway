@@ -32,6 +32,8 @@ int16 XBeeSendATCmd(int8* atcmd,uint8* pparam,uint8 len,uint8 IsRes)
 {
 	static uint8 wbuf[128];
 	uint8 i;
+	int ret=0;
+
 	XBeeApiATCmdType *cmd = (XBeeApiATCmdType*)wbuf;
 	cmd->start_delimiter  = 0x7E;
 	cmd->len_msb          = (uint8)((4+len)>>8);
@@ -44,9 +46,10 @@ int16 XBeeSendATCmd(int8* atcmd,uint8* pparam,uint8 len,uint8 IsRes)
 		*(((uint8*)cmd)+7+i) = *(pparam+i);
 	*(((uint8*)cmd)+7+len) = XBeeApiChecksum(((uint8*)cmd)+3,4+len);
 
-	pthread_mutex_lock(&mutex10_serial_wbuf);
-	write_cqueue( &serial_wbuf , (uint8*)cmd , 8+len );
-	pthread_mutex_unlock(&mutex10_serial_wbuf);
+	ret = pthread_mutex_lock(&mutex10_serial_wbuf);
+	if(ret == 0)
+		write_cqueue( &serial_wbuf , (uint8*)cmd , 8+len );
+	ret = pthread_mutex_unlock(&mutex10_serial_wbuf);
 	return (8+len);
 }
 
@@ -65,7 +68,8 @@ int16 XBeeTransReq(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,u
   	static uint8 wbuf[138];
 	uint8 cnt=0;
   	XBeeTransReqType *frame = (XBeeTransReqType*)wbuf;
-	
+	int ret=0;	
+
   	frame->start_delimiter = 0x7E;
 	frame->len_msb         = (uint8)((14+len)>>8);
   	frame->len_lsb         = (uint8)(14+len);
@@ -86,18 +90,24 @@ int16 XBeeTransReq(uint8 *adr,uint8 *net_adr,SetOptions options,uint8 *rf_data,u
 	uint8 re_buf[128];
 
 	
-	pthread_mutex_lock(&mutex13_pSourcePathList);
-	p = FindMacAdr(pSourcePathList , adr);
-	if(p != NULL)
+	ret = pthread_mutex_lock(&mutex13_pSourcePathList);
+	if(ret == 0)
 	{
-		n = XBeeCreatSourceRout( p->mac_adr, p->target_adr , p->num_mid_adr , p->mid_adr , re_buf);
+		p = FindMacAdr(pSourcePathList , adr);
+		if(p != NULL)
+		{
+			n = XBeeCreatSourceRout( p->mac_adr, p->target_adr , p->num_mid_adr , p->mid_adr , re_buf);
+		}
 	}
-	pthread_mutex_unlock(&mutex13_pSourcePathList);
+	ret = pthread_mutex_unlock(&mutex13_pSourcePathList);
 
-	pthread_mutex_lock(&mutex12_trans_req_buf);
-	write_cqueue(&trans_req_buf , re_buf , n);
-	write_cqueue(&trans_req_buf , (uint8*)frame , 18+len);
-	pthread_mutex_unlock(&mutex12_trans_req_buf);
+	ret = pthread_mutex_lock(&mutex12_trans_req_buf);
+	if(ret == 0)
+	{
+		write_cqueue(&trans_req_buf , re_buf , n);
+		write_cqueue(&trans_req_buf , (uint8*)frame , 18+len);
+	}
+	ret =pthread_mutex_unlock(&mutex12_trans_req_buf);
 
 	return (n + len + 18);
 }
@@ -156,6 +166,7 @@ int16 XBeeRemoteATCmd(uint8 *mac_adr , uint8 *net_adr , RemoteATRequestType opti
 {
 	static uint8 buf[128],i;
 	uint16 lenth;
+	int ret=0;
 
 	*buf = 0x7e;
 	lenth = len +15;
@@ -178,18 +189,24 @@ int16 XBeeRemoteATCmd(uint8 *mac_adr , uint8 *net_adr , RemoteATRequestType opti
 	int16 n=0;
 	uint8 re_buf[128];
 
-	pthread_mutex_lock(&mutex13_pSourcePathList);
-	p = FindMacAdr(pSourcePathList , mac_adr);
-	if(p != NULL)
+	ret = pthread_mutex_lock(&mutex13_pSourcePathList);
+	if(ret == 0)
 	{
-		n = XBeeCreatSourceRout( p->mac_adr, p->target_adr , p->num_mid_adr , p->mid_adr , re_buf);
+		p = FindMacAdr(pSourcePathList , mac_adr);
+		if(p != NULL)
+		{
+			n = XBeeCreatSourceRout( p->mac_adr, p->target_adr , p->num_mid_adr , p->mid_adr , re_buf);
+		}
 	}
-	pthread_mutex_unlock(&mutex13_pSourcePathList);
+	ret = pthread_mutex_unlock(&mutex13_pSourcePathList);
 	
-	pthread_mutex_lock(&mutex12_trans_req_buf);
-	write_cqueue(&trans_req_buf , re_buf , n);
-	write_cqueue(&trans_req_buf , (uint8*)buf , lenth+4);
-	pthread_mutex_unlock(&mutex12_trans_req_buf);
+	ret = pthread_mutex_lock(&mutex12_trans_req_buf);
+	if(ret == 0)
+	{
+		write_cqueue(&trans_req_buf , re_buf , n);
+		write_cqueue(&trans_req_buf , (uint8*)buf , lenth+4);
+	}
+	ret = pthread_mutex_unlock(&mutex12_trans_req_buf);
 	for(i=0;i<n;i++)
 		printf("%02x ",*(re_buf+i));
 	puts("");

@@ -59,18 +59,20 @@ SourceRouterLinkType *CreatNode(uint8 *mac_adr,uint8 *target_adr)
 **reval NULL 没有数据
       P   数据地址
 *******************************************************************************************/
-SourceRouterLinkType *FindnNode(const SourceRouterLinkType *pNode,uint8 n)
+SourceRouterLinkType *FindnNode(const SourceRouterLinkType *pNode,uint16 n)
 {
 	SourceRouterLinkType *p=NULL,*pS=NULL;
 	uint8 i=1;
 	p = (SourceRouterLinkType*)pNode;
-	while(p != NULL && i <= n)
+	while(p != NULL)
 	{
+		if(i == n)
+			return p;
 		pS = p;
 		p = p->next;
 		i++;
 	}
-	return pS;
+	return NULL;
 }
 /*******************************************************************************************
 **brief 查找数据,网络地址
@@ -249,7 +251,7 @@ int8 arrncmp(uint8 *arr1,uint8 *arr2,uint8 n)
 	return 0;
 }
 
-//serial send data buffer define******************************************************************
+/*serial send data buffer define***********************************************************************************************/
 /****************************************************************
 **brief push data into a queue
 ****************************************************************/
@@ -281,7 +283,7 @@ void queue_push_out(void)
 	
 }
 
-//serial receive data buffer define******************************************************************
+/*serial receive data buffer define*****************************/
 void creat_circular_queue( CircularQueueType *queue )  
 {  
     queue -> front = 0;  
@@ -399,6 +401,7 @@ void print_queue(CircularQueueType *queue)
 		i++;
 	}
 }
+/**********************************************************************************************************************************/
 /***********************************************************************
 **brief 创建发送应答链表节点
 ***********************************************************************/

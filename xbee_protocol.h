@@ -58,7 +58,7 @@ int16 XBeeJionDisable(uint8 *ieeeadr,uint8 *netadr);
 void XBeeProcessCFG(uint8 *rbuf);
 void XBeeProcessCTL(uint8 *rbuf);
 void XBeeProcessSEN(uint8 *rbuf);
-void XBeeProcessRoutRcord(SourceRouterLinkType *p_head , uint8 *rbuf);
+SourceRouterLinkType *XBeeProcessRoutRcord(SourceRouterLinkType *p_head , uint8 *rbuf);
 void ProcessND(uint8 *rbuf);
 void ProcessModState(uint8 *rbuf);
 void ProcessATRes(uint8 *rbuf);

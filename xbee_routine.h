@@ -43,6 +43,7 @@ typedef struct
 	uint8 ar;
 	uint8 mac_adr[8];
 	int8 net_state;
+	int8 systime[128];
 }CoorInfoType;
 
 struct XBeeDataWaiteSend
