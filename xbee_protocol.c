@@ -437,6 +437,7 @@ void XBeeNetInit(void)
 	xbee_set_AT("AC", param, 0 ,rbuf);
 	CoorInfo.NetState = 1;
 	printf("\n\033[33mxbee network established！\033[0m\n");
+	err_log("xbee网络创建成功" , strlen("xbee网络创建成功"));
 }
 /***************************************************************
 **brief xbee reset
@@ -444,6 +445,7 @@ void XBeeNetInit(void)
 void xbee_reset(void)
 {
 	uint8 rbuf[128];
+	int8 bufs[1];
 	uint32 cnt=0,cnts=0;
 	bool status=false;
 	const int8 st[]={0x7e,0x00,0x05,0x08,0x01,0x43,0x42,0x04,0x6d};
@@ -451,13 +453,23 @@ void xbee_reset(void)
 	do
 	{
 		ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
+		printf("%s,%d\r\n",__FILE__,__LINE__);
 		if(ret == 0)
 			clear_queue(&xbee_other_api_buf);
 		ret = pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
 		xbee_serial_port_init(115200);
+		printf("%s,%d\r\n",__FILE__,__LINE__);
+		do{
+			usleep(20000);
+			status = read_xbee_cts(bufs);
+		}while(status != true || *bufs != '1');
 		WriteComPort((uint8*)st, 9);
 		usleep(500000);//按需求定
 		xbee_serial_port_init(9600);
+		do{
+			usleep(20000);
+			status = read_xbee_cts(bufs);
+		}while(status != true || *bufs != '1');
 		WriteComPort((uint8*)st, 9);
 		printf("reset xbee ...\r\n");
 		cnt = 0;

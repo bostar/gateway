@@ -91,20 +91,23 @@ INT32 OpenComPort (INT32 ComPort, INT32 baudrate, INT32 databit,
         fprintf (stderr, "cannot open port %s\n", pComPort);
         return (-1);
     }
-
+printf("%s,%d\r\n",__FILE__,__LINE__);
     printf("comport fd = %d\n", fd);
 
     tcgetattr (fd, &termios_old);       /* save old termios value */
+printf("%s,%d\r\n",__FILE__,__LINE__);
     /* 0 on success, -1 on failure */
     retval = set_port_attr (baudrate, databit, stopbit, parity);
     if (-1 == retval) {
         fprintf (stderr, "\nport %s cannot set baudrate at %d\n", pComPort,
                  baudrate);
     }
+printf("%s,%d\r\n",__FILE__,__LINE__);
 	if(!retval)
 	{
 		pthread_mutex_init(&mut,NULL);
 	}
+printf("%s,%d\r\n",__FILE__,__LINE__);
     return (retval);
 }
 

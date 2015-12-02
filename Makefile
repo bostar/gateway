@@ -15,4 +15,4 @@ $(EXEC):$(OBJS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	@rm -vf $(EXEC) *.o *~
+	@rm -vf $(EXEC) *.o *~ *txt

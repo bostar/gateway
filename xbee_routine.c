@@ -59,6 +59,17 @@ void xbee_routine_thread(void)
 	uint8 _i,_adr[8];
 	uint8 *HeadMidAdr=NULL;
 
+	time_t timetTime;  
+    struct tm *pTmTime;  
+
+	timetTime = time(NULL);		//获取当前系统时间
+	//printf("timetTime=%d\n", (uint32)timetTime);
+	strncpy(CoorInfo.logname,"xbee_dev_log_",13);
+    pTmTime = localtime(&timetTime);	//time_t 结构转换成tm结构
+    snprintf(CoorInfo.logname+13 , 24 , "%04d_%02d_%02d_%02d_%02d_%02d.txt", pTmTime->tm_year+1900, pTmTime->tm_mon+1, pTmTime->tm_mday, pTmTime->tm_hour, pTmTime->tm_min, pTmTime->tm_sec);
+	printf("CoorInfo.logname=%s\n", CoorInfo.logname);
+	err_log(CoorInfo.logname , strlen(CoorInfo.logname));
+
 	xbee_gpio_init();
 	//xbee_serial_port_init();
 
@@ -120,6 +131,7 @@ void xbee_routine_thread(void)
 	    if(ret!=0)
 		{
 	        printf ("Create xbee_routine_thread_write_serial error!\n");
+			err_log("Create xbee_routine_thread_write_serial error!" , strlen("Create xbee_routine_thread_write_serial error!"));
 	    }
 		else
 			printf ("start xbee_routine_thread_write_serial ok!\n");
@@ -131,6 +143,7 @@ void xbee_routine_thread(void)
 	    if(ret!=0)
 		{
 	        printf ("Create xbee_routine_thread_read_serial error!\n");
+			err_log("Create xbee_routine_thread_read_serial error!" , strlen("Create xbee_routine_thread_read_serial error!"));
 	    }
 		else
 			printf ("start xbee_routine_thread_read_serial ok!\n");
@@ -142,9 +155,8 @@ void xbee_routine_thread(void)
     	if(ret!=0)
 		{
        		printf ("Create xbee_routine_thread_process_serial_rbuf error!\n");
+			err_log("Create xbee_routine_thread_process_serial_rbuf error!" , strlen("Create xbee_routine_thread_process_serial_rbuf error!"));
     	}
-		else
-			printf ("start xbee_routine_thread_process_serial_rbuf ok!\n");
 	}while(ret != 0);
 
 	XBeeNetInit();
@@ -155,7 +167,8 @@ void xbee_routine_thread(void)
     	ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_process_trans_status_buf,NULL);
     	if(ret!=0)
 		{
-        	printf ("Create xbee_routine_thread_process_trans_status_buf error!n");
+        	printf ("Create xbee_routine_thread_process_trans_status_buf error!\n");
+			err_log("Create xbee_routine_thread_process_trans_status_buf error!" , strlen("Create xbee_routine_thread_process_trans_status_buf error!"));
     	}
 	}
 	while(ret != 0);
@@ -165,7 +178,8 @@ void xbee_routine_thread(void)
 		ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_process_trans_req_buf,NULL);
     	if(ret!=0)
 		{
-    	    printf ("Create xbee_routine_thread_process_trans_req_buf error!n");
+    	    printf ("Create xbee_routine_thread_process_trans_req_buf error!\n");
+			err_log("Create xbee_routine_thread_process_trans_req_buf error!" , strlen("Create xbee_routine_thread_process_trans_req_buf error!"));
     	}
 	}
 	while(ret != 0);
@@ -175,8 +189,9 @@ void xbee_routine_thread(void)
 		ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_process_route_record_buf,NULL);
     	if(ret!=0)
 		{
-       		printf ("Create xbee_routine_thread_process_route_record_buf error!n");
-    	}
+			printf ("Create xbee_routine_thread_process_route_record_buf error!\n");
+			err_log("Create xbee_routine_thread_process_route_record_buf error!" , strlen("Create xbee_routine_thread_process_route_record_buf error!"));
+		}
 	}
 	while(ret != 0);
 
@@ -185,7 +200,8 @@ void xbee_routine_thread(void)
     	ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_process_other_api_buf,NULL);
     	if(ret!=0)
 		{
-			printf ("Create xbee_routine_thread_process_other_api_buf error!n");
+			printf ("Create xbee_routine_thread_process_other_api_buf error!\n");
+			err_log("Create xbee_routine_thread_process_other_api_buf error!" , strlen("Create xbee_routine_thread_process_other_api_buf error!"));
     	}
 	}while(ret != 0);
 	
@@ -199,28 +215,7 @@ void xbee_routine_thread(void)
 	    }
 	}while(ret != 0);
 #endif
-#if 0
-	time_t timetTime;  
-    struct tmtm *pTmTime;  
-    char   szTime[24] = {0};  
-      
-    //获取当前系统时间  
-    timetTime = time(NULL);  
-    printf("timetTime=%d\n", (uint32)timetTime);  
-  
-    //time_t 结构转换成tm结构  
-    pTmTime = localtime(&timetTime);  
-  
-    //验证tm类型数据是否正确  
-    snprintf(szTime, sizeof(szTime)-1,  "%d-%02d-%02d %02d:%02d:%02d",  
-		pTmTime->tm_year+1900,  
-        pTmTime->tm_mon+1,  
-        pTmTime->tm_mday,  
-        pTmTime->tm_hour,  
-        pTmTime->tm_min,  
-        pTmTime->tm_sec);  
-    printf("szTime=%s\n", szTime); 
-#endif
+
 	//CoorInfo.net_state = 'o';
 	while(1)
 	{

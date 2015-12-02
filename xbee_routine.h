@@ -20,6 +20,7 @@
 #include "xbee_protocol.h"
 #include "xbee_config.h"
 #include "xbee_api.h"
+#include "xbee_log.h"
 
 #define NO_NET        1
 #define IN_NET        2
@@ -43,7 +44,7 @@ typedef struct
 	uint8 ar;
 	uint8 mac_adr[8];
 	int8 net_state;
-	int8 systime[128];
+	int8 logname[128];
 }CoorInfoType;
 
 struct XBeeDataWaiteSend
