@@ -9,6 +9,8 @@ typedef struct {
     unsigned char online;
     unsigned char onlinecpy;
     en_parkingEvent event;
+    en_parkingEvent vehicle_event;
+    time_t vehicle_time;
     time_t time;
     time_t offline_time_out;
     unsigned char option;
