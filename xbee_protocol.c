@@ -67,16 +67,16 @@ void XBeeProcessCTL(uint8 *rbuf)
 		switch(*(rbuf+19))
 		{
 			case ParkUnlockSuccess:
-				
+
 				break;
-			case ParkLockSuccess:	
-				
+			case ParkLockSuccess:
+
 				break;
 			case ParkUnlockFailed:
-				
+
 				break;
 			case ParkLockFailed:
-				
+
 				break;
 			default:
 				break;
@@ -115,7 +115,7 @@ void XBeeProcessSEN(uint8 *rbuf)
 				event_report( char_to_int(rbuf+12),en_lock_success);
 				break;
 			case ParkLockFailed:
-				//printf("\033[33m\033[1m车位锁定失败 \033[0m \n");	
+				//printf("\033[33m\033[1m车位锁定失败 \033[0m \n");
 				event_report( char_to_int(rbuf+12),en_lock_failed);
 				break;
 			case ParkUnlockSuccess:
@@ -136,7 +136,7 @@ void XBeeProcessSEN(uint8 *rbuf)
 	}
 	if(*(rbuf+23) == 0x01)	//电量上报
 	{
-		
+
 	}
 }
 /*************************************************
@@ -221,7 +221,7 @@ void ProcessATRes(uint8 *rbuf)
 	if(ret == 0)
 	{
 		if(*(rbuf+5) == 'O' && *(rbuf+6) == 'I')
-		{	
+		{
 			CoorInfo.panID16 = 0;
 			CoorInfo.panID16 |= ((uint16)*(rbuf+8))<<8;
 			CoorInfo.panID16 |= (uint16)*(rbuf+9);
@@ -251,11 +251,11 @@ void ProcessATRes(uint8 *rbuf)
 	return;
 }
 /*************************************************
-**brief process teansmit state 
+**brief process teansmit state
 *************************************************/
 void ProcessTranState(void)
 {
-	
+
 }
 /*************************************************
 **brief process ND AT command response
@@ -263,7 +263,7 @@ void ProcessTranState(void)
 *************************************************/
 void ProcessND(uint8 *rbuf)
 {
-	
+
 }
 /*************************************************
 **brief 向router发送限时加入网络命令
@@ -271,7 +271,7 @@ void ProcessND(uint8 *rbuf)
 int16 XBeeSendNetOFF(uint8 time)
 {
 	uint8 data[5];
-	
+
 	data[0]  =  'C';
 	data[1]  =  'F';
 	data[2]  =  'G';
@@ -287,7 +287,7 @@ int16 XBeeJionEnable(uint8 *ieeeadr,uint8 *netadr)
 {
 	uint8 data[5];
 	uint16 target_adr=0;
-	
+
 	target_adr |= (uint16)*(netadr+1);
 	target_adr |= (((uint16)*(netadr+0)) << 8);
 	data[0]  =  'C';
@@ -313,7 +313,7 @@ int16 XBeeJionDisable(uint8 *ieeeadr,uint8 *netadr)
 	return 0;
 }
 /*******************************************************
-**brief 发送恢复出厂设置指令
+**brief 发���恢复出厂设置指令
 *******************************************************/
 int16 XBeeSendFactorySettingCmd(uint8 *ieeeadr,uint8 *netadr)
 {
@@ -351,7 +351,7 @@ int16 XBeePutCtlCmd(uint8 *ieeeadr,uint16 netadr,uint8 lockstate)
 {
 	uint8 data[5];
 
-	data[0]  =  'C';	
+	data[0]  =  'C';
 	data[1]  =  'T';
 	data[2]  =  'L';
 	data[3]  =  0x00;
@@ -419,13 +419,12 @@ void XBeeNetInit(void)
 {
 	uint8 param[2],rbuf[128];
 
-	xbee_reset();
+	xbee_init();
 	param[0] = 0x42;
 	param[1] = 0x00;
 	xbee_set_AT("SC", param, 2 ,rbuf);
 	//XBeeSetZS(1,NO_RES);
 	xbee_set_AT("AC", param, 0 ,rbuf);
-	printf("\033[33mcreat xbee network ...\033[0m\n");
 	usleep(3000000);
 	xbee_net();
 	param[0] = 0x0a;
@@ -442,23 +441,23 @@ void XBeeNetInit(void)
 /***************************************************************
 **brief xbee reset
 ***************************************************************/
-void xbee_reset(void)
+void xbee_init(void)
 {
 	uint8 rbuf[128];
 	int8 bufs[1];
 	uint32 cnt=0,cnts=0;
 	bool status=false;
-	const int8 st[]={0x7e,0x00,0x05,0x08,0x01,0x43,0x42,0x04,0x6d};
+	const int8 st[]={0x7e,0x00,0x05,0x08,0x01,(uint8)'C',(uint8)'B',0x04,0x6d};
 	int ret=0;
 	do
 	{
 		ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
-		printf("%s,%d\r\n",__FILE__,__LINE__);
+		//printf("%s,%d\r\n",__FILE__,__LINE__);
 		if(ret == 0)
 			clear_queue(&xbee_other_api_buf);
 		ret = pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
 		xbee_serial_port_init(115200);
-		printf("%s,%d\r\n",__FILE__,__LINE__);
+		//printf("%s,%d\r\n",__FILE__,__LINE__);
 		do{
 			usleep(20000);
 			status = read_xbee_cts(bufs);
@@ -471,7 +470,7 @@ void xbee_reset(void)
 			status = read_xbee_cts(bufs);
 		}while(status != true || *bufs != '1');
 		WriteComPort((uint8*)st, 9);
-		printf("reset xbee ...\r\n");
+		printf("\033[33mxbee factory reset\033[0m ...\r\n");
 		cnt = 0;
 		do
 		{
@@ -484,7 +483,7 @@ void xbee_reset(void)
 			if(ret == 0)
 				status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
 			ret = pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
-#if 0			
+#if 0
 			if(status == true)
 			{
 				for(i=0;i<(*(rbuf+2)+4);i++)
@@ -493,11 +492,16 @@ void xbee_reset(void)
 			}
 #endif
 			cnt++;
-		}while((*(rbuf+3) != 0x88 || *(rbuf+5) != 'C' || *(rbuf+6) != 'B') && cnt < 0xff );
+		}while((*(rbuf+3) != 0x88 || *(rbuf+5) != (uint8)'C' || *(rbuf+6) != (uint8)'B') && cnt < _RESET_TIMES );
 		cnts++;
-	}while((*(rbuf+3) != 0x88 || *(rbuf+5) != 'C' || *(rbuf+6) != 'B' || *(rbuf+7) != 0) && cnts < 0xff);
+	}while((*(rbuf+3) != 0x88 || *(rbuf+5) != (uint8)'C' || *(rbuf+6) != (uint8)'B' || *(rbuf+7) != 0) && cnts < _RESET_TIMES);
 	if(cnts >= 0xff)
-		printf("xbee init failed!");
+	{
+		printf("xbee factory reset failed!\r\n");
+		err_log("xbee factory reset failed!" , strlen("xbee init failed!"));
+	}
+	else
+		printf("\033[33mreset xbee success!\033[0m");
 	puts(" ");
 }
 /***************************************************************
@@ -511,6 +515,7 @@ void xbee_net(void)
 	int ret=0;
 	do
 	{
+		printf("\033[33mcreat xbee network ...\033[0m\n");
 		ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
 		if(ret == 0)
 			clear_queue(&xbee_other_api_buf);
@@ -537,11 +542,13 @@ void xbee_net(void)
 			}
 #endif
 			cnt++;
-		}while((*(rbuf+3) != 0x88 || *(rbuf+5) != 'A' || *(rbuf+6) != 'I') && cnt < 0xff);
+		}while((*(rbuf+3) != 0x88 || *(rbuf+5) != 'A' || *(rbuf+6) != 'I') && cnt < _START_NET_TIMES);
 		cnts++;
-	}while((*(rbuf+3) != 0x88 || *(rbuf+5) != 'A' || *(rbuf+6) != 'I' || *(rbuf+7) != 0 || *(rbuf+8) != 0) && cnts <0xff);
+	}while((*(rbuf+3) != 0x88 || *(rbuf+5) != 'A' || *(rbuf+6) != 'I' || *(rbuf+7) != 0 || *(rbuf+8) != 0) && cnts < _START_NET_TIMES);
 	if(cnts >= 0xff)
-		printf("xbee creat net failed!");
+		printf("xbee creat failed!");
+	else
+		printf("\033[33mxbee creat success!\033[0m");
 	puts(" ");
 }
 /***************************************************************
@@ -605,6 +612,7 @@ uint8 xbee_set_AT(int8 *at_cmd, uint8 *param, uint8 len, uint8 *rbuf)
 	int ret=0;
 	do
 	{
+		printf("\033[33msend xbee AT command\033[0m ...\r\n");
 		ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
 		if(ret == 0)
 			clear_queue(&xbee_other_api_buf);
@@ -632,9 +640,9 @@ uint8 xbee_set_AT(int8 *at_cmd, uint8 *param, uint8 len, uint8 *rbuf)
 			}
 #endif
 			cnt++;
-		}while((*(rbuf+3) != 0x88 || *(rbuf+5) != *at_cmd || *(rbuf+6) != *(at_cmd+1)) && cnt < 0xff );
+		}while((*(rbuf+3) != 0x88 || *(rbuf+5) != *at_cmd || *(rbuf+6) != *(at_cmd+1)) && cnt < _SET_AT_TIMES );
 		cnts++;
-	}while((*(rbuf+3) != 0x88 || *(rbuf+5) != *at_cmd || *(rbuf+6) != *(at_cmd+1) || *(rbuf+7) != 0) && cnts < 0xff);
+	}while((*(rbuf+3) != 0x88 || *(rbuf+5) != *at_cmd || *(rbuf+6) != *(at_cmd+1) || *(rbuf+7) != 0) && cnts < _SET_AT_TIMES);
 	if(cnts >= 0xff)
 		printf("xbee %s command failed!",at_cmd);
 	puts(" ");
@@ -662,7 +670,7 @@ void get_mac(void)
 			CoorInfo.mac_adr[4+i] = *(rbuf+8+i);
 	}
 	ret = pthread_mutex_unlock(&mutex14_CoorInfo);
-	printf("\033[34mcoor mac addr \033[0m: ");	
+	printf("\033[34mcoor mac addr \033[0m: ");
 	for(i=0;i<8;i++)
 	{
 		printf("%02x ",CoorInfo.mac_adr[i]);
@@ -711,14 +719,14 @@ void printf_local_time(void)
 {
 	time_t now;    //实例化time_t结构
 	struct tm  *timenow;    //实例化tm结构指针
-	
+
 	timenow = localtime(&now);//localtime函数把从time取得的时间now换算成你电脑中的时间(就是你设置的地区)
 	printf("Local time is %s\n",asctime(timenow));//asctime函数把时间转换成字符，通过printf()函数输出
 }
 /*****************************************************************************
 **brief	analysis package from a queue
-**param	
-**reval	
+**param
+**reval
 *****************************************************************************/
 uint16 read_one_package_f_queue( CircularQueueType* p_cqueue , uint8* buf )
 {
@@ -726,7 +734,7 @@ uint16 read_one_package_f_queue( CircularQueueType* p_cqueue , uint8* buf )
 	uint16 DataLen=0,cnt=0;
 	uint8 checksum;
 	uint8 UartRevBuf[255];
-	
+
 	len = read_cqueue(p_cqueue , UartRevBuf , 1);
 	if(len == 0)
 		return 0;
@@ -747,7 +755,7 @@ uint16 read_one_package_f_queue( CircularQueueType* p_cqueue , uint8* buf )
 	if(checksum != UartRevBuf[DataLen+3])
 		return 0;
 	else
-	{	
+	{
 		for(cnt=0;cnt<DataLen+4;cnt++)
 		{
 			*(buf+cnt) = *(UartRevBuf+cnt);

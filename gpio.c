@@ -89,18 +89,6 @@ void reset_zm516x(void)
     printf("reset zm516x\r\n");
 }
 
-bool read_xbee_cts(char *buf)
-{
-	int res=-1;
-
-	lseek(fd5, 0, SEEK_SET);
-	res = read(fd5 , buf , 1);
-	if(res == 1)
-	{
-		return true;
-	}
-	return false;
-}
 
 
 

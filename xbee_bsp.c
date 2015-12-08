@@ -17,6 +17,7 @@
 #include "serial.h"
 #include "xbee_config.h"
 
+
 #define ttyO0  0
 #define ttyO1  1
 #define ttyO2  2
@@ -24,19 +25,20 @@
 #define ttyO4  4
 #define ttyO5  5
 
-int fd1,fd2,fd3,fd4,fd5;
+int gpio_xbee_rts,gpio_sleep_ctl,fd3,gpio_xbee_reset,gpio_xbee_cts;
 static int n_com_port = ttyO1;
 
+/***************io口操作***********************************************************************************/
 void xbee_gpio_init(void)
 {
     int ret;
-    fd1 = open("/sys/class/gpio/gpio53/value",O_RDWR);
-    if(fd1 < 0)
+    gpio_xbee_rts = open("/sys/class/gpio/gpio53/value",O_RDWR);
+    if(gpio_xbee_rts < 0)
     {
         printf("Open gpio53 failed!\r\n");
     }
-    fd2 = open("/sys/class/gpio/gpio55/value",O_RDWR);
-    if(fd2 < 0)
+    gpio_sleep_ctl = open("/sys/class/gpio/gpio55/value",O_RDWR);
+    if(gpio_sleep_ctl < 0)
     {
         printf("Open gpio55 failed!\r\n");
     }
@@ -45,22 +47,61 @@ void xbee_gpio_init(void)
     {
         printf("Open gpio57 failed!\r\n");
     }
-    fd4 = open("/sys/class/gpio/gpio59/value",O_RDWR);
-    if(fd4 < 0)
+    gpio_xbee_reset = open("/sys/class/gpio/gpio59/value",O_RDWR);
+    if(gpio_xbee_reset < 0)
     {
         printf("Open gpio59 failed!\r\n");
     }
-    fd5 = open("/sys/class/gpio/gpio45/value",O_RDWR);
-    if(fd5 < 0)
+    gpio_xbee_cts = open("/sys/class/gpio/gpio45/value",O_RDONLY);
+    if(gpio_xbee_cts < 0)
     {
         printf("Open gpio45 failed!\r\n");
     }
 
-    ret = write(fd1, "1", 1); // DEF
-    ret = write(fd2, "1", 1); // SLEEP
-    ret = write(fd3, "1", 1); // WAKEUP
-    ret = write(fd4, "1", 1); // RESET
+    ret = write(gpio_xbee_rts, "1", 1); // RTS
+    ret = write(gpio_sleep_ctl, "1", 1); // SLEEP
+    ret = write(fd3, "1", 1);
+    ret = write(gpio_xbee_reset, "1", 1); // RESET
 }
+
+bool xbee_gpio_set(int gpio,unsigned char level)
+{
+	int8 buf;
+	int res=-1;
+
+	buf = (int8)level;
+	res = lseek(gpio, 0, SEEK_SET);
+	if(res < 0)
+	{
+		printf("\033[31mwrite gpio failed!\033[0m\r\n");
+	}
+	res = write(gpio , &buf , 1);
+	if(res < 0)
+	{
+		printf("\033[31mwrite gpio failed!\033[0m\r\n");
+		return false;
+	}
+	return true;
+}
+
+unsigned char xbee_gpio_get(int gpio)
+{
+	uint8 buf[1];
+
+	lseek(gpio_xbee_rts, 0, SEEK_SET);
+	if(read(gpio_xbee_rts , buf , 1) < 0)
+	{
+		printf("\033[31mread gpio failed!\033[0m\r\n");
+		return 2;
+	}
+	if(*buf == '0')
+		return 0;
+	else if(*buf == '1')
+		return 1;
+	else
+		return 2;
+}
+/***************串口操作*****************************************************************************************/
 void xbee_serial_port_init(uint32 bd)
 {
     int ret = -1;
@@ -108,54 +149,42 @@ int xbee_serial_port_write(unsigned char *buf,int len)
 {
     return WriteComPort(buf, len);
 }
-
-void xbee_gpio_set(int gpio,unsigned char level)
-{
-
-}
-
-unsigned char xbee_gpio_get(int gpio)
-{
-    return 0;
-}
-
+/**************xbee操作***************************************************************************************/
 /*******************************************
-**brief 创建网络
+**brief cts control
 *******************************************/
-void XBeeCreateNet(void)
+bool read_xbee_cts(char *buf)
 {
-	uint8 panID[8],i;
-	xbee_serial_port_init(115200);
-	XBeeSendAT("RE");
-	usleep(1000);
-	LeaveNetwork();	
-	xbee_serial_port_init(9600);
-	XBeeSendAT("RE");
-	usleep(1000);
-	LeaveNetwork();	
-	usleep(300000);
-	for(i=0;i<8;i++)
-		panID[i] = 0x00;
-	XBeeSetPanID(panID,NO_RES);   //设置ID的值	
-	XBeeSetChannel(SCAN_CHANNEL,NO_RES); //设置信道
-	//XBeeSetZS(1,NO_RES);
-	XbeeSendAC(NO_RES);
-	XBeeSendWR(NO_RES);
+	int res=-1;
+
+	lseek(gpio_xbee_cts, 0, SEEK_SET);
+	res = read(gpio_xbee_cts , buf , 1);
+	if(res == 1)
+	{
+		return true;
+	}
+	return false;
 }
 /*******************************************
-**brief 离开网络
+**brief xbee reset
 *******************************************/
-int16 LeaveNetwork(void)
+void xbee_reset(void)
 {
-	uint8 param=4;
-	int8 *cmd;
-	cmd = "CB";
-	return XBeeSetAT(cmd, &param, 1, NO_RES);
+	bool state=false;
+
+	do{
+		state = xbee_gpio_set(gpio_xbee_reset, (uint8)'0');
+		usleep(100000);
+	}while(state == false);
+	printf("\033[33mxbee reset\033[0m\r\n");
+	usleep(100000);
+	state = false;
+	do{
+		state = xbee_gpio_set(gpio_xbee_reset, (uint8)'1');
+		usleep(100000);
+	}while(state == false);
+	printf("\033[33mxbee start\033[0m\r\n");
 }
-
-
-
-
 
 
 

@@ -59,8 +59,8 @@ void xbee_routine_thread(void)
 	uint8 _i,_adr[8];
 	uint8 *HeadMidAdr=NULL;
 
-	time_t timetTime;  
-    struct tm *pTmTime;  
+	time_t timetTime;
+    struct tm *pTmTime;
 
 	timetTime = time(NULL);		//获取当前系统时间
 	//printf("timetTime=%d\n", (uint32)timetTime);
@@ -125,7 +125,10 @@ void xbee_routine_thread(void)
 		ret = pthread_mutex_unlock(&mutex11_route_record_buf);
 	}while(ret != 0);
 
-	printf("\033[33mstart xbee_routine_thread_write_serial...\033[0m\r\n");
+	xbee_reset();
+	sleep(1);
+
+	//printf("\033[33mstart xbee_routine_thread_write_serial...\033[0m\r\n");
 	do{
 	    ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_write_serial,NULL);
 	    if(ret!=0)
@@ -133,23 +136,19 @@ void xbee_routine_thread(void)
 	        printf ("Create xbee_routine_thread_write_serial error!\n");
 			err_log("Create xbee_routine_thread_write_serial error!" , strlen("Create xbee_routine_thread_write_serial error!"));
 	    }
-		else
-			printf ("start xbee_routine_thread_write_serial ok!\n");
 	}while(ret != 0);
 
-	printf("\033[33mstart xbee_routine_thread_read_serial...\033[0m\r\n");
-	do{		
+	//printf("\033[33mstart xbee_routine_thread_read_serial...\033[0m\r\n");
+	do{
 	    ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_read_serial,NULL);
 	    if(ret!=0)
 		{
 	        printf ("Create xbee_routine_thread_read_serial error!\n");
 			err_log("Create xbee_routine_thread_read_serial error!" , strlen("Create xbee_routine_thread_read_serial error!"));
 	    }
-		else
-			printf ("start xbee_routine_thread_read_serial ok!\n");
 	}while(ret != 0);
-	
-	printf("\033[33mstart xbee_routine_thread_process_serial_rbuf...\033[0m\r\n");
+
+	//printf("\033[33mstart xbee_routine_thread_process_serial_rbuf...\033[0m\r\n");
 	do{
     	ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_process_serial_rbuf,NULL);
     	if(ret!=0)
@@ -162,7 +161,7 @@ void xbee_routine_thread(void)
 	XBeeNetInit();
 	get_mac();
 
-	printf("\033[33mstart xbee_routine_thread_process_trans_status_buf...\033[0m\r\n");
+	//printf("\033[33mstart xbee_routine_thread_process_trans_status_buf...\033[0m\r\n");
 	do{
     	ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_process_trans_status_buf,NULL);
     	if(ret!=0)
@@ -173,7 +172,7 @@ void xbee_routine_thread(void)
 	}
 	while(ret != 0);
 
-	printf("\033[33mstart xbee_routine_thread_process_trans_req_buf...\033[0m\r\n");
+	//printf("\033[33mstart xbee_routine_thread_process_trans_req_buf...\033[0m\r\n");
 	do{
 		ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_process_trans_req_buf,NULL);
     	if(ret!=0)
@@ -184,7 +183,7 @@ void xbee_routine_thread(void)
 	}
 	while(ret != 0);
 
-	printf("\033[33mstart xbee_routine_thread_process_route_record_buf...\033[0m\r\n");
+	//printf("\033[33mstart xbee_routine_thread_process_route_record_buf...\033[0m\r\n");
 	do{
 		ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_process_route_record_buf,NULL);
     	if(ret!=0)
@@ -195,7 +194,7 @@ void xbee_routine_thread(void)
 	}
 	while(ret != 0);
 
-	printf("\033[33mstart xbee_routine_thread_process_other_api_buf...\033[0m\r\n");
+	//printf("\033[33mstart xbee_routine_thread_process_other_api_buf...\033[0m\r\n");
 	do{
     	ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_process_other_api_buf,NULL);
     	if(ret!=0)
@@ -204,7 +203,7 @@ void xbee_routine_thread(void)
 			err_log("Create xbee_routine_thread_process_other_api_buf error!" , strlen("Create xbee_routine_thread_process_other_api_buf error!"));
     	}
 	}while(ret != 0);
-	
+
 #if __XBEE_TEST__
 	printf("\033[33mstart xbee_routine_thread_test...\033[0m\r\n");
 	do{
@@ -258,12 +257,12 @@ void xbee_routine_thread_process_other_api_buf(void)
 					if(rbuf[15]=='C' && rbuf[16]=='F' && rbuf[17]=='G')
 					{
 						//TestPrintf("C F G",len,rbuf);
-						XBeeProcessCFG(rbuf);    
+						XBeeProcessCFG(rbuf);
 					}
 					else if(rbuf[15]=='C' && rbuf[16]=='T' && rbuf[17]=='L')
 						XBeeProcessCTL(rbuf);
 					else if(rbuf[15]=='S' && rbuf[16]=='E' && rbuf[17]=='N')
-					{	
+					{
 						//TestPrintf("S E N",len,rbuf);
 						XBeeProcessSEN(rbuf);
 					}
@@ -277,7 +276,7 @@ void xbee_routine_thread_process_other_api_buf(void)
 					if(*(rbuf+17) == 1 || *(rbuf+17) == 4)
 					{
 						//XBeeRemoteATCmd(rbuf+5 , rbuf+13 , 2 , (uint8*)(rbuf+15) , param , 1 , 1);
-					}					
+					}
 					TestPrintf("remote",len,rbuf);
 					break;
 				default:
@@ -324,6 +323,7 @@ void xbee_routine_thread_write_serial(void)
 	bool state;
 	while(1)
 	{
+		//printf("file : %s,line = %d\r\n",__FILE__,__LINE__);
 		sleep_time = 15000;
 		state = read_xbee_cts(bufs);
 		if(state == true && *bufs == '1')
@@ -336,7 +336,7 @@ void xbee_routine_thread_write_serial(void)
 			{
 #if 0
 				uint8 i=0;	printf("write serial : ");	for(i=0;i<len;i++)	printf("%02x ",buf[i]);	printf("\n");
-#endif		
+#endif
 				WriteComPort(buf, len);
 			}
 		}
@@ -347,7 +347,7 @@ void xbee_routine_thread_write_serial(void)
 		}
 		usleep(sleep_time);
 	}
-	
+
 }
 
 void xbee_routine_thread_read_serial(void)
@@ -357,18 +357,64 @@ void xbee_routine_thread_read_serial(void)
 	static uint8 buf[255];
 	while(1)
 	{
+		//printf("file : %s,line = %d\r\n",__FILE__,__LINE__);
 		len = ReadComPort (buf, 255);
+		//printf("file : %s,line = %d\r\n",__FILE__,__LINE__);
 		if(len > 0)
 		{
 #if 0
 			uint8 i=0;	printf("read serial : ");	for(i=0;i<len;i++)		printf("%02x " , *(buf+i));	puts(" ");
 #endif
+			//printf("file : %s,line = %d\r\n",__FILE__,__LINE__);
 			ret = pthread_mutex_lock(&mutex01_serial_rbuf);
 			if(ret == 0)
 				write_cqueue( &serial_rbuf , buf , len );
 			ret = pthread_mutex_unlock(&mutex01_serial_rbuf);
 		}
 		usleep(20000);
+	}
+}
+
+void xbee_routine_thread_process_serial_rbuf(void)
+{
+	uint16 len=0;
+	uint8 buf[255];
+	int ret=0;
+	while(1)
+	{
+		//printf("file : %s,line = %d\r\n",__FILE__,__LINE__);
+		ret = pthread_mutex_lock(&mutex01_serial_rbuf);
+		if(ret == 0)
+			len = read_one_package_f_queue(&serial_rbuf , buf);
+		ret = pthread_mutex_unlock(&mutex01_serial_rbuf);
+#if 0
+		uint8 i=0;	for(i=0;i<len;i++)	printf("\033[32m%02x \033[0m",*(buf+i));	printf("\033[31mlen = %d\033[0m\n",len);
+#endif
+		if(len)
+		{
+			switch(*(buf+3))
+			{
+				case transmit_status:
+					ret = pthread_mutex_lock( &mutex08_trans_status_buf );
+					if(ret == 0)
+						write_cqueue( &trans_status_buf , buf , len );
+					ret = pthread_mutex_unlock( &mutex08_trans_status_buf );
+					break;
+				case route_record_indicator:
+					ret = pthread_mutex_lock( &mutex11_route_record_buf );
+					if(ret == 0)
+						write_cqueue( &route_record_buf , buf , len );
+					ret = pthread_mutex_unlock( &mutex11_route_record_buf );
+					break;
+				default:
+					ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
+					if(ret == 0)
+						write_cqueue( &xbee_other_api_buf , buf , len );
+					ret = pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
+					break;
+			}
+		}
+		usleep(15000);
 	}
 }
 
@@ -440,48 +486,6 @@ void xbee_routine_thread_process_route_record_buf(void)
 		usleep(50000);
 	}
 }
-
-void xbee_routine_thread_process_serial_rbuf(void)
-{
-	uint16 len=0;
-	uint8 buf[255];
-	int ret=0;
-	while(1)
-	{
-		ret = pthread_mutex_lock(&mutex01_serial_rbuf);
-		if(ret == 0)
-			len = read_one_package_f_queue(&serial_rbuf , buf);
-		ret = pthread_mutex_unlock(&mutex01_serial_rbuf);
-#if 0
-		uint8 i=0;	for(i=0;i<len;i++)	printf("\033[32m%02x \033[0m",*(buf+i));	printf("\033[31mlen = %d\033[0m\n",len);
-#endif
-		if(len)
-		{
-			switch(*(buf+3))
-			{
-				case transmit_status:
-					ret = pthread_mutex_lock( &mutex08_trans_status_buf );
-					if(ret == 0)
-						write_cqueue( &trans_status_buf , buf , len );
-					ret = pthread_mutex_unlock( &mutex08_trans_status_buf );
-					break;
-				case route_record_indicator:
-					ret = pthread_mutex_lock( &mutex11_route_record_buf );
-					if(ret == 0)
-						write_cqueue( &route_record_buf , buf , len );
-					ret = pthread_mutex_unlock( &mutex11_route_record_buf );
-					break;
-				default:
-					ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
-					if(ret == 0)
-						write_cqueue( &xbee_other_api_buf , buf , len );
-					ret = pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
-					break;
-			}
-		}
-		usleep(15000);
-	}
-}	
 
 #if __XBEE_TEST__
 void xbee_routine_thread_test(void)

@@ -283,7 +283,7 @@ void queue_push_out(void)
 	
 }
 
-/*serial receive data buffer define*****************************/
+/*serial receive data buffer define*******************************************************************************/
 void creat_circular_queue( CircularQueueType *queue )  
 {  
     queue -> front = 0;  

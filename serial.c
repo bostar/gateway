@@ -91,23 +91,23 @@ INT32 OpenComPort (INT32 ComPort, INT32 baudrate, INT32 databit,
         fprintf (stderr, "cannot open port %s\n", pComPort);
         return (-1);
     }
-printf("%s,%d\r\n",__FILE__,__LINE__);
+	//printf("%s,%d\r\n",__FILE__,__LINE__);
     printf("comport fd = %d\n", fd);
 
     tcgetattr (fd, &termios_old);       /* save old termios value */
-printf("%s,%d\r\n",__FILE__,__LINE__);
+	//printf("%s,%d\r\n",__FILE__,__LINE__);
     /* 0 on success, -1 on failure */
     retval = set_port_attr (baudrate, databit, stopbit, parity);
     if (-1 == retval) {
         fprintf (stderr, "\nport %s cannot set baudrate at %d\n", pComPort,
                  baudrate);
     }
-printf("%s,%d\r\n",__FILE__,__LINE__);
+	//printf("%s,%d\r\n",__FILE__,__LINE__);
 	if(!retval)
 	{
 		pthread_mutex_init(&mut,NULL);
 	}
-printf("%s,%d\r\n",__FILE__,__LINE__);
+	//printf("%s,%d\r\n",__FILE__,__LINE__);
     return (retval);
 }
 
@@ -135,10 +135,15 @@ INT32 ReadComPort (void *data, INT32 datalength)
     INT32           retval = 0;
     
     FD_ZERO (&fs_read);
+	//printf("file : %s,line = %d\r\n",__FILE__,__LINE__);
     FD_SET (fd, &fs_read);
+	//printf("file : %s,line = %d\r\n",__FILE__,__LINE__);
     tv_timeout.tv_sec = TIMEOUT_SEC (datalength, get_baudrate ());
+	//printf("file : %s,line = %d\r\n",__FILE__,__LINE__);
     tv_timeout.tv_usec = TIMEOUT_USEC;
+	//printf("file : %s,line = %d\r\n",__FILE__,__LINE__);
     retval = select (fd + 1, &fs_read, NULL, NULL, &tv_timeout);
+	//printf("file : %s,line = %d\r\n",__FILE__,__LINE__);
     if (retval > 0) {
         retval = read (fd, data, datalength);
         return (retval);
