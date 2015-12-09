@@ -425,7 +425,7 @@ void XBeeNetInit(void)
 	xbee_set_AT("SC", param, 2 ,rbuf);
 	//XBeeSetZS(1,NO_RES);
 	xbee_set_AT("AC", param, 0 ,rbuf);
-	usleep(3000000);
+	sleep(3);
 	xbee_net();
 	param[0] = 0x0a;
 	param[1] = 0xf0;
@@ -435,7 +435,7 @@ void XBeeNetInit(void)
 	xbee_BD();
 	xbee_set_AT("AC", param, 0 ,rbuf);
 	CoorInfo.NetState = 1;
-	printf("\n\033[33mxbee network established！\033[0m\n");
+	printf("\033[33mxbee network established！\033[0m\r\n");
 	err_log("xbee网络创建成功" , strlen("xbee网络创建成功"));
 }
 /***************************************************************
@@ -478,7 +478,7 @@ void xbee_init(void)
 			uint8 i;
 			for(i=0;i<128;i++)
 				rbuf[i] = 0;
-			printf(".");
+			//printf(".");
 			ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
 			if(ret == 0)
 				status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
@@ -490,6 +490,7 @@ void xbee_init(void)
 					printf("%02x ",*(rbuf+i));
 				printf("\033[31m&&\033[0m");
 			}
+			puts(" ");
 #endif
 			cnt++;
 		}while((*(rbuf+3) != 0x88 || *(rbuf+5) != (uint8)'C' || *(rbuf+6) != (uint8)'B') && cnt < _RESET_TIMES );
@@ -498,11 +499,10 @@ void xbee_init(void)
 	if(cnts >= 0xff)
 	{
 		printf("xbee factory reset failed!\r\n");
-		err_log("xbee factory reset failed!" , strlen("xbee init failed!"));
+		err_log("xbee factory reset failed!" , strlen("xbee init failed!\r\n"));
 	}
 	else
-		printf("\033[33mreset xbee success!\033[0m");
-	puts(" ");
+		printf("\033[33mxbee factory reset success!\033[0m\r\n");
 }
 /***************************************************************
 **brief creat xbee net
@@ -515,7 +515,7 @@ void xbee_net(void)
 	int ret=0;
 	do
 	{
-		printf("\033[33mcreat xbee network ...\033[0m\n");
+		printf("\033[33mcreat xbee network ...\033[0m\r\n");
 		ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
 		if(ret == 0)
 			clear_queue(&xbee_other_api_buf);
@@ -525,7 +525,7 @@ void xbee_net(void)
 		do
 		{
 			usleep(100000);
-			printf(".");
+			//printf(".");
 			uint8 i;
 			for(i=0;i<128;i++)
 				rbuf[i] = 0;
@@ -540,16 +540,16 @@ void xbee_net(void)
 					printf("%02x ",*(rbuf+i));
 				printf("\033[31m&&\033[0m");
 			}
+			puts(" ");
 #endif
 			cnt++;
 		}while((*(rbuf+3) != 0x88 || *(rbuf+5) != 'A' || *(rbuf+6) != 'I') && cnt < _START_NET_TIMES);
 		cnts++;
 	}while((*(rbuf+3) != 0x88 || *(rbuf+5) != 'A' || *(rbuf+6) != 'I' || *(rbuf+7) != 0 || *(rbuf+8) != 0) && cnts < _START_NET_TIMES);
 	if(cnts >= 0xff)
-		printf("xbee creat failed!");
+		printf("creat xbee network failed!\r\n");
 	else
-		printf("\033[33mxbee creat success!\033[0m");
-	puts(" ");
+		printf("\033[33mcreat xbee network success!\033[0m\r\n");
 }
 /***************************************************************
 **brief set xbee BD
@@ -571,7 +571,7 @@ void xbee_BD(void)
 		do
 		{
 			usleep(100000);
-			printf(".");
+			//printf(".");
 			uint8 i;
 			for(i=0;i<128;i++)
 				rbuf[i] = 0;
@@ -587,6 +587,7 @@ void xbee_BD(void)
 					printf("%02x ",*(rbuf+i));
 				printf("\033[31m&&\033[0m");
 			}
+			puts(" ");
 #endif
 			cnt++;
 		}while((*(rbuf+3) != 0x88 || *(rbuf+5) != 'B' || *(rbuf+6) != 'D') && cnt < 0xff);
@@ -599,8 +600,7 @@ void xbee_BD(void)
 		cnts++;
 	}while(state == 0 && cnts < 0xff);
 	if(cnts >= 0xff)
-		printf("change bd failed!");
-	puts("");
+		printf("change bd failed!\r\n");
 }
 /***************************************************************
 **brief set xbee
@@ -612,7 +612,7 @@ uint8 xbee_set_AT(int8 *at_cmd, uint8 *param, uint8 len, uint8 *rbuf)
 	int ret=0;
 	do
 	{
-		printf("\033[33msend xbee AT command\033[0m ...\r\n");
+		//printf("\033[33msend xbee AT command\033[0m ...\r\n");
 		ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
 		if(ret == 0)
 			clear_queue(&xbee_other_api_buf);
@@ -622,7 +622,7 @@ uint8 xbee_set_AT(int8 *at_cmd, uint8 *param, uint8 len, uint8 *rbuf)
 		do
 		{
 			usleep(100000);
-			printf(".");
+			//printf(".");
 			uint8 i;
 			for(i=0;i<128;i++)
 				rbuf[i] = 0;
@@ -638,14 +638,14 @@ uint8 xbee_set_AT(int8 *at_cmd, uint8 *param, uint8 len, uint8 *rbuf)
 					printf("%02x ",*(rbuf+i));
 				printf("\033[31m&&\033[0m");
 			}
+			puts(" ");
 #endif
 			cnt++;
 		}while((*(rbuf+3) != 0x88 || *(rbuf+5) != *at_cmd || *(rbuf+6) != *(at_cmd+1)) && cnt < _SET_AT_TIMES );
 		cnts++;
 	}while((*(rbuf+3) != 0x88 || *(rbuf+5) != *at_cmd || *(rbuf+6) != *(at_cmd+1) || *(rbuf+7) != 0) && cnts < _SET_AT_TIMES);
 	if(cnts >= 0xff)
-		printf("xbee %s command failed!",at_cmd);
-	puts(" ");
+		printf("xbee %s command failed!\r\n",at_cmd);
 	return (*(rbuf+3)+4);
 }
 /***************************************************************

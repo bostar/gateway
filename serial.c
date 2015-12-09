@@ -29,7 +29,7 @@ pthread_mutex_t mut;
  * eg. 9600bps baudrate, buflen=1024B, then TIMEOUT_SEC = 1024*20/9600+1 = 3 
  * don't change the two lines below unless you do know what you are doing.
 */
-#define TIMEOUT_SEC(buflen,baud) (buflen*20/baud+2)
+#define TIMEOUT_SEC(buflen,baud) ((buflen)*20/(baud)+2)
 #define TIMEOUT_USEC 0
 
 #define CH_TO_WAIT 5
@@ -135,15 +135,18 @@ INT32 ReadComPort (void *data, INT32 datalength)
     INT32           retval = 0;
     
     FD_ZERO (&fs_read);
-	//printf("file : %s,line = %d\r\n",__FILE__,__LINE__);
     FD_SET (fd, &fs_read);
-	//printf("file : %s,line = %d\r\n",__FILE__,__LINE__);
-    tv_timeout.tv_sec = TIMEOUT_SEC (datalength, get_baudrate ());
-	//printf("file : %s,line = %d\r\n",__FILE__,__LINE__);
+	if((retval = get_baudrate()) != 0)
+	{
+    	tv_timeout.tv_sec = TIMEOUT_SEC (datalength, retval);
+	}
+	else
+	{
+		//printf("serial port hung up!\r\n");
+		return 0;
+	}
     tv_timeout.tv_usec = TIMEOUT_USEC;
-	//printf("file : %s,line = %d\r\n",__FILE__,__LINE__);
     retval = select (fd + 1, &fs_read, NULL, NULL, &tv_timeout);
-	//printf("file : %s,line = %d\r\n",__FILE__,__LINE__);
     if (retval > 0) {
         retval = read (fd, data, datalength);
         return (retval);
@@ -164,8 +167,6 @@ INT32 ReadComPortA (void *data, INT32 datalength)
     INT32           retval = 0;
     int bytes_read;
     int readlen;
-
-
 
     /**
      * caculate the time of 5 characters and get the maxim

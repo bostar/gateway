@@ -125,8 +125,8 @@ void xbee_routine_thread(void)
 		ret = pthread_mutex_unlock(&mutex11_route_record_buf);
 	}while(ret != 0);
 
-	xbee_reset();
-	sleep(1);
+	//xbee_reset();
+	//sleep(1);
 
 	//printf("\033[33mstart xbee_routine_thread_write_serial...\033[0m\r\n");
 	do{
@@ -158,6 +158,8 @@ void xbee_routine_thread(void)
     	}
 	}while(ret != 0);
 
+	xbee_reset();
+	sleep(1);
 	XBeeNetInit();
 	get_mac();
 
