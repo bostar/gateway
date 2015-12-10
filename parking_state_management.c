@@ -972,7 +972,7 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
             {
                 p->state = parking_state_booking;
                 putCtlCmd(parking_id,en_order_lock);
-                p->time = time((time_t)NULL);
+                p->time = time((time_t *)NULL);
             }
             else
             {
@@ -983,7 +983,7 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
             if((p->state == parking_state_booking) || (p->state == parking_state_booking_lock))
             {
                 p->state = parking_state_booked_coming;
-                p->time = time((time_t)NULL);
+                p->time = time((time_t *)NULL);
                 putCtlCmd(parking_id,en_order_unlock);
             }
             else
@@ -1003,7 +1003,7 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
             {
                 p->state = parking_state_unbooking;
                 putCtlCmd(parking_id,en_order_unlock);
-                p->time = time((time_t)NULL);
+                p->time = time((time_t *)NULL);
             }
             else
             {
@@ -1015,12 +1015,12 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
             {
                 case parking_state_stop_lock:
                     p->state = parking_state_have_paid;
-                    p->time = time((time_t)NULL);
+                    p->time = time((time_t *)NULL);
                     putCtlCmd(parking_id,en_order_unlock);
                     break;
                 case parking_state_booked_coming_lock:
                     p->state = parking_state_have_paid;
-                    p->time = time((time_t)NULL);
+                    p->time = time((time_t *)NULL);
                     putCtlCmd(parking_id,en_order_unlock);
                     break;
                 default:
@@ -1032,7 +1032,7 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
             {
                 putCtlCmd(parking_id,en_order_unlock);
                 p->state = parking_state_fixed_parking_unlock_req;
-                p->time = time((time_t)NULL);
+                p->time = time((time_t *)NULL);
             }
         default:
             break;
