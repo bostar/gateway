@@ -1,6 +1,6 @@
 EXEC = gateway
-OBJS = main.o uart_hal.o listener.o zlg_cmd.o gpio.o serial.o menu.o zlg_protocol.o ota.o server_duty.o xbee_api.o xbee_protocol.o xbee_routine.o xbee_atcmd.o dul_link_list.o ctl_cmd_cache.o parking_state_management.o sensor_data_flow.o
-SRC  = main.c uart_hal.c listener.c zlg_cmd.c gpio.c serial.c menu.c zlg_protocol.c ota.c server_duty.c xbee_api.c xbee_protocol.c xbee_routine.c xbee_atcmd.c dul_link_list.c ctl_cmd_cache.c parking_state_management.c sensor-data_flow.c
+OBJS = main.o uart_hal.o listener.o zlg_cmd.o gpio.o serial.o menu.o zlg_protocol.o ota.o server_duty.o xbee_api.o xbee_protocol.o xbee_routine.o xbee_atcmd.o dul_link_list.o ctl_cmd_cache.o parking_state_management.o sensor_data_flow.o file_sensor_data.o
+SRC  = main.c uart_hal.c listener.c zlg_cmd.c gpio.c serial.c menu.c zlg_protocol.c ota.c server_duty.c xbee_api.c xbee_protocol.c xbee_routine.c xbee_atcmd.c dul_link_list.c ctl_cmd_cache.c parking_state_management.c sensor-data_flow.c file_sensor_data.c
 
 CC = arm-none-linux-gnueabi-gcc
 CFLAGS += -O1 -Wall #-Wno-strict-aliasing
