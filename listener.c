@@ -60,7 +60,8 @@ void tcp_init(void)
     /* 调用gethostbyname()。调用结果都存在hptr中 */
     if( (hptr = gethostbyname("test.starbo.com") ) == NULL )
     {
-        printf("gethostbyname error for host:%s/n", ptr);
+        //printf("gethostbyname error for host:%s/n", ptr);
+	(void)ptr;
         return ; /* 如果调用gethostbyname发生错误，返回1 */
     }
     /* 将主机的规范名打出来 */
@@ -244,6 +245,7 @@ int tcp_send_to_server(int len,unsigned char *bytes)
         time_in_second = time((time_t *)NULL);
 
     } 
+    (void)time_in_second;
     return num;
 }
 

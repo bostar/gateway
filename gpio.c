@@ -44,6 +44,7 @@ void gpio_init(void)
     ret = write(fd2, "1", 1); // SLEEP
     ret = write(fd3, "1", 1); // WAKEUP
     ret = write(fd4, "1", 1); // RESET
+    (void)ret;
 
     /*ret = read(gpio_fd,buff,10);
     if( ret == -1 )
@@ -64,6 +65,7 @@ void sleep_zm516x(unsigned char state)
         ret = write(fd2, "1", 1); // SLEEP
         ret = write(fd3, "0", 1); // WAKEUP
     }
+	(void)ret;
 }
 
 void reset_params_zm516x(void)
@@ -71,6 +73,7 @@ void reset_params_zm516x(void)
 	int ret;
 	
     ret = write(fd1, "1", 1); // DEF
+	(void)ret;
 }
 void reset_zm516x(void)
 {
@@ -81,4 +84,5 @@ void reset_zm516x(void)
     ret = write(fd4, "1", 1);
     usleep(100000);
     printf("reset zm516x\r\n");
+	(void)ret;
 }
