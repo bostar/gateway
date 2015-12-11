@@ -66,6 +66,7 @@ enum motor_cmd {
 };
 
 extern unsigned char iEEEAddress[8];
+extern volatile unsigned short requestAddress;
 void communicate_thread(void);
 
 void ackRegisterNetwork(unsigned short NetAddress,ackCmd_t cmd,unsigned short panid,unsigned char channel);

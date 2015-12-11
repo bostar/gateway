@@ -10,10 +10,10 @@
 #include "server_duty.h"
 #include "ctl_cmd_cache.h"
 #include "parking_state_management.h"
+#include "sensor_data_flow.h"
 
 unsigned char iEEEAddress[8];
-static unsigned short requestAddress;
-
+volatile unsigned short requestAddress;
 
 void communicate_thread(void)
 {
@@ -25,6 +25,12 @@ void communicate_thread(void)
     unsigned char ctl_cmd;
     char macstr[20];
 
+    int ret;
+    pthread_t id;
+    ret=pthread_create(&id,NULL,(void *) sensor_data_flow_thread, NULL);
+    if(ret!=0){
+        printf ("Create sensor_data_flow_thread error!n");
+    }  
     while(1)
     {
         memset(rbuf, 0x00, 50);
@@ -81,14 +87,17 @@ void communicate_thread(void)
                 case cmdDataRequest:
                     rlened = 0;
                     do{
-                        rlen = ReadComPort(rbuf + 4 + rlened, 5 - rlened);
+                        rlen = ReadComPort(rbuf + 4 + rlened, 11 - rlened);
                         rlened += rlen;
-                    }while(rlened != 5);
+                    }while(rlened != 11);
                     requestAddress = (unsigned short)rbuf[4] << 8 | rbuf[5];
                     //mark_node_last_online_time(requestAddress);
                     set_online(requestAddress);
                     event_report(requestAddress,rbuf[6]);
-                    event_report(requestAddress,rbuf[7]);
+                    //event_report(requestAddress,rbuf[7]);
+		    printf(BLUE"x = %d, y = %d, z = %d\r\n"NONE,((short)rbuf[8]<<8 | rbuf[9]),((short)rbuf[10]<<8 | rbuf[11]),((short)rbuf[12]<< 8| rbuf[13]));
+		    write_sensor_update(requestAddress,((short)rbuf[8]<<8 | rbuf[9]),((short)rbuf[10]<<8 | rbuf[11]),((short)rbuf[12]<< 8| rbuf[13]));
+		    pthread_cond_signal(&sensor_cond);
                     /*if(rbuf[8] == 0x00)
                       printf("test sucess");*/
                     if(!getCtlCmd(requestAddress,&ctl_cmd))
