@@ -605,6 +605,7 @@ void set_temporary_DestAddr(unsigned short DestAddr)
 //	{
                 usleep(100000);
 		rlen = ReadComPort(rbuf,10);
+		(void)rlen;
 /*	}while(rlen <= 5);
 	if((rbuf[0] == 0xde)&&(rbuf[1] == 0xdf)&&(rbuf[2] == 0xef))
 	{
@@ -647,6 +648,7 @@ void set_temporary_ShowSrcAddr(showSrcAddr_cmd_t cmd)
 //	{
                 usleep(100000);
 		rlen = ReadComPort(rbuf,10);
+		(void)rlen;
 /*	}while(rlen <= 5);
 	if((rbuf[0] == 0xde)&&(rbuf[1] == 0xdf)&&(rbuf[2] == 0xef))
 	{
@@ -831,6 +833,7 @@ void set_temporary_cast_mode(cast_mode_t mode)
 		WriteComPort(wbuf, 5);
         usleep(1000000);
 		rlen = ReadComPort(rbuf,255);
+		(void)rlen;
 /*	}while(rlen <= 5);
 	if((rbuf[0] == 0xde)&&(rbuf[1] == 0xdf)&&(rbuf[2] == 0xef))
 	{
