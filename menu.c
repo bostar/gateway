@@ -335,6 +335,13 @@ void menu_thread(void)
 		else
 			printf("paramter error!! e.g. rsen 0x0001 (or '0xffff' for all nodes) for reset sensor\r\n");							
 	}
+      	else if(!strncmp(wbuf, "file", 4))
+	{
+		if(!write_file_data())
+			printf("write file data success !!!\r\n");
+		else
+			printf("write file data failed...\r\n");
+	}
 	else
 		printf("Command not found! Input \"?\" to check commands\r\n");
 	memset(wbuf,0x0,strlen(wbuf) + 1);//last is '\n'
