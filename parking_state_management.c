@@ -406,7 +406,8 @@ void event_report(unsigned short netaddr,unsigned char event)
     pst_parkingState p;
     time_t time_in_second = time((time_t *)NULL);
     printf("[SERVER:]%04x ",netaddr);
-    printf("%s",event_string[event]);
+    if( event < en_max_event ) 
+    	printf("%s",event_string[event]);
     pthread_mutex_lock(&parking_info_mutex);
 
     p = search_use_netaddr(netaddr);
