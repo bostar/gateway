@@ -11,6 +11,7 @@
 #include "ctl_cmd_cache.h"
 #include <semaphore.h>
 #include "ota.h"
+#include "sensor_data_flow.h"
 
 const char menu[] = "\r\n\
 +********************** ZLG CMD HELP ***************************+\r\n\
@@ -298,23 +299,47 @@ void menu_thread(void)
         printf("wake up all nodes...\r\n");
         keep_wake_nodes();
       }
-      else if(!strncmp(wbuf, "rsen", 4))
+      else if(!strncmp(wbuf, "ssen", 4))
       {
-				unsigned int temp;
-				if(!strncmp(&wbuf[strlen(wbuf)-6],"0x",2))
-				{
-					sscanf(&wbuf[strlen(wbuf)-4],"%04x",&temp);
-          reset_node_sensor(temp);
-          printf("reset node 0x%04x sensor...\r\n",temp);
-				}
-				else
-          printf("paramter error!! e.g. rsen 0x0001 (or '0xffff' for all nodes) for reset sensor\r\n");							
+	unsigned int temp;
+	if(!strncmp(&wbuf[strlen(wbuf)-6],"0x",2))
+	{
+		sscanf(&wbuf[strlen(wbuf)-4],"%04x",&temp);
+		write_sensor_calibration(temp);
+ 		printf("reset sensor 0x%04x calibration value...\r\n",temp);
+	}
+	else
+		printf("paramter error!! e.g. ssen 0x0001 (or '0xffff' for all nodes) to write sensor calibration\r\n");							
       }
-			else
-				printf("Command not found! Input \"?\" to check commands\r\n");
-			memset(wbuf,0x0,strlen(wbuf) + 1);//last is '\n'
-			printf("zlg_zm516x > ");
-			pthread_mutex_unlock(&mut);
+      else if(!strncmp(wbuf, "wsen", 4))
+      {
+	unsigned int temp;
+	if(!strncmp(&wbuf[strlen(wbuf)-6],"0x",2))
+	{
+		sscanf(&wbuf[strlen(wbuf)-4],"%04x",&temp);
+		writefile_sensor_calibration(temp);
+		printf("write sensor 0x%04x calibration value to file...\r\n",temp);
+	}
+	else
+		printf("paramter error!! e.g. wsen 0x0001 (or '0xffff' for all nodes) to write sensor calibration data to file\r\n");							
+      }	
+	else if(!strncmp(wbuf, "rsen", 4))
+	{
+		unsigned int temp;
+		if(!strncmp(&wbuf[strlen(wbuf)-6],"0x",2))
+		{
+			sscanf(&wbuf[strlen(wbuf)-4],"%04x",&temp);
+			reset_node_sensor(temp);
+			printf("reset node 0x%04x sensor...\r\n",temp);
+		}
+		else
+			printf("paramter error!! e.g. rsen 0x0001 (or '0xffff' for all nodes) for reset sensor\r\n");							
+	}
+	else
+		printf("Command not found! Input \"?\" to check commands\r\n");
+	memset(wbuf,0x0,strlen(wbuf) + 1);//last is '\n'
+	printf("zlg_zm516x > ");
+	pthread_mutex_unlock(&mut);
 		}
     usleep(200000);
 	}
