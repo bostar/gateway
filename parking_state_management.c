@@ -150,9 +150,9 @@ void parking_state_check_routin(void)
     while(1)
     {
     usleep(1000000);
-	printf("%s,%d\r\n",__FILE__,__LINE__);
+	//printf("%s,%d\r\n",__FILE__,__LINE__);
     time_in_second = time((time_t*)NULL);
-	printf("%s,%d\r\n",__FILE__,__LINE__);
+	//printf("%s,%d\r\n",__FILE__,__LINE__);
     pthread_mutex_lock(&parking_info_mutex);
     if(pstParkingState == NULL)
     {

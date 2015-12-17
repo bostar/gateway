@@ -1,5 +1,8 @@
 #ifndef _xbee_vari_type_h_
 #define _xbee_vari_type_h_
+
+#include <pthread.h>
+
 /*
 #define uint8 unsigned char
 #define uint32 unsigned int
@@ -19,6 +22,12 @@ typedef short int int16;
 typedef unsigned short int uint16;
 typedef unsigned long long uint64;
 typedef long long int64;
+
+#define MUTEX_LOCK(x)		while(pthread_mutex_lock((x)) != 0)
+#define MUTEX_UNLOCK(x)		while(pthread_mutex_unlock((x)) != 0)
+
+
+
 
 
 #endif

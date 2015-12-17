@@ -27,7 +27,7 @@
 
 
 
-
+int16 err_log_sigle(int8 *buf , uint16 len);
 int16 err_log(int8 *buf , uint16 len);
 
 

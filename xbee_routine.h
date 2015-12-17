@@ -99,6 +99,7 @@ extern pthread_mutex_t mutex11_route_record_buf;
 extern pthread_mutex_t mutex12_trans_req_buf;
 extern pthread_mutex_t mutex13_pSourcePathList;
 extern pthread_mutex_t mutex14_CoorInfo;
+extern pthread_mutex_t mutex15_errlog;
 
 void xbee_routine_thread(void);
 void xbee_routine_thread_write_serial(void);

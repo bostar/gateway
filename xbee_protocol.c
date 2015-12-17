@@ -32,7 +32,6 @@ void XBeeProcessCFG(uint8 *rbuf)
 {
 	int16 temp;
 	SourceRouterLinkType *p;
-	int ret=0;
 
 	if(*(rbuf+18) == net_request)
 	{
@@ -49,10 +48,10 @@ void XBeeProcessCFG(uint8 *rbuf)
 		{
 			XBeeJionDisable((rbuf+4),(rbuf+12));
 			printf("\033[31m\r\nprevent a locker jioned	the park net...\033[0m \r\n");
-			ret = pthread_mutex_lock(&mutex13_pSourcePathList);
-			if(ret == 0 && (p = FindMacAdr(pSourcePathList,rbuf+4)) != NULL)
+			MUTEX_LOCK(&mutex13_pSourcePathList);
+			if((p = FindMacAdr(pSourcePathList,rbuf+4)) != NULL)
 				DeleteNode(pSourcePathList,FindMacAdr(pSourcePathList,rbuf+4));//删除节点
-			ret = pthread_mutex_unlock(&mutex13_pSourcePathList);
+			MUTEX_UNLOCK(&mutex13_pSourcePathList);
 		}
 	}
 	return;
@@ -214,40 +213,37 @@ void ProcessModState(uint8 *rbuf)
 void ProcessATRes(uint8 *rbuf)
 {
 	uint8 i=0;
-	int ret=0;
+
 	if(*(rbuf+7) != 0)
 		return;
-	ret = pthread_mutex_lock(&mutex14_CoorInfo);
-	if(ret == 0)
+	MUTEX_LOCK(&mutex14_CoorInfo);
+	if(*(rbuf+5) == 'O' && *(rbuf+6) == 'I')
 	{
-		if(*(rbuf+5) == 'O' && *(rbuf+6) == 'I')
-		{
-			CoorInfo.panID16 = 0;
-			CoorInfo.panID16 |= ((uint16)*(rbuf+8))<<8;
-			CoorInfo.panID16 |= (uint16)*(rbuf+9);
-		}
-		else if(*(rbuf+5) == 'O' && *(rbuf+6) == 'P')
-		{
-			for(i=0;i<8;i++)
-				CoorInfo.panID64[i] = *(rbuf+8+i);
-		}
-		else if(*(rbuf+5) == 'I' && *(rbuf+6) == 'D')
-		{
-			for(i=0;i<8;i++)
-				CoorInfo.panID64[i] = *(rbuf+8+i);
-		}
-		else if(*(rbuf+5) == 'C' && *(rbuf+6) == 'H')
-			CoorInfo.channel = *(rbuf+8);
-		else if(*(rbuf+5) == 'N' && *(rbuf+6) == 'J')
-		{
-			CoorInfo.nj = *(rbuf+8);
-		}
-		else if(*(rbuf+5) == 'A' && *(rbuf+6) == 'R')
-		{
-			CoorInfo.ar = *(rbuf+8);
-		}
+		CoorInfo.panID16 = 0;
+		CoorInfo.panID16 |= ((uint16)*(rbuf+8))<<8;
+		CoorInfo.panID16 |= (uint16)*(rbuf+9);
 	}
-	ret = pthread_mutex_unlock(&mutex14_CoorInfo);
+	else if(*(rbuf+5) == 'O' && *(rbuf+6) == 'P')
+	{
+		for(i=0;i<8;i++)
+			CoorInfo.panID64[i] = *(rbuf+8+i);
+	}
+	else if(*(rbuf+5) == 'I' && *(rbuf+6) == 'D')
+	{
+		for(i=0;i<8;i++)
+			CoorInfo.panID64[i] = *(rbuf+8+i);
+	}
+	else if(*(rbuf+5) == 'C' && *(rbuf+6) == 'H')
+		CoorInfo.channel = *(rbuf+8);
+	else if(*(rbuf+5) == 'N' && *(rbuf+6) == 'J')
+	{
+		CoorInfo.nj = *(rbuf+8);
+	}
+	else if(*(rbuf+5) == 'A' && *(rbuf+6) == 'R')
+	{
+		CoorInfo.ar = *(rbuf+8);
+	}
+	MUTEX_UNLOCK(&mutex14_CoorInfo);
 	return;
 }
 /*************************************************
@@ -448,15 +444,14 @@ void xbee_init(void)
 	uint32 cnt=0,cnts=0;
 	bool status=false;
 	const int8 st[]={0x7e,0x00,0x05,0x08,0x01,(uint8)'C',(uint8)'B',0x04,0x6d};
-	int ret=0;
+
 	do
 	{
-		ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
+		MUTEX_LOCK(&mutex09_xbee_other_api_buf);
 		//printf("%s,%d\r\n",__FILE__,__LINE__);
-		if(ret == 0)
-			clear_queue(&xbee_other_api_buf);
-		ret = pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
-		xbee_serial_port_init(115200);
+		clear_queue(&xbee_other_api_buf);
+		MUTEX_UNLOCK(&mutex09_xbee_other_api_buf);
+		//xbee_serial_port_init(115200);
 		//printf("%s,%d\r\n",__FILE__,__LINE__);
 		do{
 			usleep(20000);
@@ -479,10 +474,9 @@ void xbee_init(void)
 			for(i=0;i<128;i++)
 				rbuf[i] = 0;
 			//printf(".");
-			ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
-			if(ret == 0)
-				status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
-			ret = pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
+			MUTEX_LOCK(&mutex09_xbee_other_api_buf);
+			status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
+			MUTEX_UNLOCK(&mutex09_xbee_other_api_buf);
 #if 0
 			if(status == true)
 			{
@@ -512,14 +506,12 @@ void xbee_net(void)
 	uint8 rbuf[128];
 	uint32 cnt=0,cnts=0;
 	bool status=false;
-	int ret=0;
 	do
 	{
 		printf("\033[33mcreat xbee network ...\033[0m\r\n");
-		ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
-		if(ret == 0)
-			clear_queue(&xbee_other_api_buf);
-		ret = pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
+		MUTEX_LOCK(&mutex09_xbee_other_api_buf);
+		clear_queue(&xbee_other_api_buf);
+		MUTEX_UNLOCK(&mutex09_xbee_other_api_buf);
 		XBeeReadAI();
 		cnt = 0;
 		do
@@ -529,10 +521,9 @@ void xbee_net(void)
 			uint8 i;
 			for(i=0;i<128;i++)
 				rbuf[i] = 0;
-			ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
-			if(ret == 0)
-				status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
-			ret = pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
+			MUTEX_LOCK(&mutex09_xbee_other_api_buf);
+			status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
+			MUTEX_UNLOCK(&mutex09_xbee_other_api_buf);
 #if 0
 			if(status == true)
 			{
@@ -559,13 +550,12 @@ void xbee_BD(void)
 	uint8 state=0,rbuf[128];
 	uint32 cnt=0,cnts=0;;
 	bool status=false;
-	int ret=0;
+
 	do
 	{
-		ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
-		if(ret == 0)
-			clear_queue(&xbee_other_api_buf);
-		ret = pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
+		MUTEX_LOCK(&mutex09_xbee_other_api_buf);
+		clear_queue(&xbee_other_api_buf);
+		MUTEX_UNLOCK(&mutex09_xbee_other_api_buf);
 		XBeeSetBD(115200);
 		cnt = 0;
 		do
@@ -575,10 +565,9 @@ void xbee_BD(void)
 			uint8 i;
 			for(i=0;i<128;i++)
 				rbuf[i] = 0;
-			ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
-			if(ret == 0)
-				status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
-			ret = pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
+			MUTEX_LOCK(&mutex09_xbee_other_api_buf);
+			status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
+			MUTEX_UNLOCK(&mutex09_xbee_other_api_buf);
 #if 0
 			uint8 i;
 			if(status == true)
@@ -609,14 +598,13 @@ uint8 xbee_set_AT(int8 *at_cmd, uint8 *param, uint8 len, uint8 *rbuf)
 {
 	uint32 cnt=0,cnts=0;
 	bool status=false;
-	int ret=0;
+
 	do
 	{
 		//printf("\033[33msend xbee AT command\033[0m ...\r\n");
-		ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
-		if(ret == 0)
-			clear_queue(&xbee_other_api_buf);
-		ret = pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
+		MUTEX_LOCK(&mutex09_xbee_other_api_buf);
+		clear_queue(&xbee_other_api_buf);
+		MUTEX_UNLOCK(&mutex09_xbee_other_api_buf);
 		XBeeSetAT(at_cmd, param, len, RES);
 		cnt = 0;
 		do
@@ -626,10 +614,9 @@ uint8 xbee_set_AT(int8 *at_cmd, uint8 *param, uint8 len, uint8 *rbuf)
 			uint8 i;
 			for(i=0;i<128;i++)
 				rbuf[i] = 0;
-			ret = pthread_mutex_lock(&mutex09_xbee_other_api_buf);
-			if(ret == 0)
-				status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
-			ret = pthread_mutex_unlock(&mutex09_xbee_other_api_buf);
+			MUTEX_LOCK(&mutex09_xbee_other_api_buf);
+			status = read_one_package_f_queue(&xbee_other_api_buf , rbuf);
+			MUTEX_UNLOCK(&mutex09_xbee_other_api_buf);
 #if 0
 			uint8 i;
 			if(status == true)
@@ -656,20 +643,16 @@ void get_mac(void)
 {
 	uint8 i=0,rbuf[128],len;
 	uint8 param[2];
-	int ret=0;
 
 	printf("\033[33mgetting mac address\033[0m\r\n");
-	ret = pthread_mutex_lock(&mutex14_CoorInfo);
-	if(ret == 0)
-	{
-		len = xbee_set_AT("SH", param, 0 ,rbuf);
-		for(i=0;i<4;i++)
-			CoorInfo.mac_adr[i] = *(rbuf+8+i);
-		len = xbee_set_AT("SL", param, 0 ,rbuf);
-		for(i=0;i<4;i++)
-			CoorInfo.mac_adr[4+i] = *(rbuf+8+i);
-	}
-	ret = pthread_mutex_unlock(&mutex14_CoorInfo);
+	MUTEX_LOCK(&mutex14_CoorInfo);
+	len = xbee_set_AT("SH", param, 0 ,rbuf);
+	for(i=0;i<4;i++)
+		CoorInfo.mac_adr[i] = *(rbuf+8+i);
+	len = xbee_set_AT("SL", param, 0 ,rbuf);
+	for(i=0;i<4;i++)
+		CoorInfo.mac_adr[4+i] = *(rbuf+8+i);
+	MUTEX_UNLOCK(&mutex14_CoorInfo);
 	printf("\033[34mcoor mac addr \033[0m: ");
 	for(i=0;i<8;i++)
 	{
@@ -684,18 +667,14 @@ void get_mac(void)
 int get_gateway_mac_addr(unsigned char *macAddr)
 {
 	uint8 i=0,sum=0;
-	int ret=0;
 
-	ret = pthread_mutex_lock(&mutex14_CoorInfo);
-	if(ret == 0)
+	MUTEX_LOCK(&mutex14_CoorInfo);
+	for(i=0;i<8;i++)
 	{
-		for(i=0;i<8;i++)
-		{
-			macAddr[i] = CoorInfo.mac_adr[i];
-			sum |= CoorInfo.mac_adr[i];
-		}
+		macAddr[i] = CoorInfo.mac_adr[i];
+		sum |= CoorInfo.mac_adr[i];
 	}
-	ret = pthread_mutex_unlock(&mutex14_CoorInfo);
+	MUTEX_UNLOCK(&mutex14_CoorInfo);
 	if(sum == 0)
 		return -1;
 	else

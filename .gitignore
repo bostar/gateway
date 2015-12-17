@@ -33,3 +33,10 @@
 
 # Produce files
 gateway
+
+#my files
+*.json
+
+
+
+
