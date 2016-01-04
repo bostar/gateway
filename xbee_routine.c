@@ -65,10 +65,9 @@ void xbee_routine_thread(void)
 
 	timetTime = time(NULL);		//获取当前系统时间
 	//printf("timetTime=%d\n", (uint32)timetTime);
-	strncpy(CoorInfo.logname,"xbee_dev_log_",13);
     pTmTime = localtime(&timetTime);	//time_t 结构转换成tm结构
-    snprintf(CoorInfo.logname+13 , 24 , "%04d_%02d_%02d_%02d_%02d_%02d.txt", pTmTime->tm_year+1900, pTmTime->tm_mon+1, pTmTime->tm_mday, pTmTime->tm_hour, pTmTime->tm_min, pTmTime->tm_sec);
-	printf("CoorInfo.logname=%s\n", CoorInfo.logname);
+    snprintf(CoorInfo.logname , 37 , "xbee_dev_log_%04d_%02d_%02d_%02d_%02d_%02d.txt", pTmTime->tm_year+1900, pTmTime->tm_mon+1, pTmTime->tm_mday, pTmTime->tm_hour, pTmTime->tm_min, pTmTime->tm_sec);
+	printf("CoorInfo.logname=%s\r\n", CoorInfo.logname);
 	err_log(CoorInfo.logname , strlen(CoorInfo.logname));
 
 	xbee_gpio_init();
@@ -77,35 +76,34 @@ void xbee_routine_thread(void)
 	for(_i=0;_i<8;_i++)
 		_adr[_i] = 0;
 
-		MUTEX_LOCK(&mutex13_pSourcePathList);
-			pSourcePathList = CreatRouterLink(_adr,0,HeadMidAdr,0);
-		MUTEX_UNLOCK(&mutex13_pSourcePathList);
+	MUTEX_LOCK(&mutex13_pSourcePathList);
+	pSourcePathList = CreatRouterLink(_adr,0,HeadMidAdr,0);
+	MUTEX_UNLOCK(&mutex13_pSourcePathList);
 
-		MUTEX_LOCK(&mutex01_serial_rbuf);
-			creat_circular_queue( &serial_rbuf );
-		MUTEX_UNLOCK(&mutex01_serial_rbuf);
+	MUTEX_LOCK(&mutex01_serial_rbuf);
+	creat_circular_queue( &serial_rbuf );
+	MUTEX_UNLOCK(&mutex01_serial_rbuf);
 
-		MUTEX_LOCK(&mutex08_trans_status_buf);
-			creat_circular_queue( &trans_status_buf );
-		MUTEX_UNLOCK(&mutex08_trans_status_buf);
+	MUTEX_LOCK(&mutex08_trans_status_buf);
+	creat_circular_queue( &trans_status_buf );
+	MUTEX_UNLOCK(&mutex08_trans_status_buf);
 
-		MUTEX_LOCK(&mutex09_xbee_other_api_buf);
-			creat_circular_queue( &xbee_other_api_buf );
-		MUTEX_UNLOCK(&mutex09_xbee_other_api_buf);
+	MUTEX_LOCK(&mutex09_xbee_other_api_buf);
+	creat_circular_queue( &xbee_other_api_buf );
+	MUTEX_UNLOCK(&mutex09_xbee_other_api_buf);
 
-		MUTEX_LOCK(&mutex10_serial_wbuf);
-			creat_circular_queue( &serial_wbuf );
-		MUTEX_UNLOCK(&mutex10_serial_wbuf);
+	MUTEX_LOCK(&mutex10_serial_wbuf);
+	creat_circular_queue( &serial_wbuf );
+	MUTEX_UNLOCK(&mutex10_serial_wbuf);
 
-		MUTEX_LOCK(&mutex12_trans_req_buf);
-			creat_circular_queue( &trans_req_buf );
-		MUTEX_UNLOCK(&mutex12_trans_req_buf);
+	MUTEX_LOCK(&mutex12_trans_req_buf);
+	creat_circular_queue( &trans_req_buf );
+	MUTEX_UNLOCK(&mutex12_trans_req_buf);
 
-		MUTEX_LOCK(&mutex11_route_record_buf);
-			creat_circular_queue( &route_record_buf );
-		MUTEX_UNLOCK(&mutex11_route_record_buf);
+	MUTEX_LOCK(&mutex11_route_record_buf);
+	creat_circular_queue( &route_record_buf );
+	MUTEX_UNLOCK(&mutex11_route_record_buf);
 
-	//printf("\033[33mstart xbee_routine_thread_write_serial...\033[0m\r\n");
 	do{
 	    if((ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_write_serial,NULL)) != 0)
 		{
@@ -114,7 +112,6 @@ void xbee_routine_thread(void)
 	    }
 	}while(ret != 0);
 
-	//printf("\033[33mstart xbee_routine_thread_read_serial...\033[0m\r\n");
 	do{
 	    if((ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_read_serial,NULL)) != 0)
 		{
@@ -123,7 +120,6 @@ void xbee_routine_thread(void)
 	    }
 	}while(ret != 0);
 
-	//printf("\033[33mstart xbee_routine_thread_process_serial_rbuf...\033[0m\r\n");
 	do{
     	if((ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_process_serial_rbuf,NULL)) != 0)
 		{
@@ -137,7 +133,6 @@ void xbee_routine_thread(void)
 	XBeeNetInit();
 	get_mac();
 
-	//printf("\033[33mstart xbee_routine_thread_process_trans_status_buf...\033[0m\r\n");
 	do{
     	if((ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_process_trans_status_buf,NULL)) != 0)
 		{
@@ -147,7 +142,6 @@ void xbee_routine_thread(void)
 	}
 	while(ret != 0);
 
-	//printf("\033[33mstart xbee_routine_thread_process_trans_req_buf...\033[0m\r\n");
 	do{
     	if((ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_process_trans_req_buf,NULL)) != 0)
 		{
@@ -157,7 +151,6 @@ void xbee_routine_thread(void)
 	}
 	while(ret != 0);
 
-	//printf("\033[33mstart xbee_routine_thread_process_route_record_buf...\033[0m\r\n");
 	do{
     	if((ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_process_route_record_buf,NULL)) != 0)
 		{
@@ -167,7 +160,6 @@ void xbee_routine_thread(void)
 	}
 	while(ret != 0);
 
-	//printf("\033[33mstart xbee_routine_thread_process_other_api_buf...\033[0m\r\n");
 	do{
     	if((ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_process_other_api_buf,NULL)) != 0)
 		{
@@ -177,7 +169,6 @@ void xbee_routine_thread(void)
 	}while(ret != 0);
 
 #if __XBEE_TEST__
-	//printf("\033[33mstart xbee_routine_thread_test...\033[0m\r\n");
 	do{
 		if((ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_test,NULL)) != 0)
 		{
@@ -200,7 +191,6 @@ void xbee_routine_thread(void)
 		}
 		MUTEX_UNLOCK(&mutex13_pSourcePathList);
 		usleep(5000000);
-		//usleep(2000000);
 	}
 }
 

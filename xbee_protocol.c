@@ -87,9 +87,14 @@ void XBeeProcessCTL(uint8 *rbuf)
 *******************************************************/
 void XBeeProcessSEN(uint8 *rbuf)
 {
-	get_local_addr(rbuf+12,rbuf+4);
-	if(*(rbuf+19) == 0x01)	//传感器事件使能
+	if(get_local_addr(rbuf+12,rbuf+4) != 0)
 	{
+		printf("\033[31m\r\nthe locker is not belong the park...\033[0m \r\n");
+		return;
+	}
+	if(*(rbuf+19) == 'y')	//传感器事件使能
+	{
+/*
 		if(*(rbuf+20) == ParkingUsed)
 		{
 			//printf("\033[33m\033[1m当前车位有车辆\033[0m \n");
@@ -100,14 +105,15 @@ void XBeeProcessSEN(uint8 *rbuf)
 			//printf("\033[33m\033[1m当前车位为空\033[0m \n");
 			event_report( char_to_int(rbuf+12),en_vehicle_leave);
 		}
+*/
 	}
 	else
 	{
 		printf("\033[31m\033[1m传感器事件未上报\033[0m\n");
 	}
-	if(*(rbuf+21) == 0x01) //锁事件
+	if(*(rbuf+26) == 'y') //锁事件
 	{
-		switch(*(rbuf+22))
+		switch(*(rbuf+27))
 		{
 			case ParkLockSuccess:
 				//printf("\033[33m\033[1m车位锁定成功 \033[0m \n");
@@ -133,7 +139,7 @@ void XBeeProcessSEN(uint8 *rbuf)
 	{
 		printf("\033[31m\033[1m锁事件未上报\033[0m\n");
 	}
-	if(*(rbuf+23) == 0x01)	//电量上报
+	if(*(rbuf+28) == 'y')	//电量上报
 	{
 
 	}
@@ -743,7 +749,11 @@ uint16 read_one_package_f_queue( CircularQueueType* p_cqueue , uint8* buf )
 	}
 	return 0;
 }
-
+/*****************************************************************************
+**brief	analysis package from a queue
+**param
+**reval
+*****************************************************************************/
 
 
 

@@ -59,11 +59,11 @@ SourceRouterLinkType *CreatNode(uint8 *mac_adr,uint8 *target_adr)
 **reval NULL 没有数据
       P   数据地址
 *******************************************************************************************/
-SourceRouterLinkType *FindnNode(const SourceRouterLinkType *pNode,uint16 n)
+SourceRouterLinkType *FindnNode(SourceRouterLinkType* const pNode,uint16 n)
 {
 	SourceRouterLinkType *p=NULL,*pS=NULL;
 	uint8 i=1;
-	p = (SourceRouterLinkType*)pNode;
+	p = pNode;
 	while(p != NULL)
 	{
 		if(i == n)
@@ -80,10 +80,10 @@ SourceRouterLinkType *FindnNode(const SourceRouterLinkType *pNode,uint16 n)
 **reval NULL 没有数据
 		P	 数据地址
 *******************************************************************************************/
-SourceRouterLinkType *FindNetAdr(const SourceRouterLinkType *pNode,uint16 target_adr)
+SourceRouterLinkType *FindNetAdr(SourceRouterLinkType* const pNode,uint16 target_adr)
 {
 	SourceRouterLinkType *p;
-	p = (SourceRouterLinkType*)pNode;
+	p = pNode;
 	while(p != NULL && p->target_adr != target_adr)
 	{
 		p = p->next;
@@ -96,10 +96,10 @@ SourceRouterLinkType *FindNetAdr(const SourceRouterLinkType *pNode,uint16 target
 **reval NULL 没有数据
 		P	 数据地址
 *******************************************************************************************/
-SourceRouterLinkType *FindMacAdr(const SourceRouterLinkType *pNode,uint8 *mac_adr)
+SourceRouterLinkType *FindMacAdr(SourceRouterLinkType* const pNode,uint8 *mac_adr)
 {
 	SourceRouterLinkType *p=NULL;
-	p = (SourceRouterLinkType*)pNode;
+	p = pNode;
 	while(p != NULL && arrncmp(p->mac_adr,mac_adr,8) != 0)
 	{
 		p = p->next;
@@ -109,10 +109,10 @@ SourceRouterLinkType *FindMacAdr(const SourceRouterLinkType *pNode,uint8 *mac_ad
 /*******************************************************************************************
 **brief 插入数据
 *******************************************************************************************/
-uint8 AddData(const SourceRouterLinkType *pNode,SourceRouterLinkType *pNodeS)
+uint8 AddData(SourceRouterLinkType* const pNode,SourceRouterLinkType *pNodeS)
 {
 	SourceRouterLinkType *p=NULL;
-	p = (SourceRouterLinkType*)pNode;
+	p = pNode;
 	while(p->next != NULL)
 	{
 		p = p->next;
@@ -126,11 +126,11 @@ uint8 AddData(const SourceRouterLinkType *pNode,SourceRouterLinkType *pNodeS)
 param	头指针
 reval	链表长度
 *******************************************************************************************/
-uint16 LinkLenth(const SourceRouterLinkType *pNode)
+uint16 LinkLenth(SourceRouterLinkType* const pNode)
 {
 	SourceRouterLinkType *p;
 	uint8 i;
-	p = (SourceRouterLinkType*)pNode;
+	p = pNode;
 	i = 0;
 	while(p != NULL)
 	{
@@ -145,10 +145,10 @@ uint16 LinkLenth(const SourceRouterLinkType *pNode)
 		deleteNode 删除的节点
 ××reval 0 删除成功   1节点不存在
 *******************************************************************************************/
-uint8 DeleteNode(const SourceRouterLinkType *pNode,SourceRouterLinkType *deleteNode)
+uint8 DeleteNode(SourceRouterLinkType* const pNode,SourceRouterLinkType *deleteNode)
 {
 	SourceRouterLinkType *p=NULL,*pS=NULL;
-	p = (SourceRouterLinkType*)pNode;
+	p = pNode;
 	while(p != NULL && p != deleteNode)
 	{
 		pS = p;
@@ -248,6 +248,174 @@ int8 arrncmp(uint8 *arr1,uint8 *arr2,uint8 n)
 		if(*(arr1+i) != *(arr2+i))
 			return 1;
 	}
+	return 0;
+}
+/*lock list info***************************************************************************************************************/
+/****************************************************************
+**broef 创建链表
+****************************************************************/
+LockListInfoType *creat_lock_list_info(void)
+{
+	LockListInfoType *p=NULL;
+
+	p = (LockListInfoType*)malloc(sizeof(LockListInfoType));
+	if(p == NULL)
+	{
+		puts("error");
+		return NULL;
+	}
+	return p;
+}
+/****************************************************************
+**broef 创建节点
+****************************************************************/
+LockListInfoType *creat_lock_list_info_node(uint8 *mac_adr,uint8 *net_adr,uint8 *sen_data)
+{
+	LockListInfoType *p=NULL;
+	uint8 i=0;
+	p = (LockListInfoType*)malloc(sizeof(LockListInfoType));
+	if(p ==NULL)
+	{
+		puts("error");
+		return NULL;
+	}
+	for(i=0;i<8;i++)
+		p->mac_adr[i] = *(mac_adr+i);
+	p->net_adr[0] = *(net_adr);
+	p->net_adr[1] = *(net_adr+1);
+	p->statex = (((uint16)sen_data[0] << 8) | sen_data[1]);
+	p->statey = (((uint16)sen_data[2] << 8) | sen_data[3]);
+	p->statez = (((uint16)sen_data[4] << 8) | sen_data[5]);
+	p->next = NULL;
+	return p;
+}
+/*******************************************************************************************
+**brief 查找数据，物理地址
+**param mac_adr	指向物理地址的指针
+**reval NULL 没有数据
+		P	 数据地址
+*******************************************************************************************/
+LockListInfoType *find_node_mac(LockListInfoType* const Node,uint8 *mac_adr)
+{
+	LockListInfoType *p=NULL;
+
+	p = Node;
+	while(p != NULL && arrncmp(p->mac_adr,mac_adr,8) != 0)
+	{
+		p = p->next;
+	}
+	return p;
+}
+/*******************************************************************************************
+**brief 插入数据
+*******************************************************************************************/
+uint8 add_node(LockListInfoType* const pNode,LockListInfoType *pNodeS)
+{
+	LockListInfoType *p=NULL;
+	p = pNode;
+	while(p->next != NULL)
+	{
+		p = p->next;
+	}
+	p->next = pNodeS;
+	return 0;
+}
+/*******************************************************************************************
+**brief 删除链表节点
+**param pNode 链表头
+		deleteNode 删除的节点
+××reval 0 删除成功   1节点不存在
+*******************************************************************************************/
+uint8 del_lock_list_node(LockListInfoType* const pNode,LockListInfoType *deleteNode)
+{
+	LockListInfoType *p=NULL,*pS=NULL;
+	p = pNode;
+	while(p != NULL && p != deleteNode)
+	{
+		pS = p;
+		p = p->next;
+	}
+	if(p == NULL)
+		return 1;	//节点不存在
+	if(p == pNode)
+		return 2;	//表头禁止被删除
+	pS->next = p->next;
+	free(p);
+	p = NULL;
+	deleteNode = NULL;
+	//LinkPrintf(pLinkHead);
+	return 0;
+}
+/*******************************************************************************************
+**brief 链表长度
+param	头指针
+reval	链表长度
+*******************************************************************************************/
+uint16 lock_list_len(LockListInfoType* const pNode)
+{
+	LockListInfoType *p=NULL;
+	uint8 i;
+	p = pNode;
+	i = 0;
+	while(p != NULL)
+	{
+		i++;
+		p = p->next;
+	}
+	return i;
+}
+/*******************************************************************************************
+**brief 链表数据写入文件
+param	头指针
+*******************************************************************************************/
+int write_lock_list(LockListInfoType* const pNode)
+{
+	int fd=-1,new_offset=-1;
+	LockListInfoType *p=NULL;
+	uint8 buf[125],i;
+	uint16 line_num=1,net_adr;
+	uint64 mac_adr;
+	
+	fd = open("lock_info_list.txt", O_WRONLY | O_CREAT | O_TRUNC, 0x666);
+	if(fd < 0)
+	{
+		printf("open %s failed\n","lock_info_list.txt");
+		return -1;
+	}
+	if((new_offset = lseek(fd,0,SEEK_END)) < 0)
+	{
+		printf("seek %s failed\n","lock_info_list.txt");
+		return -1;
+	}
+	snprintf((int8*)buf,sizeof("num  net_adr mac_adr          senerx senery senerz\r\n"),"num  net_adr mac_adr          senerx senery senerz\r\n");
+	if((write(fd , buf , sizeof(buf))) < 0)
+	{
+		printf("write %s failed\r\n","lock_info_list.txt");
+		return -1;
+	}
+	p = pNode;
+	while(p != NULL)
+	{
+		if((new_offset = lseek(fd,0,SEEK_END)) < 0)
+		{
+			printf("seek %s failed\n","lock_info_list.txt");
+			return -1;
+		}
+		net_adr = p->net_adr[0]<<8 | p->net_adr[1];
+		mac_adr = 0;
+		for(i=0;i<8;i++)
+			mac_adr = mac_adr | (uint32)p->mac_adr[7-i]<<(8*i);
+		snprintf((int8*)buf,sizeof("%04d %04x %llx             %04d %04d %04d\r\n"),"%04d %04x %llx             %04d %04d %04d\r\n",line_num,net_adr,mac_adr,p->statex,p->statey,p->statez);
+		if((write(fd , buf , sizeof(buf))) < 0)
+		{
+			printf("write %s failed\r\n","lock_info_list.txt");
+			return -1;
+		}
+		line_num++;
+		p = p->next;
+	}
+	fsync(fd);
+	close(fd);
 	return 0;
 }
 

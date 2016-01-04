@@ -4,7 +4,7 @@ int16 err_log_sigle(int8 *buf , uint16 len)
 {
 	int fd=-1,new_offset=-1;
 
-	fd = open(CoorInfo.logname , O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IRWXO);
+	fd = open(CoorInfo.logname , O_WRONLY | O_CREAT,0x666);
 	if(fd < 0)
 	{
 		printf("open %s failed\n",CoorInfo.logname);
