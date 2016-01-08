@@ -9,6 +9,8 @@
 #include <sys/timeb.h>
 #include "listener.h"
 #include "xbee_config.h"
+#include "xbee_protocol.h"
+#include "xbee_routine.h"
 
 extern void swap(unsigned char len,unsigned char *array);
 void set_online(unsigned short netaddr);
@@ -856,6 +858,11 @@ printf("mapping\r\n");
             pstParkingState[loop].option = option;
             printf("parking_id = %d;parking_mac_addr = 0x%08x%08x\r\n",pstParkingState[loop].parking_id,*(unsigned int*)&pstParkingState[loop].parking_mac_addr[4],*(unsigned int*)&pstParkingState[loop].parking_mac_addr[0]);
             pthread_mutex_unlock(&parking_info_mutex);
+#if _XBEE_
+			pthread_mutex_lock(&mutex16_park_list);
+			xbee_locker_list_update(pParkList , parking_id , macaddr);
+			pthread_mutex_unlock(&mutex16_park_list);
+#endif
             return;
         }
     }
@@ -893,7 +900,7 @@ int set_parking_state(unsigned short parking_id,unsigned char state)
         return 1;
     }
 
-    printf("==========0x%04x,state is 0x%02x\r\n",parking_id,state); 
+    printf("==========0x%04x,state is 0x%02x\r\n",parking_id,state);
 
     switch(state)
     {

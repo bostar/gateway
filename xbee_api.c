@@ -3,10 +3,9 @@
 /******************************************************************************************
 **broef 创建链表
 ******************************************************************************************/
-SourceRouterLinkType *CreatRouterLink(uint8 *mac_adr,uint16 target_adr,uint8 *mid_adr,uint8 num)
+SourceRouterLinkType *CreatRouterLink(void)
 {
 	SourceRouterLinkType* pRouterLink = NULL; 
-	uint8 i=0;
 
 	pRouterLink = (SourceRouterLinkType*)malloc(sizeof(SourceRouterLinkType));
 	if(pRouterLink == NULL)
@@ -14,19 +13,13 @@ SourceRouterLinkType *CreatRouterLink(uint8 *mac_adr,uint16 target_adr,uint8 *mi
 		printf("\033[31mno enough menmary\r\n");
 		return NULL;
 	}
-	for(i=0;i<8;i++)
-		pRouterLink->mac_adr[i] = mac_adr[i];
-	pRouterLink->target_adr = target_adr;
-	for(i=0;i<num*2;i++)
-		pRouterLink->mid_adr[i] = mid_adr[i];
-	pRouterLink->num_mid_adr = num;
 	pRouterLink->next = NULL;
 	return pRouterLink;
 }
 /******************************************************************************************
 **broef 创建节点
 ******************************************************************************************/
-SourceRouterLinkType *CreatNode(uint8 *mac_adr,uint8 *target_adr)
+SourceRouterLinkType *CreatRouterLinkNode(uint8 *mac_adr,uint8 *target_adr,uint8 *mid_adr,uint8 num)
 {
 	SourceRouterLinkType* pRouterLink = NULL; 
 	uint8 i=0;
@@ -42,14 +35,9 @@ SourceRouterLinkType *CreatNode(uint8 *mac_adr,uint8 *target_adr)
 	pRouterLink->target_adr = 0;
 	pRouterLink->target_adr |= target_adr[0]<<8;
 	pRouterLink->target_adr |= target_adr[1];
-	for(i=0;i<40;i++)
-		pRouterLink->mid_adr[i] = 0;
-	pRouterLink->num_mid_adr = 0;
-	//pRouterLink->lock_state = 0;
-#if __XBEE_TEST_LAR_NODE__
-	pRouterLink->send_cmd_times = 0;
-	pRouterLink->rev_rep_times = 0;
-#endif
+	for(i=0;i<num*2;i++)
+		pRouterLink->mid_adr[i] = mid_adr[i];
+	pRouterLink->num_mid_adr = num;
 	pRouterLink->next = NULL;
 	return pRouterLink;
 }
@@ -237,19 +225,6 @@ void LinkPrintf(SourceRouterLinkType *pNode)
 	}
 	printf("\033[0m");
 }
-/*************************************************************
-**brief	比较数组是否相等
-*************************************************************/
-int8 arrncmp(uint8 *arr1,uint8 *arr2,uint8 n)
-{
-	uint8 i;
-	for(i=0;i<n;i++)
-	{
-		if(*(arr1+i) != *(arr2+i))
-			return 1;
-	}
-	return 0;
-}
 /*lock list info***************************************************************************************************************/
 /****************************************************************
 **broef 创建链表
@@ -264,28 +239,22 @@ LockListInfoType *creat_lock_list_info(void)
 		puts("error");
 		return NULL;
 	}
+	p->next = NULL;
 	return p;
 }
 /****************************************************************
 **broef 创建节点
 ****************************************************************/
-LockListInfoType *creat_lock_list_info_node(uint8 *mac_adr,uint8 *net_adr,uint8 *sen_data)
+LockListInfoType *creat_lock_list_info_node(void)
 {
 	LockListInfoType *p=NULL;
-	uint8 i=0;
+
 	p = (LockListInfoType*)malloc(sizeof(LockListInfoType));
 	if(p ==NULL)
 	{
 		puts("error");
 		return NULL;
 	}
-	for(i=0;i<8;i++)
-		p->mac_adr[i] = *(mac_adr+i);
-	p->net_adr[0] = *(net_adr);
-	p->net_adr[1] = *(net_adr+1);
-	p->statex = (((uint16)sen_data[0] << 8) | sen_data[1]);
-	p->statey = (((uint16)sen_data[2] << 8) | sen_data[3]);
-	p->statez = (((uint16)sen_data[4] << 8) | sen_data[5]);
 	p->next = NULL;
 	return p;
 }
@@ -301,6 +270,23 @@ LockListInfoType *find_node_mac(LockListInfoType* const Node,uint8 *mac_adr)
 
 	p = Node;
 	while(p != NULL && arrncmp(p->mac_adr,mac_adr,8) != 0)
+	{
+		p = p->next;
+	}
+	return p;
+}
+/*******************************************************************************************
+**brief 查找数据，物理地址
+**param mac_adr	指向物理地址的指针
+**reval NULL 没有数据
+		P	 数据地址
+*******************************************************************************************/
+LockListInfoType *find_node_park_id(LockListInfoType* const Node,uint16 park_id)
+{
+	LockListInfoType *p=NULL;
+
+	p = Node;
+	while(p != NULL && p->park_id != park_id)
 	{
 		p = p->next;
 	}
@@ -343,7 +329,7 @@ uint8 del_lock_list_node(LockListInfoType* const pNode,LockListInfoType *deleteN
 	free(p);
 	p = NULL;
 	deleteNode = NULL;
-	//LinkPrintf(pLinkHead);
+	//Link//Printf(pLllinkHead);
 	return 0;
 }
 /*******************************************************************************************
@@ -370,53 +356,178 @@ param	头指针
 *******************************************************************************************/
 int write_lock_list(LockListInfoType* const pNode)
 {
-	int fd=-1,new_offset=-1;
+	FILE *fp=NULL;
 	LockListInfoType *p=NULL;
-	uint8 buf[125],i;
-	uint16 line_num=1,net_adr;
-	uint64 mac_adr;
+	uint8 buf[125];
+	int32 count;
 	
-	fd = open("lock_info_list.txt", O_WRONLY | O_CREAT | O_TRUNC, 0x666);
-	if(fd < 0)
+	if((fp = fopen(LOCK_NAME,"w")) == NULL)
 	{
-		printf("open %s failed\n","lock_info_list.txt");
+		printf("\033[31mopen %s failed\033[0m\r\n",LOCK_NAME);
 		return -1;
 	}
-	if((new_offset = lseek(fd,0,SEEK_END)) < 0)
-	{
-		printf("seek %s failed\n","lock_info_list.txt");
-		return -1;
-	}
-	snprintf((int8*)buf,sizeof("num  net_adr mac_adr          senerx senery senerz\r\n"),"num  net_adr mac_adr          senerx senery senerz\r\n");
-	if((write(fd , buf , sizeof(buf))) < 0)
-	{
-		printf("write %s failed\r\n","lock_info_list.txt");
-		return -1;
-	}
-	p = pNode;
+	
+	snprintf((int8*)buf,strlen(S_FILE_TITLE),S_FILE_TITLE);
+	count = fwrite(buf,strlen((char*)buf),1,fp);
+	count = fwrite("\r\n",2,1,fp);
+	p = pNode->next;
 	while(p != NULL)
 	{
-		if((new_offset = lseek(fd,0,SEEK_END)) < 0)
+	/*	snprintf((char*)buf,4,"%04x",p->park_id);
+		for(i=0;i<(strlen(S_FILE_TITLE1)-4);i++)
 		{
-			printf("seek %s failed\n","lock_info_list.txt");
-			return -1;
+			snprintf((char*)(buf+4+i),1," ");
 		}
-		net_adr = p->net_adr[0]<<8 | p->net_adr[1];
-		mac_adr = 0;
-		for(i=0;i<8;i++)
-			mac_adr = mac_adr | (uint32)p->mac_adr[7-i]<<(8*i);
-		snprintf((int8*)buf,sizeof("%04d %04x %llx             %04d %04d %04d\r\n"),"%04d %04x %llx             %04d %04d %04d\r\n",line_num,net_adr,mac_adr,p->statex,p->statey,p->statez);
-		if((write(fd , buf , sizeof(buf))) < 0)
+		snprintf((char*)(buf+strlen(S_FILE_TITLE1)),4,"%04x",arr2int(p->net_adr,2));
+		for(i=0;i<(strlen(S_FILE_TITLE2)-4);i++)
 		{
-			printf("write %s failed\r\n","lock_info_list.txt");
-			return -1;
+			snprintf((char*)(buf+i+4+strlen(S_FILE_TITLE1)),1," ");
 		}
-		line_num++;
+		snprintf((char*)(buf+strlen(S_FILE_TITLE1)+strlen(S_FILE_TITLE2)),16,"%08x%08x",arr2int(p->mac_adr,4),arr2int(p->mac_adr+4,4));
+		for(i=0;i<(strlen(S_FILE_TITLE3)-16);i++)
+		{
+			snprintf((char*)(buf+i+16+strlen(S_FILE_TITLE2)),1," ");
+		}
+		snprintf((char*)(buf+strlen(S_FILE_TITLE1)+strlen(S_FILE_TITLE2)+strlen(S_FILE_TITLE3)),4,"%04x",p->statex);
+		for(i=0;i<(strlen(S_FILE_TITLE4)-4);i++)
+		{
+			printf(" ");
+		}
+		snprintf((char*)(buf+strlen(S_FILE_TITLE1)+strlen(S_FILE_TITLE2)+strlen(S_FILE_TITLE3)+strlen(S_FILE_TITLE4)),4,"%04x",p->statey);
+		for(i=0;i<(strlen(S_FILE_TITLE5)-4);i++)
+		{
+			printf(" ");
+		}
+		snprintf((char*)(buf+strlen(S_FILE_TITLE1)+strlen(S_FILE_TITLE2)+strlen(S_FILE_TITLE3)+strlen(S_FILE_TITLE4)+strlen(S_FILE_TITLE5)),4,"%04x",p->statez);
+		*/
+		snprintf((char*)buf,60,"%04d     %04x    %08x%08x   %06d %06d %06d\r\n",p->park_id,arr2int(p->net_adr,2),arr2int(p->mac_adr,4),arr2int(p->mac_adr+4,4),p->statex,p->statey,p->statez);
+		int32 count;
+		count = fwrite(buf,strlen((char*)buf),1,fp);
 		p = p->next;
 	}
-	fsync(fd);
-	close(fd);
+	fflush(fp);
+	fclose(fp);
 	return 0;
+}
+/*******************************************************************************************
+**brief 从文件读取传感器标定值
+param	头指针
+*******************************************************************************************/
+int read_lock_list(LockListInfoType* const pNode)
+{
+	LockListInfoType *p=NULL;
+	uint8 buf[125];
+	FILE *fp=NULL;
+	
+	if((fp = fopen(LOCK_NAME,"ar+")) == NULL)
+	{
+		printf("\033[31mopen %s failed\033[0m\r\n",LOCK_NAME);
+		return -1;
+	}
+	if(fseek(fp,0,SEEK_SET) < 0)
+	{
+		printf("\033[31mseek %s failed\033[0m\r\n",LOCK_NAME);
+		return -1;
+	}
+	while(!feof(fp))
+	{
+		if(fgets((char*)buf,100,fp) != NULL && strncmp((char*)buf,"park_id",7) != 0)
+		{
+			p = creat_lock_list_info_node();
+			uint8 tmp[64],cnt1=0,cnt2=0;
+			while(*(buf+cnt1) != 0)
+			{
+				if((char)*(buf+cnt1) != ' ')
+				{
+					*(tmp+cnt2) = *(buf+cnt1);
+					cnt2++;
+				}
+				cnt1++;
+			}
+			printf("%s",tmp);
+
+			uint8 arr[32];
+			str2hex((char*)tmp , (uint8)strlen((char*)tmp) , arr);
+			p->park_id = (uint16)*(arr)<<8 | (uint16)*(arr+1);
+			for(cnt1=0;cnt1<2;cnt1++)
+				*(p->net_adr+cnt1) = *(arr+2+cnt1);
+			for(cnt1=0;cnt1<8;cnt1++)
+				*(p->mac_adr+cnt1) = *(arr+4+cnt1);
+			p->statex = (int16)str2dec((char*)(tmp+24) , 6);
+			p->statey = (int16)str2dec((char*)(tmp+30) , 6);
+			p->statez = (int16)str2dec((char*)(tmp+36) , 6);
+			add_node(pNode,p);
+		}
+	}
+	fclose(fp);
+	return 0;
+}
+/*****************************************************************************
+**brief	update xbee locker list
+**param 
+**reval
+*****************************************************************************/
+void xbee_locker_list_update(LockListInfoType* const pNode , uint16 park_id , uint8 *mac_adr)
+{
+	LockListInfoType *p1=NULL,*p2=NULL,*pS=NULL;
+	
+	p1 = find_node_mac(pNode,mac_adr);
+	printf("mac_adr %p \r\n",p1);
+	p2 = find_node_park_id(pNode,park_id);
+	printf("park_id %p \r\n",p2);
+	if(p1 == NULL)
+	{
+		pS = creat_lock_list_info_node();
+		pS->park_id = park_id;
+		strncpy((char*)pS->mac_adr,(char*)mac_adr,8);
+		add_node(pNode,pS);
+		printf("\033[33madd new park id\033[0m\r\n");
+		return;
+	}
+	if(p2 == NULL && p1 != NULL)
+	{
+		printf("\033[33mthe park id has existing,update park_id\033[0m\r\n");
+		p1->park_id = park_id;
+		return;
+	}
+	if(p1 != p2)
+	{
+		p1->park_id = park_id;
+		del_lock_list_node(pNode,p2);
+		printf("\033[33mupdate park id\033[0m\r\n");
+		return;
+	}
+	printf("\033[33mno operations\033[0m\r\n");
+	return;
+}
+
+void printf_list(LockListInfoType* const pNode)
+{
+	LockListInfoType *p=NULL;
+	uint8 i=0;
+	
+	p = pNode;
+	printf("%s\r\n",S_FILE_TITLE);
+	while(p!=NULL)
+	{
+		printf("%04x",p->park_id);
+		for(i=0;i<(strlen(S_FILE_TITLE1)-4);i++)
+			printf(" ");
+		printf("%04x",arr2int(p->net_adr,2));
+		for(i=0;i<(strlen(S_FILE_TITLE2)-4);i++)
+			printf(" ");
+		printf("%08x%08x",arr2int(p->mac_adr,4),arr2int(p->mac_adr+4,4));
+		for(i=0;i<(strlen(S_FILE_TITLE3)-16);i++)
+			printf(" ");
+		printf("%06d",p->statex);
+		for(i=0;i<(strlen(S_FILE_TITLE4)-6);i++)
+			printf(" ");
+		printf("%06d",p->statey);
+		for(i=0;i<(strlen(S_FILE_TITLE5)-6);i++)
+			printf(" ");
+		printf("%06d\r\n",p->statez);
+		p = p->next;
+	}
 }
 
 /*serial send data buffer define***********************************************************************************************/
@@ -603,10 +714,82 @@ transReqListType *creat_trans_req_list(void)
 	return creat_trans_req_node();
 }
 
-
-
-
-
+/*************************************************************
+**brief	比较数组是否相等
+*************************************************************/
+int8 arrncmp(uint8 *arr1,uint8 *arr2,uint8 n)
+{
+	uint8 i;
+	for(i=0;i<n;i++)
+	{
+		if(*(arr1+i) != *(arr2+i))
+			return 1;
+	}
+	return 0;
+}
+/*************************************************************
+**brief	数组转整形
+*************************************************************/
+uint32 arr2int(uint8 *buf , uint8 len)
+{
+	uint8 i=0;
+	uint32 ret=0;
+	
+	for(i=0;i<len;i++)
+	{
+		ret = ret | (uint32)(*(buf+i))<<((len-1-i)*8);
+	}
+	return ret;
+}
+/*************************************************************
+**brief	字符串转16进制数组
+*************************************************************/
+void str2hex(char *str , uint8 len , uint8 *arr)
+{
+	uint8 h_data=0,l_data=0,i=0;
+	
+	for(i=0;i<len/2;i++)
+	{
+		h_data = *(str+2*i);
+		l_data = *(str+2*i+1);
+		*(arr+i) = 0;
+		//printf("%02x %02x \r\n",h_data,l_data);
+		if(h_data > '9')
+			*(arr+i) |= (h_data-0x57)<<4;
+		else
+			*(arr+i) |= (h_data-0x30)<<4;
+		//printf("%02x \r\n",*(arr+i));
+		if(l_data > '9')
+			*(arr+i) |= (l_data-0x57);
+		else
+			*(arr+i) |= (l_data-0x30);
+		//printf("%02x \r\n",*(arr+i));
+	}
+}
+/*************************************************************
+**brief	字符串转十进制数组
+*************************************************************/
+int32 str2dec(char *str , uint8 len)
+{
+	int32 reval=0;
+	uint8 i=0;
+	
+	for(i=0;i<len;i++)
+	{
+		if(*(str+i)  == '-')
+		{
+			continue;
+		}
+		else
+		{
+			reval = 10 * reval + *(str+i) - 0x30;
+			//printf(" i = %d  ,  reval = %d\r\n",i,reval);
+		}
+	}
+	if(*(str) == '-')
+			reval = 0 - reval;
+	return reval;
+}
 
 
 

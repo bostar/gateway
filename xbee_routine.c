@@ -26,6 +26,7 @@ CircularQueueType serial_wbuf;			//the serial write buffer
 CircularQueueType trans_req_buf;		//xbee transmit status API buffer
 CircularQueueType route_record_buf;		//
 SourceRouterLinkType *pSourcePathList=NULL;
+LockListInfoType *pParkList=NULL;
 #if 0//__XBEE_TEST_LAR_NODE__
 CircularQueueType ts_buf;
 #endif
@@ -47,6 +48,7 @@ pthread_mutex_t mutex12_trans_req_buf = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex13_pSourcePathList = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex14_CoorInfo = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex15_errlog = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex16_park_list = PTHREAD_MUTEX_INITIALIZER;
 #if 0//__XBEE_TEST_LAR_NODE__
 pthread_mutex_t mutex14_ts_buf = PTHREAD_MUTEX_INITIALIZER;
 #endif
@@ -57,8 +59,6 @@ void xbee_routine_thread(void)
 {
 	int ret=0;
     pthread_t id;
-	uint8 _i,_adr[8];
-	uint8 *HeadMidAdr=NULL;
 
 	time_t timetTime;
     struct tm *pTmTime;
@@ -73,37 +73,15 @@ void xbee_routine_thread(void)
 	xbee_gpio_init();
 	xbee_serial_port_init(115200);
 
-	for(_i=0;_i<8;_i++)
-		_adr[_i] = 0;
-
-	MUTEX_LOCK(&mutex13_pSourcePathList);
-	pSourcePathList = CreatRouterLink(_adr,0,HeadMidAdr,0);
-	MUTEX_UNLOCK(&mutex13_pSourcePathList);
-
-	MUTEX_LOCK(&mutex01_serial_rbuf);
+	pSourcePathList = CreatRouterLink();
 	creat_circular_queue( &serial_rbuf );
-	MUTEX_UNLOCK(&mutex01_serial_rbuf);
-
-	MUTEX_LOCK(&mutex08_trans_status_buf);
 	creat_circular_queue( &trans_status_buf );
-	MUTEX_UNLOCK(&mutex08_trans_status_buf);
-
-	MUTEX_LOCK(&mutex09_xbee_other_api_buf);
 	creat_circular_queue( &xbee_other_api_buf );
-	MUTEX_UNLOCK(&mutex09_xbee_other_api_buf);
-
-	MUTEX_LOCK(&mutex10_serial_wbuf);
 	creat_circular_queue( &serial_wbuf );
-	MUTEX_UNLOCK(&mutex10_serial_wbuf);
-
-	MUTEX_LOCK(&mutex12_trans_req_buf);
 	creat_circular_queue( &trans_req_buf );
-	MUTEX_UNLOCK(&mutex12_trans_req_buf);
-
-	MUTEX_LOCK(&mutex11_route_record_buf);
 	creat_circular_queue( &route_record_buf );
-	MUTEX_UNLOCK(&mutex11_route_record_buf);
-
+	pParkList = creat_lock_list_info();
+	read_lock_list(pParkList);
 	do{
 	    if((ret=pthread_create(&id,NULL,(void *) xbee_routine_thread_write_serial,NULL)) != 0)
 		{
@@ -178,6 +156,7 @@ void xbee_routine_thread(void)
 #endif
 	while(1)
 	{
+		write_lock_list(pParkList);
 		uint16 i=0,n=0;
 		SourceRouterLinkType *p=NULL;
 		MUTEX_LOCK(&mutex13_pSourcePathList);

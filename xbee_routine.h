@@ -82,6 +82,7 @@ extern CircularQueueType serial_wbuf;
 extern CircularQueueType trans_req_buf;
 extern CircularQueueType route_record_buf;
 extern SourceRouterLinkType *pSourcePathList;
+extern LockListInfoType *pParkList;
 /**************************declarations of mutex************************/
 extern pthread_mutex_t mutex01_serial_rbuf;
 #if __XBEE_TEST_LAR_NODE__
@@ -100,6 +101,7 @@ extern pthread_mutex_t mutex12_trans_req_buf;
 extern pthread_mutex_t mutex13_pSourcePathList;
 extern pthread_mutex_t mutex14_CoorInfo;
 extern pthread_mutex_t mutex15_errlog;
+extern pthread_mutex_t mutex16_park_list;
 
 void xbee_routine_thread(void);
 void xbee_routine_thread_write_serial(void);

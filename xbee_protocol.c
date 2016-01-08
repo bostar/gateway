@@ -156,7 +156,7 @@ SourceRouterLinkType *XBeeProcessRoutRcord(SourceRouterLinkType *p_head , uint8 
 	target_adr = 0;
 	target_adr |= (uint16)*(rbuf+13);
 	target_adr |= (((uint16)*(rbuf+12)) << 8);
-	pS = CreatRouterLink(rbuf+4,target_adr,(rbuf+16),*(rbuf+15));
+	pS = CreatRouterLinkNode(rbuf+4,(rbuf+12),(rbuf+16),*(rbuf+15));
 	pS->cnt = _SOURCE_CNT;
 	//NodePrintf(pS);
 	p = FindMacAdr(p_head,rbuf+4);
@@ -749,11 +749,6 @@ uint16 read_one_package_f_queue( CircularQueueType* p_cqueue , uint8* buf )
 	}
 	return 0;
 }
-/*****************************************************************************
-**brief	analysis package from a queue
-**param
-**reval
-*****************************************************************************/
 
 
 

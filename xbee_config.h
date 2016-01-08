@@ -19,10 +19,13 @@
 
 //对应IO口映射
 
+//other
+#define LOCK_NAME	"lock_info_list.txt"
 
 
+#define _XBEE_						1
 //#define __XBEE_TEST_LAR_NODE__	1				//大规模网络测试
-#define __XBEE_TEST__ 			1				//调试用
+#define __XBEE_TEST__ 				1				//调试用
 
 
 
